@@ -9,12 +9,15 @@
   },
   "dependencies": {
     "arraybuffer-loader": "^1.0.8",
+    "chart.js": "^2.9.3",
     "core-js": "^3.3.2",
     "hammerjs": "^2.0.8",
     "lodash": "^4.17.15",
     "two.js": "^0.7.0-beta.3",
     "vue": "^2.6.10",
+    "vue-chartjs": "^3.5.0",
     "vue-router": "^3.1.3",
+    "vue-svg-loader": "^0.15.0",
     "vuetify": "^2.1.0",
     "vuex": "^3.0.1",
     "wasm-loader": "^1.3.0"
@@ -29,6 +32,7 @@
     "babel-eslint": "^10.0.3",
     "eslint": "^5.16.0",
     "eslint-plugin-vue": "^5.0.0",
+    "html-loader": "^0.5.5",
     "sass": "^1.19.0",
     "sass-loader": "^8.0.0",
     "vue-cli-plugin-pug": "^1.0.7",

@@ -2,18 +2,19 @@
 v-row(ref='container'
       justify='center')
   div.canvas(ref='canvas')
+  div(ref='svgDiv', v-html='refreshSvg' style='width: 32px; height: 32px')
 </template>
 
 <script>
 import Two from "two.js";
-import { SimplePendulum } from "@/components/simplePendulum.js";
+import { Acrobot } from "@/components/acrobot.js";
 import { LQR } from "@/components/controls.js";
 import _ from "lodash";
 import Hammer from "hammerjs";
+import refreshSvg from "@assets/refresh.svg";
 const eig = require("../../lib/eigen-js/eigen.js");
-import { ValueIterationPlanner } from "@/components/valueIterationPlanner.js";
 
-const HEIGHT = 512;
+const HEIGHT = 768;
 const COLOR = "#00897B";
 const COLOR_DARK = "#1565C0";
 const FRAME_COLOR = "#455A64";
@@ -26,7 +27,8 @@ export default {
     radius: 16,
     length: 128,
     // Graphics
-    objPendulum: null,
+    objPendulum: {},
+    refreshSvg,
     // State
     pendulum: null,
     controller: null,
@@ -40,28 +42,12 @@ export default {
   },
 
   created() {
-    const xTop = eig.DenseMatrix.fromArray([Math.PI, 0])
     const params = {
-      x0: eig.DenseMatrix.fromArray([0, 0]), // xTop,
+      x0: eig.DenseMatrix.fromArray([Math.PI, 0, 0, 0]),
       u0: eig.DenseMatrix.fromArray([0])
     };
-    this.pendulum = new SimplePendulum(params);
-    this.controller = new LQR(this.pendulum, params.x0, params.u0);
-
-    // TEST
-    const p = this.pendulum.params;
-    const maxThetaDot = 2 * Math.sqrt(p.g / p.l);
-    this.VI = new ValueIterationPlanner(
-      this.pendulum,
-      [
-        { min: -Math.PI, max: Math.PI, count: 50 },
-        { min: -maxThetaDot, max: maxThetaDot, count: 50 }
-      ],
-      [{ min: -5, max: 5, count: 2 }],
-      [xTop, xTop.negated()],
-      0.1
-    );
-    this.VI.run(1000);
+    this.system = new Acrobot(params);
+    this.controller = new LQR(this.system, params.x0, params.u0);
   },
 
   mounted() {
@@ -76,35 +62,57 @@ export default {
     frame.translation.set(this.width / 2, HEIGHT / 2);
     frame.fill = FRAME_COLOR;
 
-    // Create pole
-    const pole = two.makeRectangle(
+    // Create first pole
+    const r1 = two.makeRectangle(
       0,
       this.length / 2,
       this.thickness,
       this.length + this.thickness
     );
-    pole.fill = COLOR;
-    pole.linewidth = 2;
+    r1.fill = COLOR;
+    r1.linewidth = 2;
+    // Create second pole
+    const r2 = two.makeRectangle(
+      0,
+      this.length / 2,
+      this.thickness,
+      this.length + this.thickness
+    );
+    r2.fill = COLOR;
+    r2.linewidth = 2;
     const circle = two.makeCircle(0, this.length, this.radius);
     circle.fill = COLOR_DARK;
     circle.linewidth = 2;
-    this.objPendulum = two.makeGroup(pole, circle);
+    console.log("SVG", this.$refs.svgDiv.childNodes);
+    // const torque = two.interpret(this.$refs.svg);
+    // console.log("TORQUE", torque);
+    const p2 = two.makeGroup(r2, circle);
+    p2.translation.set(0, this.length);
+    // Assemble poles
+    const p1 = two.makeGroup(r1, p2);
+    this.objPendulum = {
+      p1,
+      p2
+    };
+
+    this.objPendulum.p1.translation.set(this.width / 2, HEIGHT / 2);
+    // two.update();
     two.bind("update", this.update).play();
 
     // Handle touch events
     const canvas = this.$refs.canvas;
     document.addEventListener("mouseup", ev => {
-      this.pendulum.target = null;
+      this.system.target = null;
     });
     canvas.addEventListener("mousedown", ev => {
-      this.pendulum.target = {
+      this.system.target = {
         x: ev.offsetX - this.width / 2,
         y: ev.offsetY - HEIGHT / 2
       };
     });
     canvas.addEventListener("mousemove", ev => {
-      if (this.pendulum.target) {
-        this.pendulum.target = {
+      if (this.system.target) {
+        this.system.target = {
           x: ev.offsetX - this.width / 2,
           y: ev.offsetY - HEIGHT / 2
         };
@@ -115,24 +123,18 @@ export default {
   methods: {
     update() {
       const dt = Math.min(100, Date.now() - this.updateTime) / 1000;
-      // if (dt < 0.05) { return }
       const a = Date.now();
-
-      // const u = this.controller.getCommand();
-      const u = this.VI.getCommand()
-      // const old_x = new eig.DenseMatrix(this.pendulum.x)
-      // this.pendulum.step(u, dt);
-
-
-      const x = this.VI.getNextState()
-      eig.GC.set(this.pendulum, 'x', x)
-
-      this.objPendulum.rotation = -this.pendulum.x.get(0, 0);
-      this.objPendulum.translation.set(this.width / 2, HEIGHT / 2);
+      // const u = eig.DenseMatrix.fromArray([5]);
+      const u = this.controller.getCommand();
+      this.system.step(u, dt);
+      this.objPendulum.p1.rotation = -this.system.x.vGet(0);
+      this.objPendulum.p2.rotation = -this.system.x.vGet(1);
+      // this.objPendulum.rotation += 0.1;
+      this.objPendulum.p1.translation.set(this.width / 2, HEIGHT / 2);
       this.updateTime = Date.now();
       // Run GC
       eig.GC.flush();
-      const b = Date.now();
+      // const b = Date.now();
       // console.log('total time', b - a)
     }
   }

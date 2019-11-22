@@ -13,18 +13,22 @@ v-app
       v-progress-circular(:size='40'
                           color='blue'
                           indeterminate)
-    SimplePendulum(v-if='!loading')
+    div(style='height: 100%')
+      SimplePendulum(v-if='!loading')
+      //- LineChart
 </template>
 
 <script>
 import SimplePendulum from "@/components/SimplePendulum.vue";
+import LineChart from "@/components/LineChart.vue";
 const eig = require("../lib/eigen-js/eigen.js");
 
 export default {
   name: "App",
 
   components: {
-    SimplePendulum
+    SimplePendulum,
+    LineChart
   },
 
   data: () => ({
