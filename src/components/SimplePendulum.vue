@@ -6,10 +6,11 @@ v-row(ref='container'
 
 <script>
 import Two from "two.js";
-import SimplePendulum from "@/components/simplePendulum.js";
+import { SimplePendulum, LQR } from "@/components/simplePendulum.js";
 import Controls from "@/components/controls.js";
 import _ from "lodash";
 import Hammer from "hammerjs";
+const eig = require('../../lib/eigen-js/eigen.js')
 
 const HEIGHT = 512;
 const COLOR = "#00897B";
@@ -27,6 +28,7 @@ export default {
     objPendulum: null,
     // State
     pendulum: null,
+    controller: null,
     updateTime: Date.now()
   }),
 
@@ -38,11 +40,12 @@ export default {
 
   created() {
     const params = _.clone({
-      mu: 0.1,
-      x0: [Math.PI / 4, 0]
+      mu: 0.5,
+      x0: eig.DenseMatrix.fromArray([[Math.PI], [0]]),
+      u0: eig.DenseMatrix.fromArray([[0]])
     });
     this.pendulum = new SimplePendulum(params);
-    Controls.test(); // temp
+    this.controller = new LQR(this.pendulum, params.x0, params.u0);
   },
 
   mounted() {
@@ -101,15 +104,19 @@ export default {
 
   methods: {
     update() {
-      const dt = Math.min(2, (Date.now() - this.updateTime) / 1000);
-      // if (dt < 1) {
-      //   return
-      // }
-      // console.log('dt', dt)
-      this.pendulum.step(0, dt);
-      this.objPendulum.rotation = -this.pendulum.x[0];
+      const dt = Math.min(100, Date.now() - this.updateTime) / 1000;
+      const a = Date.now();
+      const u = this.controller.getCommand();
+      this.pendulum.step(u, dt);
+      const angle = this.pendulum.x.get(0, 0)
+      this.objPendulum.rotation = -angle;
+      // this.objPendulum.rotation += 0.1;
       this.objPendulum.translation.set(this.width / 2, HEIGHT / 2);
       this.updateTime = Date.now();
+      // Run GC
+      eig.GC.flush()
+      const b = Date.now();
+      // console.log('total time', b - a)
     }
   }
 };

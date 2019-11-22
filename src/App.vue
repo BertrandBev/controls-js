@@ -6,21 +6,35 @@ v-app
       span.mr-2 Latest Release
       v-icon mdi-open-in-new
   v-content
-    SimplePendulum
+    v-row(v-if='loading'
+          align='center'
+          justify='center'
+          style='height: 100%')
+      v-progress-circular(:size='40'
+                          color='blue'
+                          indeterminate)
+    SimplePendulum(v-if='!loading')
 </template>
 
 <script>
-import SimplePendulum from '@/components/SimplePendulum.vue';
+import SimplePendulum from "@/components/SimplePendulum.vue";
+const eig = require("../lib/eigen-js/eigen.js");
 
 export default {
-  name: 'App',
+  name: "App",
 
   components: {
-    SimplePendulum,
+    SimplePendulum
   },
 
   data: () => ({
-    //
+    loading: true
   }),
+
+  created() {
+    eig.ready = () => {
+      this.loading = false;
+    };
+  }
 };
 </script>
