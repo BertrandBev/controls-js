@@ -34,8 +34,7 @@ class Acrobot {
       mu2: 0.5,
       ...params
     }
-    // Needs a copy contructor here to prevent garbage collection
-    const x = new eig.DenseMatrix(params.x0) || new eig.DenseMatrix(4, 1);
+    const x = params.x0 || new eig.DenseMatrix(4, 1);
     eig.GC.set(this, 'x', x);
     this.target = null
   }

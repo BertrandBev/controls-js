@@ -1,6 +1,7 @@
 import _ from 'lodash'
 const eig = require("../../lib/eigen-js/eigen.js");
 import { wrapAngle } from './controls.js'
+import Plotly from 'plotly.js-dist'
 
 class Tensor {
   /**
@@ -64,8 +65,21 @@ class Tensor {
   print(title) {
     console.log(title, this.data)
   }
+
+  /**
+   * Get matrix form
+   */
+  getMatrix() {
+    console.assert(this.dims.length === 2, `The tensor dimension (${this.dims}) must be 2`)
+    return [...Array(this.dims[0])].map((val, i) => {
+      return [...Array(this.dims[1])].map((val, j) => this.get([i, j]))
+    })
+  }
 }
 
+/**
+ * Test // TODO: use a test framework
+ */
 function testTensor() {
   const t = new Tensor([2, 3, 4]);
   [...Array(2)].map((_, i) => i).forEach(i => {
@@ -84,8 +98,72 @@ function testTensor() {
   console.log('Test successful')
 }
 
-testTensor()
 
+
+class Interpolator {
+  /**
+   * Create interpolator based on an array of vector
+   * @param {Array} array of matrices
+   * @param {Number} dt 
+   */
+  set(array, dt) {
+    console.assert(dt > 0, 'The time must be positive')
+    console.assert(array.length > 0, 'The array must have at least one element')
+    eig.GC.set(this, 'array', array)
+    this.dt = dt
+    this.tEnd = (this.array.length - 1) * this.dt
+  }
+
+
+  /**
+   * Get interpolated value
+   * @param {Number} t time of interpolation
+   */
+  get(t) {
+    // console.assert(t >= 0 && t <= this.tEnd, 'Time out of bound')
+    const idx = Math.max(0, Math.min(this.array.length - 2, Math.floor(t / this.dt)))
+    const ratio = (t - this.dt * idx) / this.dt;
+    return this.array.length < 2 ?
+      this.array[0] :
+      this.array[idx].mul(1 - ratio).matAdd(this.array[idx + 1].mul(ratio))
+  }
+
+  // /**
+  //  * Rediscretize array value
+  //  * @param {Number} dt 
+  //  */
+  // discretize(dt) {
+  //   console.assert(dt > 0, 'The time must be positive')
+  //   const array = []
+  //   for (let t = 0; t <= this.tEnd; t += dt) {
+  //     const val = this.get(t)
+  //     array.push(val)
+  //   }
+  //   return array
+  // }
+
+  /**
+   * Delete interpolator
+   */
+  delete() {
+    eig.GC.popException(this.array)
+  }
+}
+
+/**
+ * Test // TODO: use a test framework TODO: refactor
+ */
+function testInterpolator() {
+  const array = [1, 2, 3, 7]
+  const ip = new Interpolator(array, 0.5)
+  let val = [ip.get(0), ip.get(1), ip.get(1.5), ip.get(0.25)];
+  let expected = [1, 3, 7, 1.5];
+  console.assert(_.isEqual(val, expected), `Expected ${expected}, got ${val}`);
+  // val = ip.discretize(0.25)
+  // expected = [1, 1.5, 2, 2.5, 3, 5, 7]
+  // console.assert(_.isEqual(val, expected), `Expected ${expected}, got ${val}`);
+  console.log('Test successful')
+}
 
 
 class ValueIterationPlanner {
@@ -103,6 +181,7 @@ class ValueIterationPlanner {
     this.xEqInds = xEqs.map(x => this.toGrid(this.xGrid, x))
     this.dt = dt
     this.createTransitionTable()
+    this.interp = new Interpolator()
   }
 
   /**
@@ -198,7 +277,8 @@ class ValueIterationPlanner {
       const converged = this.step(k)
       if (converged) {
         console.log(`Converged in ${k + 1} iterations`)
-        this.V.print()
+        this.buildPolicy()
+        // this.V.print()
         return
       }
     }
@@ -206,40 +286,79 @@ class ValueIterationPlanner {
   }
 
 
-  getBestU() {
-    const xInd = this.V.pack(this.toGrid(this.xGrid, this.system.x))
-    let bestU = 0 // TODO: pick random U
-    let minCost = Infinity
-    _.forEach(this.table[xInd] || {}, (newIdx, uIdx) => {
-      const cost = this.V.data[newIdx]
-      if (cost < minCost) {
-        minCost = cost;
-        bestU = uIdx
+  buildPolicy() {
+    this.policy = []
+    for (let k = 0; k < this.V.length; k++) {
+      let bestU = 0 // TODO: pick random U
+      let minCost = Infinity
+      _.forEach(this.table[k] || {}, (newIdx, uIdx) => {
+        const cost = this.V.data[newIdx]
+        if (cost < minCost) {
+          minCost = cost;
+          bestU = uIdx
+        }
+      })
+      this.policy.push(bestU)
+    }
+  }
+
+  /**
+   * Rollout
+   * @param {Number} tStart
+   * @param {Number} tEnd
+   */
+  rollout(tStart, tEnd) {
+    this.tStart = tStart
+    const sequence = []
+    let x = this.system.x
+    let xInd = this.V.pack(this.toGrid(this.xGrid, x))
+    sequence.push(new eig.DenseMatrix(x))
+    for (let t = tStart; t <= tEnd; t += this.dt) {
+      const u = this.policy[xInd]
+      xInd = (this.table[xInd] || {})[u];
+      if (!xInd) {
+        // Fixed point found, return
+        break;
       }
-    })
-    return bestU
+      // this.fromGrid(this.xGrid, this.V.unpack(xInd)).print('')
+      sequence.push(this.fromGrid(this.xGrid, this.V.unpack(xInd)))
+    }
+    this.interp.set(sequence, this.dt)
   }
 
   /**
-   * Get command
+   * Sample rollout a time t
+   * @param {Number} t
    */
-  getCommand() {
-    const bestU = this.getBestU()
-    const u = this.fromGrid(this.uGrid, this.U.unpack(bestU))
-    // u.print(`get command u: ${minCost}`)
-    return u
+  sampleRollout(t) {
+    // Rescale t
+    t = Math.min(t - this.tStart, this.interp.tEnd)
+    return this.interp.get(t)
   }
 
   /**
-   * Get next state
+   * Plot result
    */
-  getNextState() {
-    const xInd = this.V.pack(this.toGrid(this.xGrid, this.system.x))
-    const bestU = this.getBestU()
-    const xNext = (this.table[xInd] || {})[bestU] || xInd
-    const nextState = this.fromGrid(this.xGrid, this.V.unpack(xNext))
-    nextState.print('next')
-    return nextState
+  plot(div) {
+    const data = [{
+      z: this.V.getMatrix(),
+      x0: this.xGrid[0].min,
+      dx: (this.xGrid[0].max - this.xGrid[0].min) / this.xGrid[0].count,
+      y0: this.xGrid[1].min,
+      dy: (this.xGrid[1].max - this.xGrid[1].min) / this.xGrid[1].count,
+      type: 'heatmap'
+    }];
+    const layout = {
+      xaxis: { title: 'theta (rad)' },
+      yaxis: { title: 'thetaDot (rad)' }
+    }
+    const config = {
+      displaylogo: false,
+      displayModeBar: false,
+      scrollZoom: false,
+      showAxisDragHandles: false
+    }
+    Plotly.newPlot(div, data, layout, config);
   }
 }
 

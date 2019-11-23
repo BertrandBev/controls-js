@@ -13,6 +13,7 @@
     "core-js": "^3.3.2",
     "hammerjs": "^2.0.8",
     "lodash": "^4.17.15",
+    "plotly.js-dist": "^1.51.1",
     "two.js": "^0.7.0-beta.3",
     "vue": "^2.6.10",
     "vue-chartjs": "^3.5.0",

@@ -2,6 +2,7 @@
 v-row(ref='container'
       justify='center')
   div.canvas(ref='canvas')
+  div(ref='plot')
 </template>
 
 <script>
@@ -30,7 +31,9 @@ export default {
     // State
     pendulum: null,
     controller: null,
-    updateTime: Date.now()
+    updateTime: Date.now(),
+    // Misc TODO: exract to mixin
+    dragging: false
   }),
 
   computed: {
@@ -39,8 +42,16 @@ export default {
     }
   },
 
+  watch: {
+    dragging() {
+      if (!this.dragging) {
+        this.VI.rollout(Date.now() / 1000, Date.now() / 1000 + 5);
+      }
+    }
+  },
+
   created() {
-    const xTop = eig.DenseMatrix.fromArray([Math.PI, 0])
+    const xTop = eig.DenseMatrix.fromArray([Math.PI, 0]);
     const params = {
       x0: eig.DenseMatrix.fromArray([0, 0]), // xTop,
       u0: eig.DenseMatrix.fromArray([0])
@@ -62,6 +73,7 @@ export default {
       0.1
     );
     this.VI.run(1000);
+    this.VI.rollout(Date.now() / 1000, Date.now() / 1000 + 5);
   },
 
   mounted() {
@@ -89,14 +101,19 @@ export default {
     circle.fill = COLOR_DARK;
     circle.linewidth = 2;
     this.objPendulum = two.makeGroup(pole, circle);
-    two.bind("update", this.update).play();
 
-    // Handle touch events
+    two.bind("update", this.update).play();
+    // this.update()
+    // two.update()
+
+    // Handle touch events TODO: extract in mixin / parent
     const canvas = this.$refs.canvas;
     document.addEventListener("mouseup", ev => {
+      this.dragging = false;
       this.pendulum.target = null;
     });
     canvas.addEventListener("mousedown", ev => {
+      this.dragging = true;
       this.pendulum.target = {
         x: ev.offsetX - this.width / 2,
         y: ev.offsetY - HEIGHT / 2
@@ -110,30 +127,30 @@ export default {
         };
       }
     });
+
+    // Register plot area for VI
+    this.VI.plot(this.$refs.plot);
   },
 
   methods: {
     update() {
-      const dt = Math.min(100, Date.now() - this.updateTime) / 1000;
-      // if (dt < 0.05) { return }
-      const a = Date.now();
-
-      // const u = this.controller.getCommand();
-      const u = this.VI.getCommand()
-      // const old_x = new eig.DenseMatrix(this.pendulum.x)
-      // this.pendulum.step(u, dt);
-
-
-      const x = this.VI.getNextState()
-      eig.GC.set(this.pendulum, 'x', x)
-
+      // TODO: add FPS meter
+      if (this.mode == "Controls" || this.dragging) {
+        // TODO: hook to mode selector
+        const dt = Math.min(100, Date.now() - this.updateTime) / 1000;
+        const u = this.controller.getCommand();
+        this.pendulum.step(u, dt);
+      } else {
+        // Rollout mode
+        const x = this.VI.sampleRollout(Date.now() / 1000);
+        eig.GC.set(this.pendulum, "x", x);
+      }
+      // Graphic update
       this.objPendulum.rotation = -this.pendulum.x.get(0, 0);
       this.objPendulum.translation.set(this.width / 2, HEIGHT / 2);
       this.updateTime = Date.now();
       // Run GC
       eig.GC.flush();
-      const b = Date.now();
-      // console.log('total time', b - a)
     }
   }
 };

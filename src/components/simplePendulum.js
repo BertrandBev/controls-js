@@ -13,8 +13,7 @@ class SimplePendulum {
       mu: 0.5,
       ...params
     }
-    // Needs a copy contructor here to prevent deletion
-    const x = new eig.DenseMatrix(params.x0) || new eig.DenseMatrix(2, 1);
+    const x = params.x0 || new eig.DenseMatrix(2, 1);
     eig.GC.set(this, 'x', x)
     this.target = null
   }
