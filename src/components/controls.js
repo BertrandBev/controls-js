@@ -28,7 +28,7 @@ class LQR {
     const Q = eig.DenseMatrix.identity(xn, xn).mul(10);
     const R = eig.DenseMatrix.identity(un, un);
     const CareSolver = new eig.CareSolver(Jx, Ju, Q, R);
-    eig.GC.set(this, 'K', CareSolver.K().transpose())
+    eig.GC.set(this, 'K', CareSolver.K())
   }
 
   /**
@@ -37,9 +37,8 @@ class LQR {
    */
   getCommand() {
     const delta_x = this.x0.matSub(this.system.x)
-    delta_x.vSet(0, wrapAngle(delta_x.vGet(0)))
-    delta_x.vSet(1, wrapAngle(delta_x.vGet(1)))
-    return delta_x.transpose().matMul(this.K).clip(-1000, 1000)
+    this.system.bound(delta_x)
+    return this.K.matMul(delta_x).matAdd(this.u0).clamp(-1000, 1000) // TODO: use system actuator limits
   }
 
   /**

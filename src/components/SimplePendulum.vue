@@ -9,6 +9,7 @@ v-row(ref='container'
 import Two from "two.js";
 import { SimplePendulum } from "@/components/simplePendulum.js";
 import { LQR } from "@/components/controls.js";
+import mouseMixin from "@/components/mouseMixin.js";
 import _ from "lodash";
 import Hammer from "hammerjs";
 const eig = require("../../lib/eigen-js/eigen.js");
@@ -22,6 +23,8 @@ const FRAME_COLOR = "#455A64";
 export default {
   name: "SimplePendulum",
 
+  mixins: [mouseMixin],
+
   data: () => ({
     thickness: 8,
     radius: 16,
@@ -31,20 +34,22 @@ export default {
     // State
     pendulum: null,
     controller: null,
-    updateTime: Date.now(),
-    // Misc TODO: exract to mixin
-    dragging: false
+    updateTime: Date.now()
   }),
 
   computed: {
+    height() {
+      return HEIGHT;
+    },
+
     width() {
       return this.$refs.container.clientWidth;
     }
   },
 
   watch: {
-    dragging() {
-      if (!this.dragging) {
+    mouseDragging() {
+      if (!this.mouseDragging) {
         this.VI.rollout(Date.now() / 1000, Date.now() / 1000 + 5);
       }
     }
@@ -56,14 +61,14 @@ export default {
       x0: eig.DenseMatrix.fromArray([0, 0]), // xTop,
       u0: eig.DenseMatrix.fromArray([0])
     };
-    this.pendulum = new SimplePendulum(params);
-    this.controller = new LQR(this.pendulum, params.x0, params.u0);
+    this.system = new SimplePendulum(params);
+    this.controller = new LQR(this.system, params.x0, params.u0);
 
     // TEST
-    const p = this.pendulum.params;
+    const p = this.system.params;
     const maxThetaDot = 2 * Math.sqrt(p.g / p.l);
     this.VI = new ValueIterationPlanner(
-      this.pendulum,
+      this.system,
       [
         { min: -Math.PI, max: Math.PI, count: 50 },
         { min: -maxThetaDot, max: maxThetaDot, count: 50 }
@@ -77,7 +82,7 @@ export default {
   },
 
   mounted() {
-    const params = { width: this.width, height: HEIGHT };
+    const params = { width: this.width, height: this.height };
     const two = new Two(params).appendTo(this.$refs.canvas);
 
     // Frame
@@ -85,7 +90,7 @@ export default {
       two.makeLine(-this.width / 3, 0, this.width / 3, 0),
       two.makeLine(0, -this.width / 6, 0, this.width / 6)
     );
-    frame.translation.set(this.width / 2, HEIGHT / 2);
+    frame.translation.set(this.width / 2, this.height / 2);
     frame.fill = FRAME_COLOR;
 
     // Create pole
@@ -106,28 +111,6 @@ export default {
     // this.update()
     // two.update()
 
-    // Handle touch events TODO: extract in mixin / parent
-    const canvas = this.$refs.canvas;
-    document.addEventListener("mouseup", ev => {
-      this.dragging = false;
-      this.pendulum.target = null;
-    });
-    canvas.addEventListener("mousedown", ev => {
-      this.dragging = true;
-      this.pendulum.target = {
-        x: ev.offsetX - this.width / 2,
-        y: ev.offsetY - HEIGHT / 2
-      };
-    });
-    canvas.addEventListener("mousemove", ev => {
-      if (this.pendulum.target) {
-        this.pendulum.target = {
-          x: ev.offsetX - this.width / 2,
-          y: ev.offsetY - HEIGHT / 2
-        };
-      }
-    });
-
     // Register plot area for VI
     this.VI.plot(this.$refs.plot);
   },
@@ -135,19 +118,19 @@ export default {
   methods: {
     update() {
       // TODO: add FPS meter
-      if (this.mode == "Controls" || this.dragging) {
+      if (this.mode == "Controls" || this.mouseDragging) {
         // TODO: hook to mode selector
         const dt = Math.min(100, Date.now() - this.updateTime) / 1000;
         const u = this.controller.getCommand();
-        this.pendulum.step(u, dt);
+        this.system.step(u, dt, this.mouseTarget);
       } else {
         // Rollout mode
         const x = this.VI.sampleRollout(Date.now() / 1000);
-        eig.GC.set(this.pendulum, "x", x);
+        eig.GC.set(this.system, "x", x);
       }
       // Graphic update
-      this.objPendulum.rotation = -this.pendulum.x.get(0, 0);
-      this.objPendulum.translation.set(this.width / 2, HEIGHT / 2);
+      this.objPendulum.rotation = -this.system.x.vGet(0);
+      this.objPendulum.translation.set(this.width / 2, this.height / 2);
       this.updateTime = Date.now();
       // Run GC
       eig.GC.flush();

@@ -15,7 +15,6 @@ class SimplePendulum {
     }
     const x = params.x0 || new eig.DenseMatrix(2, 1);
     eig.GC.set(this, 'x', x)
-    this.target = null
   }
 
   /**
@@ -24,6 +23,14 @@ class SimplePendulum {
    */
   shape() {
     return [2, 1]
+  }
+
+  /**
+   * Bound state x to appropriate domain
+   * @param {Matrix} x 
+   */
+  bound(x) {
+    x.vSet(0, wrapAngle(x.vGet(0)))
   }
 
   /**
@@ -47,19 +54,20 @@ class SimplePendulum {
    * Execute a step
    * @param {DenseMatrix} u controls effort
    * @param {Number} dt delta time
+   * @param {Array} mouseTarget optional mouse target
    */
-  step(u, dt) {
+  step(u, dt, mouseTarget) {
     const dx = this.dynamics(this.x, u)
     // Override x if target tracking
-    if (this.target) {
-      const theta = -wrapAngle(Math.atan2(this.target.y, this.target.x) - Math.PI / 2)
+    if (mouseTarget) {
+      const theta = -Math.atan2(mouseTarget[0], mouseTarget[0]) - Math.PI / 2
       this.x.vSet(1, -10 * wrapAngle(this.x.vGet(0) - theta))
       dx.vSet(0, this.x.vGet(1))
       dx.vSet(1, 0)
     }
     // console.log('x', x, 'xDot', xDot)
     const newX = this.x.matAdd(dx.mul(dt))
-    newX.vSet(0, wrapAngle(newX.vGet(0)))
+    this.bound(newX)
     eig.GC.set(this, 'x', newX)
   }
 }
