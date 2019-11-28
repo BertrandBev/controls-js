@@ -5,32 +5,32 @@ v-row(ref='container'
 </template>
 
 <script>
-import Two from "two.js";
 import { Quadrotor2D } from "@/components/quadrotor2D.js";
 import { LQR } from "@/components/controls.js";
-import mouseMixin from "@/components/mouseMixin.js";
+import worldMixin from "@/components/worldMixin.js";
 import _ from "lodash";
 import Hammer from "hammerjs";
 const eig = require("../../lib/eigen-js/eigen.js");
 import { InteractivePath } from "@/components/interactivePath.js";
 import { Interpolator } from "./utils.js";
 
-const HEIGHT = 512;
 const COLOR = "#00897B";
 const COLOR_DARK = "#1565C0";
 const FRAME_COLOR = "#455A64";
 const COLOR_RED = "#F44336";
 
+const GEOM = {
+  thickness: 8,
+  length: 128
+};
+
 export default {
   name: "Quadrotor2D",
 
-  mixins: [mouseMixin],
+  mixins: [worldMixin],
 
   data: () => ({
-    // TODO: make that a params object
-    thickness: 8,
-    radius: 16,
-    length: 128,
+    // Graphics
     graphics: {},
     // Mode
     mode: "Flatness",
@@ -42,16 +42,8 @@ export default {
   }),
 
   computed: {
-    height() {
-      return HEIGHT;
-    },
-
-    width() {
-      return this.$refs.container.clientWidth;
-    },
-
     scale() {
-      return this.length / this.system.params.l;
+      return GEOM.length / this.system.params.l;
     }
   },
 
@@ -67,28 +59,17 @@ export default {
   },
 
   mounted() {
-    const params = { width: this.width, height: this.height };
-    const two = new Two(params).appendTo(this.$refs.canvas);
-
-    // Frame
-    const frame = two.makeGroup(
-      two.makeLine(-this.width / 3, 0, this.width / 3, 0),
-      two.makeLine(0, -this.width / 6, 0, this.width / 6)
-    );
-    frame.translation.set(this.width / 2, this.height / 2);
-    frame.fill = FRAME_COLOR;
-
     // Create body
-    const body = two.makeRectangle(0, 0, this.length, this.thickness);
+    const body = this.two.makeRectangle(0, 0, GEOM.length, GEOM.thickness);
     body.fill = COLOR;
     body.linewidth = 2;
 
     // Create propellers
-    const propHeight = -1.5 * this.thickness;
-    const propLength = this.length / 4;
+    const propHeight = -1.5 * GEOM.thickness;
+    const propLength = GEOM.length / 4;
     this.graphics.force = [null, null];
-    let sides = [(-3 * this.length) / 7, (3 * this.length) / 7].map(x => {
-      const prop = two.makeLine(
+    let sides = [(-3 * GEOM.length) / 7, (3 * GEOM.length) / 7].map(x => {
+      const prop = this.two.makeLine(
         x - propLength,
         propHeight,
         x + propLength,
@@ -96,19 +77,23 @@ export default {
       );
       prop.linewidth = 3;
       prop.fill = COLOR_DARK;
-      const shaft = two.makeLine(x, -3, x, propHeight);
+      const shaft = this.two.makeLine(x, -3, x, propHeight);
       shaft.linewidth = 2;
       shaft.fill = COLOR_DARK;
       // Motors?
 
       // Forces
-      const fLine = two.makeLine(x, propHeight, x, propHeight - 10);
+      const fLine = this.two.makeLine(x, propHeight, x, propHeight - 10);
       fLine.linewidth = 2;
       fLine.stroke = COLOR_RED;
-      const fHead = two.makePolygon(x, propHeight - 10, 6, 3);
+      const fHead = this.two.makePolygon(x, propHeight - 10, 6, 3);
       fHead.fill = COLOR_RED;
 
-      return { prop: two.makeGroup(prop, shaft, fLine, fHead), fLine, fHead };
+      return {
+        prop: this.two.makeGroup(prop, shaft, fLine, fHead),
+        fLine,
+        fHead
+      };
     });
     this.graphics.showControl = u => {
       sides.forEach((side, idx) => {
@@ -118,27 +103,25 @@ export default {
         side.fLine.vertices[1].y = side.fHead.translation.y;
       });
     };
-    this.graphics.system = two.makeGroup(body, sides[0].prop, sides[1].prop);
-
-    // TEMP
-    // this.graphics.system.visible = false;
-    // frame.visible = false;
-    // this.update();
-    // two.update();
+    this.graphics.system = this.two.makeGroup(
+      body,
+      sides[0].prop,
+      sides[1].prop
+    );
 
     // Setup path
     this.interpolator = new Interpolator(true);
-    this.path = new InteractivePath(two);
+    this.path = new InteractivePath(this.two);
     this.path.group.translation.set(this.width / 2, this.height / 2);
     // Update path
-    this.updatePathDebounced = _.debounce(this.updatePath, 1000)
+    this.updatePathDebounced = _.debounce(this.updatePath, 1000);
     this.path.addUpdateListener(() => {
       this.updatePathDebounced();
     });
     this.updatePathDebounced();
 
     // Start animation
-    two.bind("update", this.update).play();
+    this.two.bind("update", this.update).play();
   },
 
   methods: {
@@ -150,23 +133,9 @@ export default {
         const pathPos = [val.x + this.width / 2, val.y + this.height / 2];
         return eig.DenseMatrix.fromArray(this.canvasToWorld(pathPos));
       });
-      const x = this.system.fitTrajectory(xy, dt)
+      const x = this.system.fitTrajectory(xy, dt);
       // Init rollout
       this.interpolator.set(x, dt);
-    },
-
-    canvasToWorld(pos) {
-      return [
-        (pos[0] - this.width / 2) / this.scale,
-        -(pos[1] - this.height / 2) / this.scale
-      ];
-    },
-
-    worldToCanvas(pos) {
-      return [
-        pos[0] * this.scale + this.width / 2,
-        -pos[1] * this.scale + this.height / 2
-      ];
     },
 
     update() {
@@ -177,7 +146,7 @@ export default {
         const x = this.interpolator.get(Date.now() / 1000);
         this.system.x.vSet(0, x.vGet(0));
         this.system.x.vSet(1, x.vGet(1));
-        this.system.x.vSet(2, x.vGet(2))
+        this.system.x.vSet(2, x.vGet(2));
         u = x.block(6, 0, 2, 1);
       } else {
         // TODO: hook to mode selector

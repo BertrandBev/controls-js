@@ -2,42 +2,42 @@
 v-row(ref='container'
       justify='center')
   div.canvas(ref='canvas')
-  div(ref='svgDiv', v-html='refreshSvg' style='width: 32px; height: 32px')
 </template>
 
 <script>
-import Two from "two.js";
+import worldMixin from "@/components/worldMixin.js";
 import { Acrobot } from "@/components/acrobot.js";
 import { LQR } from "@/components/controls.js";
 import _ from "lodash";
 import Hammer from "hammerjs";
-import refreshSvg from "@assets/refresh.svg";
 const eig = require("../../lib/eigen-js/eigen.js");
 
-const HEIGHT = 768;
 const COLOR = "#00897B";
 const COLOR_DARK = "#1565C0";
 const FRAME_COLOR = "#455A64";
 
+const GEOM = {
+  thickness: 8,
+  radius: 16,
+  length: 128
+};
+
 export default {
   name: "SimplePendulum",
 
+  mixins: [worldMixin],
+
   data: () => ({
-    thickness: 8,
-    radius: 16,
-    length: 128,
     // Graphics
-    objPendulum: {},
-    refreshSvg,
+    graphics: {},
     // State
-    pendulum: null,
     controller: null,
     updateTime: Date.now()
   }),
 
   computed: {
-    width() {
-      return this.$refs.container.clientWidth;
+    scale() {
+      return GEOM.length / this.system.params.l;
     }
   },
 
@@ -51,19 +51,8 @@ export default {
   },
 
   mounted() {
-    const params = { width: this.width, height: HEIGHT };
-    const two = new Two(params).appendTo(this.$refs.canvas);
-
-    // Frame
-    const frame = two.makeGroup(
-      two.makeLine(-this.width / 3, 0, this.width / 3, 0),
-      two.makeLine(0, -this.width / 6, 0, this.width / 6)
-    );
-    frame.translation.set(this.width / 2, HEIGHT / 2);
-    frame.fill = FRAME_COLOR;
-
     // Create first pole
-    const r1 = two.makeRectangle(
+    const r1 = this.two.makeRectangle(
       0,
       this.length / 2,
       this.thickness,
@@ -72,7 +61,7 @@ export default {
     r1.fill = COLOR;
     r1.linewidth = 2;
     // Create second pole
-    const r2 = two.makeRectangle(
+    const r2 = this.two.makeRectangle(
       0,
       this.length / 2,
       this.thickness,
@@ -80,62 +69,36 @@ export default {
     );
     r2.fill = COLOR;
     r2.linewidth = 2;
-    const circle = two.makeCircle(0, this.length, this.radius);
+    const circle = this.two.makeCircle(0, this.length, this.radius);
     circle.fill = COLOR_DARK;
     circle.linewidth = 2;
-    console.log("SVG", this.$refs.svgDiv.childNodes);
-    // const torque = two.interpret(this.$refs.svg);
-    // console.log("TORQUE", torque);
-    const p2 = two.makeGroup(r2, circle);
+
+    const p2 = this.two.makeGroup(r2, circle);
     p2.translation.set(0, this.length);
     // Assemble poles
-    const p1 = two.makeGroup(r1, p2);
-    this.objPendulum = {
+    const p1 = this.two.makeGroup(r1, p2);
+    this.graphics = {
       p1,
       p2
     };
 
-    this.objPendulum.p1.translation.set(this.width / 2, HEIGHT / 2);
-    // two.update();
-    two.bind("update", this.update).play();
-
-    // Handle touch events
-    const canvas = this.$refs.canvas;
-    document.addEventListener("mouseup", ev => {
-      this.system.target = null;
-    });
-    canvas.addEventListener("mousedown", ev => {
-      this.system.target = {
-        x: ev.offsetX - this.width / 2,
-        y: ev.offsetY - HEIGHT / 2
-      };
-    });
-    canvas.addEventListener("mousemove", ev => {
-      if (this.system.target) {
-        this.system.target = {
-          x: ev.offsetX - this.width / 2,
-          y: ev.offsetY - HEIGHT / 2
-        };
-      }
-    });
+    this.two.bind("update", this.update).play();
   },
 
   methods: {
     update() {
       const dt = Math.min(100, Date.now() - this.updateTime) / 1000;
       const a = Date.now();
-      // const u = eig.DenseMatrix.fromArray([5]);
       const u = this.controller.getCommand();
       this.system.step(u, dt);
-      this.objPendulum.p1.rotation = -this.system.x.vGet(0);
-      this.objPendulum.p2.rotation = -this.system.x.vGet(1);
-      // this.objPendulum.rotation += 0.1;
-      this.objPendulum.p1.translation.set(this.width / 2, HEIGHT / 2);
+      // Update graphics
+      const x = this.system.x;
+      this.graphics.p1.rotation = -x.vGet(0);
+      this.graphics.p2.rotation = -x.vGet(2);
+      this.graphics.p1.translation.set(...this.worldToCanvas([0, 0]));
       this.updateTime = Date.now();
       // Run GC
       eig.GC.flush();
-      // const b = Date.now();
-      // console.log('total time', b - a)
     }
   }
 };

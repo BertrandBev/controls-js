@@ -15,13 +15,15 @@ v-app
                           indeterminate)
     div(style='height: 100%')
       SimplePendulum(v-if='!loading && false')
-      Quadrotor2D(v-if='!loading && true')
+      Quadrotor2D(v-if='!loading && false')
+      CartPole(v-if='!loading && true')
       //- LineChart
 </template>
 
 <script>
 import SimplePendulum from "@/components/SimplePendulum.vue";
 import Quadrotor2D from "@/components/Quadrotor2D.vue";
+import CartPole from "@/components/CartPole.vue";
 import LineChart from "@/components/LineChart.vue";
 const eig = require("../lib/eigen-js/eigen.js");
 
@@ -30,8 +32,9 @@ export default {
 
   components: {
     SimplePendulum,
+    CartPole,
     Quadrotor2D,
-    LineChart
+    LineChart,
   },
 
   data: () => ({

@@ -1,6 +1,6 @@
 /* eslint-disable */
 // import eig from '../../lib/eigen-js/eigen.js'
-const eig = require('../../lib/eigen-js/eigen.js')
+const eig = require('@lib/eigen-js/eigen.js')
 import _ from 'lodash'
 import { LQR, wrapAngle } from './controls.js'
 
@@ -60,8 +60,8 @@ class SimplePendulum {
     const dx = this.dynamics(this.x, u)
     // Override x if target tracking
     if (mouseTarget) {
-      const theta = -Math.atan2(mouseTarget[0], mouseTarget[0]) - Math.PI / 2
-      this.x.vSet(1, -10 * wrapAngle(this.x.vGet(0) - theta))
+      const theta = Math.atan2(mouseTarget[1], mouseTarget[0]) + Math.PI / 2
+      this.x.vSet(1, 10 * wrapAngle(theta - this.x.vGet(0)))
       dx.vSet(0, this.x.vGet(1))
       dx.vSet(1, 0)
     }
@@ -72,4 +72,4 @@ class SimplePendulum {
   }
 }
 
-export { LQR, SimplePendulum }
+export { SimplePendulum }

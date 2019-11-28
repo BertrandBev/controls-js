@@ -1,4 +1,4 @@
-const eig = require('../../lib/eigen-js/eigen.js')
+const eig = require('@lib/eigen-js/eigen.js')
 import _ from 'lodash'
 
 function wrapAngle(angle) {
@@ -9,6 +9,10 @@ function wrapAngle(angle) {
 
 function sqr(val) {
   return Math.pow(val, 2)
+}
+
+function clamp(val, min, max) {
+  return Math.max(min, Math.min(max, val))
 }
 
 class LQR {
@@ -82,5 +86,5 @@ class LQR {
 }
 
 export {
-  wrapAngle, LQR, sqr
+  wrapAngle, LQR, sqr, clamp
 }
