@@ -2,7 +2,7 @@
 // import eig from '../../lib/eigen-js/eigen.js'
 const eig = require('@lib/eigen-js/eigen.js')
 import _ from 'lodash'
-import { wrapAngle, sqr, clamp } from './math.js'
+import { wrapAngle, sqr } from './math.js'
 
 class CartPole {
   constructor(params = {}) {
@@ -24,6 +24,13 @@ class CartPole {
    */
   shape() {
     return [4, 1]
+  }
+
+  /**
+   * Get steady-state command
+   */
+  ssCommand() {
+    return eig.DenseMatrix.fromArray([0])
   }
 
   /**
@@ -114,7 +121,7 @@ class CartPole {
       } else {
         // Control cart
         const xVel = 10 * (mouseTarget[0] - this.x.vGet(0));
-        this.x.vSet(2, clamp(xVel, -15, 15))
+        this.x.vSet(2, _.clamp(xVel, -15, 15))
         dx.vSet(0, this.x.vGet(2))
         dx.vSet(2, 0)
       }

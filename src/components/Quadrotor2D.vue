@@ -9,7 +9,6 @@ import { Quadrotor2D } from "@/components/quadrotor2D.js";
 import { LQR } from "@/components/controls.js";
 import worldMixin from "@/components/worldMixin.js";
 import _ from "lodash";
-import Hammer from "hammerjs";
 const eig = require("../../lib/eigen-js/eigen.js");
 import { InteractivePath } from "@/components/interactivePath.js";
 import { Interpolator } from "./utils.js";
@@ -68,7 +67,7 @@ export default {
     const propHeight = -1.5 * GEOM.thickness;
     const propLength = GEOM.length / 4;
     this.graphics.force = [null, null];
-    let sides = [(-3 * GEOM.length) / 7, (3 * GEOM.length) / 7].map(x => {
+    const sides = [(-3 * GEOM.length) / 7, (3 * GEOM.length) / 7].map(x => {
       const prop = this.two.makeLine(
         x - propLength,
         propHeight,

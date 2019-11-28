@@ -1,6 +1,6 @@
+import _ from 'lodash'
 import nlopt from '@lib/nlopt-js/nlopt.js'
 import eig from '@lib/eigen-js/eigen.js'
-import { clamp } from './math.js'
 
 class DirectCollocation {
   /**
@@ -70,7 +70,7 @@ class DirectCollocation {
     }
     // Add anchors
     anchors.forEach(a => {
-      const idx = clamp(Math.floor(a.t * this.n), 0, this.n - 1) * this.shape[0]
+      const idx = _.clamp(Math.floor(a.t * this.n), 0, this.n - 1) * this.shape[0]
       for (let k = 0; k < this.shape[0]; k++) {
         upper.set(idx + k, a.x.vGet(k))
         lower.set(idx + k, a.x.vGet(k))

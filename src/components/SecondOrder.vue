@@ -7,15 +7,14 @@ v-row(ref='container'
 </template>
 
 <script>
+import _ from "lodash";
+const eig = require("../../lib/eigen-js/eigen.js");
 import { SecondOrder } from "@/components/secondOrder.js";
 import { LQR } from "@/components/controls.js";
 import worldMixin from "@/components/worldMixin.js";
 import { test } from "@/components/directCollocation.js";
-import _ from "lodash";
-import Hammer from "hammerjs";
 import { Interpolator } from "@/components/utils.js";
 import { DirectCollocation } from "@/components/directCollocation.js";
-const eig = require("../../lib/eigen-js/eigen.js");
 
 const COLOR = "#00897B";
 const COLOR_DARK = "#1565C0";

@@ -11,7 +11,6 @@ import { SimplePendulum } from "@/components/simplePendulum.js";
 import { LQR } from "@/components/controls.js";
 import worldMixin from "@/components/worldMixin.js";
 import _ from "lodash";
-import Hammer from "hammerjs";
 const eig = require("../../lib/eigen-js/eigen.js");
 import { ValueIterationPlanner } from "@/components/valueIterationPlanner.js";
 

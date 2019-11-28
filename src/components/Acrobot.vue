@@ -9,7 +9,6 @@ import worldMixin from "@/components/worldMixin.js";
 import { Acrobot } from "@/components/acrobot.js";
 import { LQR } from "@/components/controls.js";
 import _ from "lodash";
-import Hammer from "hammerjs";
 const eig = require("../../lib/eigen-js/eigen.js");
 
 const COLOR = "#00897B";

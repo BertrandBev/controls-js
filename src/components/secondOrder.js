@@ -2,7 +2,7 @@
 // import eig from '../../lib/eigen-js/eigen.js'
 const eig = require('@lib/eigen-js/eigen.js')
 import _ from 'lodash'
-import { clamp } from './controls.js'
+import { clamp } from './math.js'
 
 class SecondOrder {
   constructor(params = {}) {
