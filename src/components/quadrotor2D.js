@@ -2,7 +2,8 @@
 // import eig from '../../lib/eigen-js/eigen.js'
 const eig = require('@lib/eigen-js/eigen.js')
 import _ from 'lodash'
-import { LQR, wrapAngle, sqr } from './controls.js'
+import { LQR } from './controls.js'
+import { wrapAngle, sqr } from './math.js'
 
 class Quadrotor2D {
   constructor(params = {}) {

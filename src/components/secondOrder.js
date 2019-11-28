@@ -2,18 +2,15 @@
 // import eig from '../../lib/eigen-js/eigen.js'
 const eig = require('@lib/eigen-js/eigen.js')
 import _ from 'lodash'
-import { wrapAngle } from './math.js'
+import { clamp } from './controls.js'
 
-class SimplePendulum {
+class SecondOrder {
   constructor(params = {}) {
     this.params = {
-      g: 9.81,
-      l: 1,
       m: 1,
-      mu: 0.5,
       ...params
     }
-    const x = params.x0 || new eig.DenseMatrix(2, 1);
+    const x = params.x0 || new eig.DenseMatrix(4, 1);
     eig.GC.set(this, 'x', x)
   }
 
@@ -30,7 +27,6 @@ class SimplePendulum {
    * @param {Matrix} x 
    */
   bound(x) {
-    x.vSet(0, wrapAngle(x.vGet(0)))
   }
 
   /**
@@ -40,15 +36,35 @@ class SimplePendulum {
    * @returns {DenseMatrix} dx
    */
   dynamics(x, u) {
-    // x = [theta, thetaDot]
-    const p = this.params
-    const dx = new eig.DenseMatrix(2, 1);
-    const ddx = (-p.m * p.g * p.l * Math.sin(x.vGet(0)) - p.mu * x.vGet(1) + u.vGet(0)) / (p.m * Math.pow(p.l, 2))
-    dx.vSet(0, x.vGet(1))
-    dx.vSet(1, ddx)
-    return dx
+    return eig.DenseMatrix.fromArray([
+      x.vGet(1),
+      u.vGet(0) / this.params.m
+    ])
   }
 
+  /**
+   * Returns df/dx
+   * @param {DenseMatrix} x
+   * @param {DenseMatrix} u
+   * @returns {DenseMatrix} df/dx
+   */
+  xJacobian(x, u) {
+    return eig.DenseMatrix.fromArray([
+      [0, 1], [0, 0]
+    ])
+  }
+
+  /**
+   * Returns df/du
+   * @param {DenseMatrix} x
+   * @param {DenseMatrix} u
+   * @returns {DenseMatrix} df/du
+   */
+  uJacobian(x, u) {
+    return eig.DenseMatrix.fromArray([
+      [0], [1 / this.params.m]
+    ])
+  }
 
   /**
    * Execute a step
@@ -60,16 +76,15 @@ class SimplePendulum {
     const dx = this.dynamics(this.x, u)
     // Override x if target tracking
     if (mouseTarget) {
-      const theta = Math.atan2(mouseTarget[1], mouseTarget[0]) + Math.PI / 2
-      this.x.vSet(1, 10 * wrapAngle(theta - this.x.vGet(0)))
+      // Control cart
+      const xVel = 10 * (mouseTarget[0] - this.x.vGet(0));
+      this.x.vSet(1, clamp(xVel, -15, 15))
       dx.vSet(0, this.x.vGet(1))
-      dx.vSet(1, 0)
     }
-    // console.log('x', x, 'xDot', xDot)
     const newX = this.x.matAdd(dx.mul(dt))
     this.bound(newX)
     eig.GC.set(this, 'x', newX)
   }
 }
 
-export { SimplePendulum }
+export { SecondOrder }

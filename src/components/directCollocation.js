@@ -1,18 +1,25 @@
 import nlopt from '@lib/nlopt-js/nlopt.js'
 import eig from '@lib/eigen-js/eigen.js'
+import { clamp } from './math.js'
 
 class DirectCollocation {
-  constructor(system, n, xStart, xEnd, uMax) {
+  /**
+   * 
+   * @param {Object} system 
+   * @param {Number} n 
+   * @param {Number} uMax 
+   * @param {Array} anchors [{t in [0, 1], x}]
+   */
+  constructor(system, n, uMax, anchors) {
     console.assert(n >= 2, "The number of points must be positive")
     this.system = system
     this.n = n
-    eig.GC.set(this, 'xStart', xStart)
-    eig.GC.set(this, 'xEnd', xEnd)
 
     // Compute dimensionality
     this.shape = system.shape()
     this.dim = (this.shape[0] + this.shape[1]) * this.n + 1
-    this.opt = new nlopt.Optimize(this.dim)
+    const algorithm = nlopt.Algorithm.LD_SLSQP // LD_SLSQP LD_MMA LN_COBYLA
+    this.opt = new nlopt.Optimize(algorithm, this.dim)
 
     // Set objective
     this.opt.set_min_objective(nlopt.ScalarFunction.fromLambda((x, grad) => {
@@ -24,16 +31,20 @@ class DirectCollocation {
         grad[this.dim - 1] = 1
       }
       return tEnd
-    }), 1e-4)
+    }), 1e-5)
 
     // Add dynamic constraint
     this.addDynamicContraints()
 
     // Set bounds
-    this.setBounds(uMax)
+    this.setBounds(uMax, anchors)
   }
 
-  setBounds(uMax) {
+  delete() {
+    nlopt.GC.flush()
+  }
+
+  setBounds(uMax, anchors) {
     const lower = new nlopt.Vector()
     const upper = new nlopt.Vector()
     const x0 = new nlopt.Vector()
@@ -46,17 +57,9 @@ class DirectCollocation {
       x0.push_back(x)
     }
     for (let k = 0; k < this.dim; k++) {
-      if (k < this.shape[0]) {
-        // xStart
-        const val = this.xStart.vGet(k)
-        setPoint(val, val, val)
-      } else if (k < uIdx - this.shape[0]) {
+      if (k < uIdx) {
         // x
         setPoint(-INF, INF, 0)
-      } else if (k < uIdx) {
-        // xEnd
-        const val = this.xEnd.vGet(k - uIdx + this.shape[0])
-        setPoint(val, val, val)
       } else if (k < tIdx) {
         // u
         setPoint(-uMax, uMax, 0)
@@ -65,12 +68,19 @@ class DirectCollocation {
         setPoint(0, INF, 1)
       }
     }
+    // Add anchors
+    anchors.forEach(a => {
+      const idx = clamp(Math.floor(a.t * this.n), 0, this.n - 1) * this.shape[0]
+      for (let k = 0; k < this.shape[0]; k++) {
+        upper.set(idx + k, a.x.vGet(k))
+        lower.set(idx + k, a.x.vGet(k))
+        x0.set(idx + k, a.x.vGet(k))
+      }
+    })
+    // TODO: add initial guess
     this.opt.set_lower_bounds(lower)
     this.opt.set_upper_bounds(upper)
     this.x0 = x0
-    // DEBUG
-    // this.printVals(lower, 'lower')
-    // this.printVals(upper, 'upper')
   }
 
   getVector(arr, idx, len) {
@@ -108,6 +118,14 @@ class DirectCollocation {
     // const xc = []
     // x.forEach(val => xc.push(val))
     // console.log('x', xc)
+    // console.log('JS ', x[0], x[1], x[this.dim - 2], x[this.dim - 1]);
+
+    // Zero-out gradient
+    if (grad) {
+      for (let i = 0; i < nConst * this.dim; i++) {
+        grad[i] = 0;
+      }
+    }
 
     // Loop for all colocation points
     let max = 0
@@ -190,6 +208,13 @@ class DirectCollocation {
 
 
     }
+    // TEMP
+
+
+    // if (grad)
+    // console.log('JS ', grad[0], grad[nConst * this.dim - 1]);
+    // console.log('JS RES', res[0], res[nConst - 1])
+
     // if (iter++ % 100 == 0)
     //   console.log(`Iteration ${iter}; max constraint ${max}`)
     eig.GC.flush()
@@ -234,72 +259,41 @@ class DirectCollocation {
     const nx = this.shape[0]
     const nu = this.shape[1]
     const nConst = (this.n - 1) * nx
-    const tolVec = nlopt.Vector.fromArray([...Array(nConst)].map(() => 1e-4))
+    const tolVec = nlopt.Vector.fromArray([...Array(nConst)].map(() => 1e-6))
     let iter = 0;
     this.opt.add_equality_mconstraint(nlopt.VectorFunction.fromLambda((x, grad, res) => {
-      return this.constraint(x, grad, res)
+      this.constraint(x, grad, res)
     }), tolVec)
   }
 
   optimize() {
-    // TEMP
-    this.opt.set_maxtime(10)
+    this.opt.set_maxtime(15)
     const res = this.opt.optimize(this.x0)
-    this.printVals(res.x, 'result')
+    const [xList, uList, tEnd] = this.unpack(res.x)
+    console.log('xList', xList, 'uList', uList)
+    return xList.map((x, idx) => {
+      return eig.DenseMatrix.fromArray(x).vcat(eig.DenseMatrix.fromArray(uList[idx]))
+    })
   }
 
-  printVals(vector, title) {
-    const xVal = []
-    const uVal = []
-    let tEnd = 0
+  unpack(vector) {
+    const xList = []
+    const uList = []
+    let tEnd = vector.get(this.dim - 1)
     const uIdx = this.n * this.shape[0]
     const tIdx = this.dim - 1
-    for (let k = 0; k < this.dim; k++) {
-      if (k < uIdx) {
-        xVal.push(vector.get(k))
-      } else if (k < tIdx) {
-        uVal.push(vector.get(k))
-      } else {
-        tEnd = vector.get(k)
-      }
+    function slice(idx, len) {
+      return [...Array(len)].map((_, k) => vector.get(idx + k))
     }
-    console.log('Values:', title)
-    console.log('x:', xVal)
-    console.log('u:', uVal)
-    console.log('t:', tEnd)
+    for (let k = 0; k < uIdx; k += this.shape[0]) {
+      xList.push(slice(k, this.shape[0]))
+    }
+    for (let k = uIdx; k < this.dim - 1; k += this.shape[1]) {
+      uList.push(slice(k, this.shape[1]))
+    }
+    return [xList, uList, tEnd]
   }
 }
-
-// class SecondOrderSystemTest {
-//   constructor() {
-//     this.params = {
-//       m: 1
-//     }
-//   }
-
-//   shape() {
-//     return [2, 1]
-//   }
-
-//   dynamics(x, u) {
-//     return eig.DenseMatrix.fromArray([
-//       x.vGet(1) + x.vGet(0) * 0.3 - u.vGet(0) * 0.23,
-//       u.vGet(0) / this.params.m + x.vGet(0) * 0.1 - x.vGet(1) * 0.7
-//     ])
-//   }
-
-//   xJacobian(x, u) {
-//     return eig.DenseMatrix.fromArray([
-//       [0.3, 1], [0.1, -0.7]
-//     ])
-//   }
-
-//   uJacobian(x, u) {
-//     return eig.DenseMatrix.fromArray([
-//       [-0.23], [1 / this.params.m]
-//     ])
-//   }
-// }
 
 class SecondOrderSystem {
   constructor() {
@@ -334,12 +328,18 @@ class SecondOrderSystem {
 
 // TEST FUNCTION
 function test() {
+  console.log('test called')
   const system = new SecondOrderSystem()
   const xStart = eig.DenseMatrix.fromArray([0, 0])
   const xEnd = eig.DenseMatrix.fromArray([1, 0])
-  const collocation = new DirectCollocation(system, 15, xStart, xEnd, 5)
+  const uMax = 1
+  const nPoints = 30
+  const anchors = [{ t: 0, x: xStart }, { t: 1, x: xEnd }]
+  const collocation = new DirectCollocation(system, nPoints, uMax, anchors)
   collocation.optimize()
+  collocation.delete()
+  console.log('test deleted')
   // collocation.testGrad()
 }
 
-export { test }
+export { test, DirectCollocation }

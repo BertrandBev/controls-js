@@ -1,6 +1,6 @@
 import _ from 'lodash'
 const eig = require("../../lib/eigen-js/eigen.js");
-import { wrapAngle } from './controls.js'
+import { wrapAngle } from './math.js'
 import Plotly from 'plotly.js-dist'
 import { Interpolator } from './utils.js'
 

@@ -17,6 +17,7 @@ v-app
       SimplePendulum(v-if='!loading && false')
       Quadrotor2D(v-if='!loading && false')
       CartPole(v-if='!loading && true')
+      SecondOrder(v-if='!loading && false')
       //- LineChart
 </template>
 
@@ -24,6 +25,7 @@ v-app
 import SimplePendulum from "@/components/SimplePendulum.vue";
 import Quadrotor2D from "@/components/Quadrotor2D.vue";
 import CartPole from "@/components/CartPole.vue";
+import SecondOrder from "@/components/SecondOrder.vue";
 import LineChart from "@/components/LineChart.vue";
 const eig = require("../lib/eigen-js/eigen.js");
 
@@ -33,6 +35,7 @@ export default {
   components: {
     SimplePendulum,
     CartPole,
+    SecondOrder,
     Quadrotor2D,
     LineChart,
   },

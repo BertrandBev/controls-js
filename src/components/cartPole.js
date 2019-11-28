@@ -2,7 +2,7 @@
 // import eig from '../../lib/eigen-js/eigen.js'
 const eig = require('@lib/eigen-js/eigen.js')
 import _ from 'lodash'
-import { LQR, wrapAngle, sqr, clamp } from './controls.js'
+import { wrapAngle, sqr, clamp } from './math.js'
 
 class CartPole {
   constructor(params = {}) {
@@ -46,13 +46,54 @@ class CartPole {
     const [c, s] = [Math.cos(x.vGet(1)), Math.sin(x.vGet(1))]
     const dx = x.block(2, 0, 2, 1)
     const den = p.mc + p.mp * sqr(s)
-    const ddx = new eig.DenseMatrix.fromArray([
-      u.vGet(0) + p.mp * s * (p.l * sqr(x.vGet(3)) + p.g * c) / den - p.mu * x.vGet(1),
-      -(u.vGet(0) * c + p.mp * p.l * sqr(x.vGet(3)) * c * s + (p.mp + p.mc) * p.g * s) / p.l / den - p.mu * x.vGet(3)
+    const ddx = eig.DenseMatrix.fromArray([
+      (u.vGet(0) + p.mp * s * (p.l * sqr(x.vGet(3)) + p.g * c)) / den, //- p.mu * x.vGet(2),
+      -(u.vGet(0) * c + p.mp * p.l * sqr(x.vGet(3)) * c * s + (p.mp + p.mc) * p.g * s) / p.l / den //- p.mu * x.vGet(3)
     ])
     return dx.vcat(ddx)
   }
 
+  /**
+   * Returns df/dx
+   * @param {DenseMatrix} x
+   * @param {DenseMatrix} u
+   * @returns {DenseMatrix} df/dx
+   */
+  xJacobian(x, u) {
+    const p = this.params
+    const td = x.vGet(3)
+    const f = u.vGet(0)
+    const [c, s] = [Math.cos(x.vGet(1)), Math.sin(x.vGet(1))]
+    const [c2, s2, td2] = [sqr(c), sqr(s), sqr(td)]
+    const den = p.mp * s2 + p.mc
+    const dx2dt = (p.mp * c * (p.l * td2 + p.g * c) - p.g * p.mp * s2) / den - (2 * p.mp * c * s * (f + p.mp * s * (p.l * td2 + p.g * c))) / sqr(den)
+    const dx2dt1 = (2 * p.l * p.mp * td * s) / den
+    const dt2dt = (f * s - p.g * c * (p.mc + p.mp) - p.l * p.mp * td2 * c2 + p.l * p.mp * td2 * s2) / (p.l * den) + (2 * p.mp * c * s * (p.l * p.mp * c * s * td2 + f * c + p.g * s * (p.mc + p.mp))) / (p.l * sqr(den))
+    const dt2dt1 = -(2 * p.mp * td * c * s) / den
+    return eig.DenseMatrix.fromArray([
+      [0, 0, 1, 0],
+      [0, 0, 0, 1],
+      [0, dx2dt, 0, dx2dt1],
+      [0, dt2dt, 0, dt2dt1]
+    ])
+  }
+
+  /**
+   * Returns df/du
+   * @param {DenseMatrix} x
+   * @param {DenseMatrix} u
+   * @returns {DenseMatrix} df/du
+   */
+  uJacobian(x, u) {
+    const p = this.params
+    const [c, s] = [Math.cos(x.vGet(1)), Math.sin(x.vGet(1))]
+    const s2 = sqr(s)
+    const dx2du = 1 / (p.mp * s2 + p.mc)
+    const dt2du = -c / (p.l * (p.mp * s2 + p.mc))
+    return eig.DenseMatrix.fromArray([
+      [0], [0], [dx2du], [dt2du]
+    ])
+  }
 
   /**
    * Execute a step
@@ -64,7 +105,7 @@ class CartPole {
     const dx = this.dynamics(this.x, u)
     // Override x if target tracking
     if (mouseTarget) {
-      if (this.controls = "pendulum") {
+      if (this.controls === "pendulum") {
         // Control pendulum
         const theta = Math.atan2(mouseTarget[1], mouseTarget[0] - this.x.vGet(0)) + Math.PI / 2
         this.x.vSet(3, 10 * wrapAngle(theta - this.x.vGet(1)))

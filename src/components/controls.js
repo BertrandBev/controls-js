@@ -1,20 +1,6 @@
 const eig = require('@lib/eigen-js/eigen.js')
 import _ from 'lodash'
 
-function wrapAngle(angle) {
-  let mod = (angle + Math.PI) % (2 * Math.PI)
-  if (mod < 0) { mod += 2 * Math.PI }
-  return mod - Math.PI
-}
-
-function sqr(val) {
-  return Math.pow(val, 2)
-}
-
-function clamp(val, min, max) {
-  return Math.max(min, Math.min(max, val))
-}
-
 class LQR {
   /**
    * Build a LQR controller to stabilize the system around x0
@@ -27,7 +13,7 @@ class LQR {
     eig.GC.set(this, 'x0', x0)
     eig.GC.set(this, 'u0', u0)
     const [xn, un] = system.shape()
-    const [Jx, Ju] = this.linearize(system, this.x0, this.u0)
+    const [Jx, Ju] = LQR.linearize(system, this.x0, this.u0)
     // Solve LQR
     const Q = eig.DenseMatrix.identity(xn, xn).mul(10);
     const R = eig.DenseMatrix.identity(un, un);
@@ -52,9 +38,11 @@ class LQR {
    * @param {DenseMatrix} u0 equilibrium command
    * @returns {DenseMatrix} [Jx, Ju]
    */
-  linearize(system, x0, u0) {
+  static linearize(system, x0, u0) {
     const eps = 10e-8
     const [xn, un] = system.shape()
+    // Get nominal value
+    const dx0 = system.dynamics(x0, u0)
     // TODO: extract in C lib ?
     function setCol(mat, row, vec) {
       for (let k = 0; k < vec.rows(); k++) {
@@ -66,7 +54,7 @@ class LQR {
     for (let k = 0; k < xn; k += 1) {
       const x = new eig.DenseMatrix(x0);
       x.vSet(k, x.vGet(k) + eps);
-      const dx = system.dynamics(x, u0).div(eps);
+      const dx = system.dynamics(x, u0).matSub(dx0).div(eps);
       setCol(Jx, k, dx)
     }
     // Populate Ju matrix
@@ -74,15 +62,35 @@ class LQR {
     for (let k = 0; k < un; k += 1) {
       const u = new eig.DenseMatrix(u0);
       u.vSet(k, u.vGet(k) + eps)
-      const du = system.dynamics(x0, u).div(eps)
+      const du = system.dynamics(x0, u).matSub(dx0).div(eps)
       setCol(Ju, k, du)
     }
     // Jx.print("Jx")
     // Ju.print("Ju")
     return [Jx, Ju]
   }
+
+  /**
+   * Test jacobian functions
+   */
+  static testJacobian(system) {
+    const [xn, un] = system.shape()
+    const x0 = new eig.DenseMatrix(xn, 1);
+    for (let i = 0; i < xn; i++) {
+      x0.vSet(i, i + 13.7);
+    }
+    const u0 = new eig.DenseMatrix(un, 1);
+    for (let i = 0; i < un; i++) {
+      u0.vSet(i, i + 13.7);
+    }
+    const [Jxn, Jun] = LQR.linearize(system, x0, u0)
+    const Jx = system.xJacobian(x0, u0)
+    const Ju = system.uJacobian(x0, u0)
+    Jx.matSub(Jxn).print('Jx diff')
+    Ju.matSub(Jun).print('Ju diff')
+  }
 }
 
 export {
-  wrapAngle, LQR, sqr, clamp
+  LQR
 }
