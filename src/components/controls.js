@@ -77,10 +77,8 @@ class LQR {
       const du = system.dynamics(x0, u).div(eps)
       setCol(Ju, k, du)
     }
-    // Ignore return variables
-    // eig.GC.ignore(Jx, Ju)
-    Jx.print("Jx")
-    Ju.print("Ju")
+    // Jx.print("Jx")
+    // Ju.print("Ju")
     return [Jx, Ju]
   }
 }
