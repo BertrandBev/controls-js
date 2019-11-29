@@ -5,6 +5,17 @@ import _ from 'lodash'
 import { wrapAngle, sqr } from './math.js'
 
 class CartPole {
+  static STATES = Object.freeze([
+    { name: 'x', show: true },
+    { name: 'theta', angle: true, min: -Math.PI, max: Math.PI, show: true },
+    { name: 'xDot' },
+    { name: 'thetaDot' }
+  ])
+
+  static COMMANDS = Object.freeze([
+    { name: 'force' }
+  ])
+
   constructor(params = {}) {
     this.params = {
       g: 9.81,
@@ -23,7 +34,21 @@ class CartPole {
    * @returns {Array} shape [xn, un]
    */
   shape() {
-    return [4, 1]
+    return [CartPole.STATES.length, CartPole.COMMANDS.length]
+  }
+
+  /**
+   * Get states description
+   */
+  states() {
+    return CartPole.STATES
+  }
+
+  /**
+   * Get commands description
+   */
+  commands() {
+    return CartPole.COMMANDS
   }
 
   /**

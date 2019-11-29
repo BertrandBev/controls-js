@@ -19,7 +19,7 @@ export default {
     },
 
     height() {
-      return HEIGHT;
+      return HEIGHT; // this.canvas.clientHeight;
     },
 
     width() {

@@ -99,7 +99,7 @@ class DirectCollocation {
     const nu = this.shape[1]
     const nConst = (this.n - 1) * nx
 
-    // const d = new Date()
+    let tstart = Date.now()
     // Retreive initial values
     const dhdt = 1 / (this.n - 1)
     const h = x[this.dim - 1] * dhdt
@@ -126,6 +126,8 @@ class DirectCollocation {
         grad[i] = 0;
       }
     }
+
+    const t1 = Date.now() - tstart;
 
     // Loop for all colocation points
     let max = 0
@@ -208,6 +210,9 @@ class DirectCollocation {
 
 
     }
+    const t2 = Date.now() - tstart - t1;
+    console.log('iteration time', t1, t2)
+
     // TEMP
 
 

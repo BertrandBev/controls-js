@@ -1,9 +1,12 @@
 <template lang='pug'>
-v-row(ref='container'
-      justify='center')
+div.frame(ref='cont')
   v-btn(@click='optimize') optimize
-  div.canvas(ref='canvas')
-  div(ref='plot')
+  div.canvas(ref='canvas'
+             style='flex: 0 0 auto')
+  TimeGraph(ref='graph'
+            style='flex: 1 0 auto'
+            :system='system'
+            :interpolator='interpolator')
 </template>
 
 <script>
@@ -15,6 +18,7 @@ import worldMixin from "@/components/worldMixin.js";
 import { test } from "@/components/directCollocation.js";
 import { Interpolator } from "@/components/utils.js";
 import { DirectCollocation } from "@/components/directCollocation.js";
+import TimeGraph from "@/components/TimeGraph.vue";
 
 const COLOR = "#00897B";
 const COLOR_DARK = "#1565C0";
@@ -32,6 +36,8 @@ export default {
   name: "CartPole",
 
   mixins: [worldMixin],
+
+  components: { TimeGraph },
 
   data: () => ({
     // Graphics
@@ -110,14 +116,18 @@ export default {
     };
 
     this.two.bind("update", this.update).play();
+
+    // TEMP
+    console.log('refs', this.$refs)
+    this.$refs.graph.plot()
   },
 
   methods: {
     optimize() {
       const xStart = eig.DenseMatrix.fromArray([0, 0, 0, 0]);
       const xEnd = eig.DenseMatrix.fromArray([0, Math.PI, 0, 0]);
-      const uMax = 20;
-      const nPoints = 40;
+      const uMax = 10;
+      const nPoints = 15;
       const anchors = [
         { t: 0, x: xStart },
         // { t: 0.5, x: xEnd },
@@ -131,7 +141,8 @@ export default {
         anchors
       );
       const x = collocation.optimize();
-      this.interpolator.set(x, Date.now() / 1000, 0.2);
+      this.interpolator.set(x, Date.now() / 1000, 0.1);
+      this.$refs.graph.plot()
     },
 
     update() {
@@ -164,6 +175,12 @@ export default {
 </script>
 
 <style>
+.frame {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
 .canvas {
   background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAATUlEQVRYR+3VMQoAMAhD0Xq3HNs75QgtdOqsg1C+u5C8JWF7r8ELAiCAAAIIIIBARyAz75BLKg96a47HA5RrP48tAQIggAACCCDwhcABvG5/oRsc6n0AAAAASUVORK5CYII=")
     center center;

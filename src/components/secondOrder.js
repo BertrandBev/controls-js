@@ -2,7 +2,6 @@
 // import eig from '../../lib/eigen-js/eigen.js'
 const eig = require('@lib/eigen-js/eigen.js')
 import _ from 'lodash'
-import { clamp } from './math.js'
 
 class SecondOrder {
   constructor(params = {}) {
@@ -78,7 +77,7 @@ class SecondOrder {
     if (mouseTarget) {
       // Control cart
       const xVel = 10 * (mouseTarget[0] - this.x.vGet(0));
-      this.x.vSet(1, clamp(xVel, -15, 15))
+      this.x.vSet(1, _.clamp(xVel, -15, 15))
       dx.vSet(0, this.x.vGet(1))
     }
     const newX = this.x.matAdd(dx.mul(dt))
