@@ -2,7 +2,8 @@
 v-row(ref='container'
       justify='center')
   div.canvas(ref='canvas')
-  div(ref='plot')
+  div(v-if='mode === "VI"'
+      ref='plot')
 </template>
 
 <script>
@@ -13,6 +14,8 @@ import worldMixin from "@/components/worldMixin.js";
 import _ from "lodash";
 const eig = require("../../lib/eigen-js/eigen.js");
 import { ValueIterationPlanner } from "@/components/valueIterationPlanner.js";
+import { Interpolator } from "./utils.js";
+import { ModelPredictiveControl } from "@/components/modelPredictiveControl.js";
 
 const COLOR = "#00897B";
 const COLOR_DARK = "#1565C0";
@@ -35,7 +38,8 @@ export default {
     // State
     system: null,
     controller: null,
-    updateTime: Date.now()
+    updateTime: Date.now(),
+    mode: "MPC"
   }),
 
   computed: {
@@ -51,7 +55,8 @@ export default {
   watch: {
     mouseDragging() {
       if (!this.mouseDragging) {
-        this.VI.rollout(Date.now() / 1000, Date.now() / 1000 + 5);
+        // this.VI.rollout(5);
+        // console.log("rolled out");
       }
     }
   },
@@ -59,13 +64,13 @@ export default {
   created() {
     const xTop = eig.DenseMatrix.fromArray([Math.PI, 0]);
     const params = {
-      x0: eig.DenseMatrix.fromArray([0, 0]), // xTop,
+      x0: eig.DenseMatrix.fromArray([Math.PI - 0.2, 0]), // xTop,
       u0: eig.DenseMatrix.fromArray([0])
     };
     this.system = new SimplePendulum(params);
     this.controller = new LQR(this.system, params.x0, params.u0);
 
-    // TEST
+    // ValueIteration
     const p = this.system.params;
     const maxThetaDot = 2 * Math.sqrt(p.g / p.l);
     this.VI = new ValueIterationPlanner(
@@ -75,11 +80,11 @@ export default {
         { min: -maxThetaDot, max: maxThetaDot, count: 50 }
       ],
       [{ min: -5, max: 5, count: 2 }],
-      [xTop, xTop.negated()],
+      [xTop, xTop.mul(-1)],
       0.1
     );
     this.VI.run(1000);
-    this.VI.rollout(Date.now() / 1000, Date.now() / 1000 + 5);
+    this.VI.rollout(5);
   },
 
   mounted() {
@@ -100,16 +105,40 @@ export default {
     this.two.bind("update", this.update).play();
 
     // Register plot area for VI
-    this.VI.plot(this.$refs.plot);
+    // this.VI.plot(this.$refs.plot);
+
+    // Setup MPD
+    this.interpolator = new Interpolator(true);
+    const top = eig.DenseMatrix.fromArray([Math.PI, 0, 0]);
+    this.interpolator.set([top, top], 0.1);
+    this.mdp = new ModelPredictiveControl(
+      this.system,
+      this.interpolator,
+      0.05,
+      10,
+      { min: [-20], max: [20] }
+    );
+    this.mdp.getCommand(); // TEMP
+    eig.GC.flush();
   },
 
   methods: {
     update() {
       // TODO: add FPS meter
+      const dt = Math.min(100, Date.now() - this.updateTime) / 1000;
+      if (dt < 0.02) {
+        return;
+      }
+
+      let u = new eig.DenseMatrix(1, 1)
       if (this.mode == "Controls" || this.mouseDragging) {
         // TODO: hook to mode selector
-        const dt = Math.min(100, Date.now() - this.updateTime) / 1000;
-        const u = this.controller.getCommand();
+        u = this.controller.getCommand();
+        this.system.step(u, dt, this.mouseTarget);
+      } else if (this.mode == "MPC" && this.mdp) {
+        const xTraj = this.mdp.getCommand();
+        const [xn, un] = this.system.shape();
+        u = xTraj[0].block(xn, 0, un, 1);
         this.system.step(u, dt, this.mouseTarget);
       } else {
         // Rollout mode

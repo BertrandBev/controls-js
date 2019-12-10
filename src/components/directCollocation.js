@@ -3,14 +3,16 @@ import nlopt from '@lib/nlopt-js/nlopt.js'
 import eig from '@lib/eigen-js/eigen.js'
 
 class DirectCollocation {
+  static FREE = 1.23e-123
+
   /**
    * 
    * @param {Object} system 
    * @param {Number} n 
-   * @param {Number} uMax 
+   * @param {Number} uBounds {min, max} 
    * @param {Array} anchors [{t in [0, 1], x}]
    */
-  constructor(system, n, uMax, anchors) {
+  constructor(system, n, uBounds, anchors) {
     console.assert(n >= 2, "The number of points must be positive")
     this.system = system
     this.n = n
@@ -37,14 +39,17 @@ class DirectCollocation {
     this.addDynamicContraints()
 
     // Set bounds
-    this.setBounds(uMax, anchors)
+    this.setBounds(uBounds, anchors)
+
+    const mat = new eig.DenseMatrix(2, 2)
+    console.log(mat)
   }
 
   delete() {
     nlopt.GC.flush()
   }
 
-  setBounds(uMax, anchors) {
+  setBounds(uBounds, anchors) {
     const lower = new nlopt.Vector()
     const upper = new nlopt.Vector()
     const x0 = new nlopt.Vector()
@@ -62,7 +67,9 @@ class DirectCollocation {
         setPoint(-INF, INF, 0)
       } else if (k < tIdx) {
         // u
-        setPoint(-uMax, uMax, 0)
+        const min = uBounds.min.vGet((k - uIdx) % this.shape[1])
+        const max = uBounds.max.vGet((k - uIdx) % this.shape[1])
+        setPoint(min, max, (min + max) / 2)
       } else {
         // tEnd
         setPoint(0, INF, 1)
@@ -72,9 +79,11 @@ class DirectCollocation {
     anchors.forEach(a => {
       const idx = _.clamp(Math.floor(a.t * this.n), 0, this.n - 1) * this.shape[0]
       for (let k = 0; k < this.shape[0]; k++) {
-        upper.set(idx + k, a.x.vGet(k))
-        lower.set(idx + k, a.x.vGet(k))
-        x0.set(idx + k, a.x.vGet(k))
+        if (a.x.vGet(k) !== DirectCollocation.FREE) {
+          upper.set(idx + k, a.x.vGet(k))
+          lower.set(idx + k, a.x.vGet(k))
+          x0.set(idx + k, a.x.vGet(k))
+        }
       }
     })
     // TODO: add initial guess
@@ -211,7 +220,7 @@ class DirectCollocation {
 
     }
     const t2 = Date.now() - tstart - t1;
-    console.log('iteration time', t1, t2)
+    // console.log('iteration time', t1, t2)
 
     // TEMP
 
@@ -272,7 +281,7 @@ class DirectCollocation {
   }
 
   optimize() {
-    this.opt.set_maxtime(15)
+    this.opt.set_maxtime(30)
     const res = this.opt.optimize(this.x0)
     const [xList, uList, tEnd] = this.unpack(res.x)
     console.log('xList', xList, 'uList', uList)

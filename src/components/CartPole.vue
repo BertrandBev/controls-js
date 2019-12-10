@@ -118,8 +118,8 @@ export default {
     this.two.bind("update", this.update).play();
 
     // TEMP
-    console.log('refs', this.$refs)
-    this.$refs.graph.plot()
+    console.log("refs", this.$refs);
+    this.$refs.graph.plot();
   },
 
   methods: {
@@ -127,7 +127,7 @@ export default {
       const xStart = eig.DenseMatrix.fromArray([0, 0, 0, 0]);
       const xEnd = eig.DenseMatrix.fromArray([0, Math.PI, 0, 0]);
       const uMax = 10;
-      const nPoints = 15;
+      const nPoints = 30;
       const anchors = [
         { t: 0, x: xStart },
         // { t: 0.5, x: xEnd },
@@ -137,12 +137,15 @@ export default {
       const collocation = new DirectCollocation(
         this.system,
         nPoints,
-        uMax,
+        {
+          min: eig.DenseMatrix.fromArray([-uMax]),
+          max: eig.DenseMatrix.fromArray([uMax])
+        },
         anchors
       );
       const x = collocation.optimize();
-      this.interpolator.set(x, Date.now() / 1000, 0.1);
-      this.$refs.graph.plot()
+      this.interpolator.set(x, 0.1);
+      this.$refs.graph.plot();
     },
 
     update() {

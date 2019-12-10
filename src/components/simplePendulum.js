@@ -1,8 +1,6 @@
-/* eslint-disable */
-// import eig from '../../lib/eigen-js/eigen.js'
 const eig = require('@lib/eigen-js/eigen.js')
 import _ from 'lodash'
-import { wrapAngle } from './math.js'
+import { wrapAngle, sqr } from './math.js'
 
 class SimplePendulum {
   constructor(params = {}) {
@@ -43,12 +41,40 @@ class SimplePendulum {
     // x = [theta, thetaDot]
     const p = this.params
     const dx = new eig.DenseMatrix(2, 1);
-    const ddx = (-p.m * p.g * p.l * Math.sin(x.vGet(0)) - p.mu * x.vGet(1) + u.vGet(0)) / (p.m * Math.pow(p.l, 2))
+    const s = Math.sin(x.vGet(0))
+    const ddx = (-p.m * p.g * p.l * s - p.mu * x.vGet(1) + u.vGet(0)) / (p.m * Math.pow(p.l, 2))
     dx.vSet(0, x.vGet(1))
     dx.vSet(1, ddx)
     return dx
   }
 
+  /**
+   * Returns df/dx
+   * @param {DenseMatrix} x
+   * @param {DenseMatrix} u
+   * @returns {DenseMatrix} df/dx
+   */
+  xJacobian(x, u) {
+    const p = this.params
+    const c = Math.cos(x.vGet(0))
+    return eig.DenseMatrix.fromArray([
+      [0, 1],
+      [-p.g / p.l * c, - p.mu / p.m * p.l]
+    ])
+  }
+
+  /**
+   * Returns df/du
+   * @param {DenseMatrix} x
+   * @param {DenseMatrix} u
+   * @returns {DenseMatrix} df/du
+   */
+  uJacobian(x, u) {
+    const p = this.params
+    return eig.DenseMatrix.fromArray([
+      [0], [1 / p.m / sqr(p.l)]
+    ])
+  }
 
   /**
    * Execute a step

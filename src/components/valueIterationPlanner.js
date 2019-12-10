@@ -116,7 +116,7 @@ class ValueIterationPlanner {
     this.xEqInds = xEqs.map(x => this.toGrid(this.xGrid, x))
     this.dt = dt
     this.createTransitionTable()
-    this.interp = new Interpolator()
+    this.interp = new Interpolator(true)
   }
 
   /**
@@ -239,16 +239,14 @@ class ValueIterationPlanner {
 
   /**
    * Rollout
-   * @param {Number} tStart
-   * @param {Number} tEnd
+   * @param {Number} duration
    */
-  rollout(tStart, tEnd) {
-    this.tStart = tStart
+  rollout(duration) {
     const sequence = []
     let x = this.system.x
     let xInd = this.V.pack(this.toGrid(this.xGrid, x))
     sequence.push(new eig.DenseMatrix(x))
-    for (let t = tStart; t <= tEnd; t += this.dt) {
+    for (let t = 0; t <= duration; t += this.dt) {
       const u = this.policy[xInd]
       xInd = (this.table[xInd] || {})[u];
       if (!xInd) {
@@ -258,7 +256,7 @@ class ValueIterationPlanner {
       // this.fromGrid(this.xGrid, this.V.unpack(xInd)).print('')
       sequence.push(this.fromGrid(this.xGrid, this.V.unpack(xInd)))
     }
-    this.interp.set(sequence, this.dt)
+    this.interp.set(sequence, Date.now() / 1000, this.dt)
   }
 
   /**
@@ -267,7 +265,6 @@ class ValueIterationPlanner {
    */
   sampleRollout(t) {
     // Rescale t
-    t = Math.min(t - this.tStart, this.interp.tEnd)
     return this.interp.get(t)
   }
 

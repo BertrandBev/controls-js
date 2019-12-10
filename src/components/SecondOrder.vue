@@ -92,7 +92,7 @@ export default {
         anchors
       );
       const x = collocation.optimize();
-      this.interpolator.set(x, Date.now() / 1000, 0.1);
+      this.interpolator.set(x, 0.1);
     },
 
     update() {

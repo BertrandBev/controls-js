@@ -18,18 +18,24 @@ class Interpolator {
   }
 
   /**
+   * Reset starting time
+   */
+  reset() {
+    this.tStart = Date.now() / 1000
+  }
+
+  /**
    * Create interpolator based on an array of matrices
    * @param {Array} array of matrices
    * @param {Number} dt 
    */
-  set(array, tStart, dt) {
+  set(array, dt) {
     console.assert(dt > 0, 'The time must be positive')
     console.assert(array.length > 0, 'The array must have at least one element')
     eig.GC.set(this, 'array', array)
     this.dt = dt
-    this.tStart = tStart
-    this.tEnd = tStart + (this.array.length - 1) * this.dt
-    this.delta = this.tEnd - this.tStart
+    this.tStart = Date.now() / 1000
+    this.duration = (this.array.length - 1) * this.dt
   }
 
 
@@ -38,11 +44,10 @@ class Interpolator {
    * @param {Number} t time of interpolation
    */
   get(t) {
-    // console.assert(t >= 0 && t <= this.tEnd, 'Time out of bound')
     t -= this.tStart;
     let idx = Math.max(0, Math.floor(t / this.dt))
     idx = this.loop ? idx % (this.array.length - 1) : Math.min(this.array.length - 2, idx)
-    const ratio = Math.max(0, Math.min(1, t % this.delta - this.dt * idx) / this.dt);
+    const ratio = Math.max(0, Math.min(1, t % this.duration - this.dt * idx) / this.dt);
     return this.array.length < 2 ?
       this.array[0] :
       this.array[idx].mul(1 - ratio).matAdd(this.array[idx + 1].mul(ratio))
@@ -63,12 +68,31 @@ class Interpolator {
     const xList = []
     const tList = []
     const dt = this.delta / nPts;
-    for (let t = this.tStart; t < this.tEnd; t += dt) {
+    for (let t = this.tStart; t < this.tStart + this.duration; t += dt) {
       tList.push(t - this.tStart)
       xList.push(this.get(t).vGet(idx))
     }
     return [tList, xList]
   }
+
+  /**
+   * Get a string version of the trajectory
+   */
+  toString() {
+    let rows = '[\n'
+    this.array.forEach((vec, idx) => {
+      rows += '['
+      for (let k = 0; k < vec.length(); k += 1) {
+        rows += `${vec.vGet(k).toFixed(4)}` + (k < vec.length() - 1 ? ',' : '')
+      }
+      rows += ']' + (idx === this.array.length - 1 ? ']' : '')
+    })
+    return rows
+  }
+
+  /**
+   * From array
+   */
 }
 
 /**

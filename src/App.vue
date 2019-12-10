@@ -14,9 +14,9 @@ v-app
                           color='blue'
                           indeterminate)
     div(style='height: 100%')
-      SimplePendulum(v-if='!loading && false')
+      SimplePendulum(v-if='!loading && true')
       Quadrotor2D(v-if='!loading && false')
-      CartPole(v-if='!loading && true')
+      CartPole(v-if='!loading && false')
       SecondOrder(v-if='!loading && false')
       //- LineChart
 </template>

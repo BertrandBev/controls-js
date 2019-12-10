@@ -1,17 +1,24 @@
 <template lang='pug'>
 v-row(ref='container'
       justify='center')
+  v-row(justify='center')
+    v-btn(@click='optimize') optimize
+    v-btn.ml-2(@click='download') download
+    v-btn.ml-2(@click='reset') reset
+    //- v-btn.ml-2(@click='mdp') mdp
   div.canvas(ref='canvas')
 </template>
 
 <script>
-import { Quadrotor2D } from "@/components/quadrotor2D.js";
+import { Quadrotor2D, flipTraj } from "@/components/quadrotor2D.js";
 import { LQR } from "@/components/controls.js";
 import worldMixin from "@/components/worldMixin.js";
 import _ from "lodash";
 const eig = require("../../lib/eigen-js/eigen.js");
 import { InteractivePath } from "@/components/interactivePath.js";
 import { Interpolator } from "./utils.js";
+import { DirectCollocation } from "@/components/directCollocation.js";
+import { ModelPredictiveControl } from "@/components/modelPredictiveControl.js";
 
 const COLOR = "#00897B";
 const COLOR_DARK = "#1565C0";
@@ -33,14 +40,19 @@ export default {
     graphics: {},
     // Mode
     mode: "Flatness",
-    rollout: null,
     // State
     system: null,
     controller: null,
-    updateTime: Date.now()
+    updateTime: Date.now(),
+    interpolator: null,
+    mdp: null
   }),
 
   computed: {
+    canvas() {
+      return this.$refs.canvas;
+    },
+
     scale() {
       return GEOM.length / this.system.params.l;
     }
@@ -67,7 +79,7 @@ export default {
     const propHeight = -1.5 * GEOM.thickness;
     const propLength = GEOM.length / 4;
     this.graphics.force = [null, null];
-    const sides = [(-3 * GEOM.length) / 7, (3 * GEOM.length) / 7].map(x => {
+    const sides = [(3 * GEOM.length) / 7, (-3 * GEOM.length) / 7].map(x => {
       const prop = this.two.makeLine(
         x - propLength,
         propHeight,
@@ -102,28 +114,105 @@ export default {
         side.fLine.vertices[1].y = side.fHead.translation.y;
       });
     };
+    const trajLines = [...Array(10)].map(() => {
+      const line = this.two.makeLine(0, 0, 0, 0);
+      return line;
+    });
+    this.graphics.showTraj = traj => {
+      traj.forEach((x, idx) => {
+        const xy = this.worldToCanvas([x.vGet(0), x.vGet(1)]);
+        trajLines[idx].vertices[0].x = xy[0];
+        trajLines[idx].vertices[0].y = xy[1];
+        trajLines[idx].vertices[1].x = xy[0];
+        trajLines[idx].vertices[1].y = xy[1];
+        if (idx > 0) {
+          trajLines[idx - 1].vertices[1].x = xy[0];
+          trajLines[idx - 1].vertices[1].y = xy[1];
+        }
+      });
+    };
     this.graphics.system = this.two.makeGroup(
       body,
       sides[0].prop,
       sides[1].prop
     );
 
-    // Setup path
+    // Setup interpolator
     this.interpolator = new Interpolator(true);
-    this.path = new InteractivePath(this.two);
-    this.path.group.translation.set(this.width / 2, this.height / 2);
-    // Update path
-    this.updatePathDebounced = _.debounce(this.updatePath, 1000);
-    this.path.addUpdateListener(() => {
+    const trajRev = [...flipTraj];
+    trajRev.reverse();
+    const symTraj = [...flipTraj, ...trajRev];
+    this.interpolator.set(
+      symTraj.map(vec => eig.DenseMatrix.fromArray(vec)),
+      0.1
+    );
+    this.mdp = new ModelPredictiveControl(
+      this.system,
+      this.interpolator,
+      0.05,
+      5,
+      { min: [-10, -10], max: [10, 10] }
+    );
+    this.mdp.getCommand() // TEMP
+
+    if (this.mode === "Path") {
+      this.path = new InteractivePath(this.two);
+      this.path.group.translation.set(this.width / 2, this.height / 2);
+      // Update path
+      this.updatePathDebounced = _.debounce(this.updatePath, 1000);
+      this.path.addUpdateListener(() => {
+        this.updatePathDebounced();
+      });
       this.updatePathDebounced();
-    });
-    this.updatePathDebounced();
+    }
 
     // Start animation
     this.two.bind("update", this.update).play();
   },
 
   methods: {
+    optimize() {
+      const FREE = DirectCollocation.FREE;
+      const xStart = eig.DenseMatrix.fromArray([-2, -1.5, 0, 0, 0, 0]);
+      // const xFlip = eig.DenseMatrix.fromArray([FREE, FREE, Math.PI, FREE, FREE, FREE]);
+      const xEnd = eig.DenseMatrix.fromArray([2, -1.5, -2 * Math.PI, 0, 0, 0]);
+      const uMax = {
+        min: eig.DenseMatrix.fromArray([0, 0]),
+        max: eig.DenseMatrix.fromArray([30, 30])
+      };
+      const nPoints = 20;
+      const anchors = [
+        { t: 0, x: xStart },
+        // { t: 0.5, x: xFlip },
+        { t: 1, x: xEnd }
+      ];
+
+      const collocation = new DirectCollocation(
+        this.system,
+        nPoints,
+        uMax,
+        anchors
+      );
+      const x = collocation.optimize();
+      this.interpolator.set(x, 0.05);
+    },
+
+    download() {
+      const str = this.interpolator.toString();
+      const blob = new Blob([str], { type: "text/plain" });
+      const link = document.createElement("a");
+      link.href = window.URL.createObjectURL(blob);
+      link.download = "trajectory";
+      link.click();
+    },
+
+    reset() {
+      if (this.mode === "Flatness" && this.interpolator.ready()) {
+        const x = this.interpolator.get(Date.now() / 1000);
+        this.system.x.setBlock(0, 0, x.block(0, 0, 6, 1));
+      }
+    },
+
     updatePath() {
       // On path update
       const travelTime = 5;
@@ -139,22 +228,29 @@ export default {
 
     update() {
       // TODO: add FPS meter
+      const dt = Math.min(100, Date.now() - this.updateTime) / 1000;
+      if (dt < 0.05) {
+        return;
+      }
       let u = this.system.ssCommand();
       if (this.mode === "Flatness" && this.interpolator.ready()) {
         // Flatness mode
         const x = this.interpolator.get(Date.now() / 1000);
-        this.system.x.vSet(0, x.vGet(0));
-        this.system.x.vSet(1, x.vGet(1));
-        this.system.x.vSet(2, x.vGet(2));
-        u = x.block(6, 0, 2, 1);
+        // this.system.x.setBlock(0, 0, x.block(0, 0, 6, 1));
+        // u = x.block(6, 0, 2, 1);
+        
+        // Temp mdp command
+        const xTraj = this.mdp.getCommand();
+        const [xn, un] = this.system.shape();
+        u = xTraj[0].block(xn, 0, un, 1);
+        // u.print('u')
+        this.system.step(u, dt, this.mouseTarget);
+        this.graphics.showTraj(xTraj);
       } else {
         // TODO: hook to mode selector
-        const dt = Math.min(100, Date.now() - this.updateTime) / 1000;
+
         u = this.controller.getCommand();
-        const target = this.mouseTarget
-          ? this.canvasToWorld(this.mouseTarget)
-          : null;
-        this.system.step(u, dt, target);
+        this.system.step(u, dt, this.mouseTarget);
       }
       // Graphic update
       const x = this.system.x;

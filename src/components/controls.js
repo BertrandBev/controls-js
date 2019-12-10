@@ -77,11 +77,11 @@ class LQR {
     const [xn, un] = system.shape()
     const x0 = new eig.DenseMatrix(xn, 1);
     for (let i = 0; i < xn; i++) {
-      x0.vSet(i, i + 13.7);
+      x0.vSet(i, i * 2.8 + 13.7);
     }
     const u0 = new eig.DenseMatrix(un, 1);
     for (let i = 0; i < un; i++) {
-      u0.vSet(i, i + 13.7);
+      u0.vSet(i, i * 2.8 + 13.7);
     }
     const [Jxn, Jun] = LQR.linearize(system, x0, u0)
     const Jx = system.xJacobian(x0, u0)
