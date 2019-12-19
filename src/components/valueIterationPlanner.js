@@ -1,5 +1,5 @@
 import _ from 'lodash'
-const eig = require("../../lib/eigen-js/eigen.js");
+import eig from "@eigen";
 import { wrapAngle } from './math.js'
 import Plotly from 'plotly.js-dist'
 import { Interpolator } from './utils.js'
@@ -177,7 +177,7 @@ class ValueIterationPlanner {
       const factor = Math.max(0, Math.min(val.count, indices[idx]))
       return val.min + interval * (factor + .5)
     })
-    return eig.DenseMatrix.fromArray(vec)
+    return eig.Matrix.fromArray(vec)
   }
 
   /**
@@ -245,7 +245,7 @@ class ValueIterationPlanner {
     const sequence = []
     let x = this.system.x
     let xInd = this.V.pack(this.toGrid(this.xGrid, x))
-    sequence.push(new eig.DenseMatrix(x))
+    sequence.push(new eig.Matrix(x))
     for (let t = 0; t <= duration; t += this.dt) {
       const u = this.policy[xInd]
       xInd = (this.table[xInd] || {})[u];

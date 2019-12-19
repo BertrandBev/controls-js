@@ -1,5 +1,5 @@
 import _ from 'lodash'
-const eig = require("../../lib/eigen-js/eigen.js");
+import eig from "@eigen";
 
 class Interpolator {
   /**
@@ -67,8 +67,7 @@ class Interpolator {
   getList(idx, nPts) {
     const xList = []
     const tList = []
-    const dt = this.delta / nPts;
-    for (let t = this.tStart; t < this.tStart + this.duration; t += dt) {
+    for (let t = this.tStart; t < this.tStart + this.duration; t += this.dt) {
       tList.push(t - this.tStart)
       xList.push(this.get(t).vGet(idx))
     }
@@ -78,16 +77,16 @@ class Interpolator {
   /**
    * Get a string version of the trajectory
    */
-  toString() {
-    let rows = '[\n'
+  print() {
+    let rows = `dt: ${this.dt},\n` + 'x: ['
     this.array.forEach((vec, idx) => {
       rows += '['
       for (let k = 0; k < vec.length(); k += 1) {
         rows += `${vec.vGet(k).toFixed(4)}` + (k < vec.length() - 1 ? ',' : '')
       }
-      rows += ']' + (idx === this.array.length - 1 ? ']' : '')
+      rows += ']' + (idx === this.array.length - 1 ? ']' : ',\n')
     })
-    return rows
+    console.log(rows)
   }
 
   /**

@@ -14,7 +14,7 @@ import { Quadrotor2D, flipTraj } from "@/components/quadrotor2D.js";
 import { LQR } from "@/components/controls.js";
 import worldMixin from "@/components/worldMixin.js";
 import _ from "lodash";
-const eig = require("../../lib/eigen-js/eigen.js");
+import eig from "@eigen";
 import { InteractivePath } from "@/components/interactivePath.js";
 import { Interpolator } from "./utils.js";
 import { DirectCollocation } from "@/components/directCollocation.js";
@@ -38,12 +38,13 @@ export default {
   data: () => ({
     // Graphics
     graphics: {},
+    dt: 0.01,
     // Mode
     mode: "Flatness",
     // State
     system: null,
     controller: null,
-    updateTime: Date.now(),
+    // updateTime: Date.now(),
     interpolator: null,
     mdp: null
   }),
@@ -62,7 +63,7 @@ export default {
 
   created() {
     const params = {
-      x0: new eig.DenseMatrix(6, 1)
+      x0: new eig.Matrix(6, 1)
     };
     this.system = new Quadrotor2D(params);
     params.u0 = this.system.ssCommand();
@@ -114,7 +115,7 @@ export default {
         side.fLine.vertices[1].y = side.fHead.translation.y;
       });
     };
-    const trajLines = [...Array(10)].map(() => {
+    const trajLines = [...Array(20)].map(() => {
       const line = this.two.makeLine(0, 0, 0, 0);
       return line;
     });
@@ -139,21 +140,22 @@ export default {
 
     // Setup interpolator
     this.interpolator = new Interpolator(true);
-    const trajRev = [...flipTraj];
+    const trajRev = [...flipTraj.x];
     trajRev.reverse();
-    const symTraj = [...flipTraj, ...trajRev];
+    const symTraj = [...flipTraj.x, ...trajRev];
     this.interpolator.set(
-      symTraj.map(vec => eig.DenseMatrix.fromArray(vec)),
-      0.1
+      symTraj.map(vec => eig.Matrix.fromArray(vec)),
+      flipTraj.dt
     );
+    this.dt = flipTraj.dt
     this.mdp = new ModelPredictiveControl(
       this.system,
       this.interpolator,
-      0.05,
-      5,
-      { min: [-10, -10], max: [10, 10] }
+      1 / 60,
+      20,
+      { min: [-20, -20], max: [20, 20] }
     );
-    this.mdp.getCommand() // TEMP
+    this.mdp.getCommand(); // TEMP
 
     if (this.mode === "Path") {
       this.path = new InteractivePath(this.two);
@@ -167,18 +169,24 @@ export default {
     }
 
     // Start animation
-    this.two.bind("update", this.update).play();
+    const updateFun = () => {
+      this.update();
+      this.two.update();
+      setTimeout(updateFun, this.dt);
+    };
+    updateFun();
   },
 
   methods: {
     optimize() {
       const FREE = DirectCollocation.FREE;
-      const xStart = eig.DenseMatrix.fromArray([-2, -1.5, 0, 0, 0, 0]);
-      // const xFlip = eig.DenseMatrix.fromArray([FREE, FREE, Math.PI, FREE, FREE, FREE]);
-      const xEnd = eig.DenseMatrix.fromArray([2, -1.5, -2 * Math.PI, 0, 0, 0]);
+      // const xStart = eig.Matrix.fromArray([-2, -1.5, 0, 0, 0, 0]);
+      // const xEnd = eig.Matrix.fromArray([2, -1.5, -2 * Math.PI, 0, 0, 0]);
+      const xStart = eig.Matrix.fromArray([-2, -1.5, 0, 0, 0, 0]);
+      const xEnd = eig.Matrix.fromArray([2, -1.5, 0, 0, 0, 0]);
       const uMax = {
-        min: eig.DenseMatrix.fromArray([0, 0]),
-        max: eig.DenseMatrix.fromArray([30, 30])
+        min: eig.Matrix.fromArray([0, 0]),
+        max: eig.Matrix.fromArray([10, 10])
       };
       const nPoints = 20;
       const anchors = [
@@ -193,8 +201,10 @@ export default {
         uMax,
         anchors
       );
-      const x = collocation.optimize();
-      this.interpolator.set(x, 0.05);
+      const [x, tEnd] = collocation.optimize(30);
+      const dt = tEnd / nPoints;
+      this.interpolator.set(x, tEnd / nPoints);
+      this.interpolator.print();
     },
 
     download() {
@@ -207,7 +217,7 @@ export default {
     },
 
     reset() {
-      if (this.mode === "Flatness" && this.interpolator.ready()) {
+      if (this.interpolator.ready()) {
         const x = this.interpolator.get(Date.now() / 1000);
         this.system.x.setBlock(0, 0, x.block(0, 0, 6, 1));
       }
@@ -219,7 +229,7 @@ export default {
       const dt = 1 / 60;
       const xy = this.path.discretize(travelTime / dt).map(val => {
         const pathPos = [val.x + this.width / 2, val.y + this.height / 2];
-        return eig.DenseMatrix.fromArray(this.canvasToWorld(pathPos));
+        return eig.Matrix.fromArray(this.canvasToWorld(pathPos));
       });
       const x = this.system.fitTrajectory(xy, dt);
       // Init rollout
@@ -228,29 +238,31 @@ export default {
 
     update() {
       // TODO: add FPS meter
-      const dt = Math.min(100, Date.now() - this.updateTime) / 1000;
-      if (dt < 0.05) {
-        return;
-      }
+      // const dt = Math.min(100, Date.now() - this.updateTime) / 1000;
+      // if (dt < 0.05) {
+      //   return;
+      // }
       let u = this.system.ssCommand();
       if (this.mode === "Flatness" && this.interpolator.ready()) {
         // Flatness mode
         const x = this.interpolator.get(Date.now() / 1000);
-        // this.system.x.setBlock(0, 0, x.block(0, 0, 6, 1));
-        // u = x.block(6, 0, 2, 1);
-        
+        this.system.x.setBlock(0, 0, x.block(0, 0, 6, 1));
+        u = x.block(6, 0, 2, 1);
+        // this.system.step(u, this.dt, this.mouseTarget);
+      
+      } else if (this.mode === "MDP" && this.interpolator.ready()) {
         // Temp mdp command
         const xTraj = this.mdp.getCommand();
         const [xn, un] = this.system.shape();
         u = xTraj[0].block(xn, 0, un, 1);
         // u.print('u')
-        this.system.step(u, dt, this.mouseTarget);
+        this.system.step(u, this.dt, this.mouseTarget);
         this.graphics.showTraj(xTraj);
       } else {
         // TODO: hook to mode selector
 
         u = this.controller.getCommand();
-        this.system.step(u, dt, this.mouseTarget);
+        this.system.step(u, this.dt, this.mouseTarget);
       }
       // Graphic update
       const x = this.system.x;
@@ -259,7 +271,7 @@ export default {
         ...this.worldToCanvas([x.vGet(0), x.vGet(1)])
       );
       this.graphics.showControl(u);
-      this.updateTime = Date.now();
+      // this.updateTime = Date.now();
       // Run GC
       eig.GC.flush();
     }

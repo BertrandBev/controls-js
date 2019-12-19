@@ -11,7 +11,7 @@ div.frame(ref='cont')
 
 <script>
 import _ from "lodash";
-const eig = require("../../lib/eigen-js/eigen.js");
+import eig from "@eigen";
 import { CartPole } from "@/components/cartPole.js";
 import { LQR } from "@/components/controls.js";
 import worldMixin from "@/components/worldMixin.js";
@@ -61,10 +61,10 @@ export default {
   },
 
   created() {
-    const xTop = eig.DenseMatrix.fromArray([0, Math.PI, 0, 0]);
+    const xTop = eig.Matrix.fromArray([0, Math.PI, 0, 0]);
     const params = {
-      x0: eig.DenseMatrix.fromArray([0, 0, 0, 0]), // xTop,
-      u0: eig.DenseMatrix.fromArray([0])
+      x0: eig.Matrix.fromArray([0, 0, 0, 0]), // xTop,
+      u0: eig.Matrix.fromArray([0])
     };
     this.system = new CartPole(params);
     this.controller = new LQR(this.system, params.x0, params.u0);
@@ -124,8 +124,8 @@ export default {
 
   methods: {
     optimize() {
-      const xStart = eig.DenseMatrix.fromArray([0, 0, 0, 0]);
-      const xEnd = eig.DenseMatrix.fromArray([0, Math.PI, 0, 0]);
+      const xStart = eig.Matrix.fromArray([0, 0, 0, 0]);
+      const xEnd = eig.Matrix.fromArray([0, Math.PI, 0, 0]);
       const uMax = 10;
       const nPoints = 30;
       const anchors = [
@@ -138,8 +138,8 @@ export default {
         this.system,
         nPoints,
         {
-          min: eig.DenseMatrix.fromArray([-uMax]),
-          max: eig.DenseMatrix.fromArray([uMax])
+          min: eig.Matrix.fromArray([-uMax]),
+          max: eig.Matrix.fromArray([uMax])
         },
         anchors
       );
@@ -155,7 +155,7 @@ export default {
         // TODO: hook to mode selector
         const dt = Math.min(100, Date.now() - this.updateTime) / 1000;
         // const u = this.controller.getCommand();
-        u = new eig.DenseMatrix(1, 1);
+        u = new eig.Matrix(1, 1);
         this.system.step(u, dt, this.mouseTarget);
       } else if (this.interpolator.ready()) {
         const x = this.interpolator.get(Date.now() / 1000);

@@ -1,4 +1,4 @@
-const eig = require('@lib/eigen-js/eigen.js')
+const eig = require('@eigen')
 import _ from 'lodash'
 import { wrapAngle, sqr } from './math.js'
 
@@ -11,7 +11,7 @@ class SimplePendulum {
       mu: 0.5,
       ...params
     }
-    const x = params.x0 || new eig.DenseMatrix(2, 1);
+    const x = params.x0 || new eig.Matrix(2, 1);
     eig.GC.set(this, 'x', x)
   }
 
@@ -33,14 +33,14 @@ class SimplePendulum {
 
   /**
    * Returns dx/dt
-   * @param {DenseMatrix} x
-   * @param {DenseMatrix} u
-   * @returns {DenseMatrix} dx
+   * @param {Matrix} x
+   * @param {Matrix} u
+   * @returns {Matrix} dx
    */
   dynamics(x, u) {
     // x = [theta, thetaDot]
     const p = this.params
-    const dx = new eig.DenseMatrix(2, 1);
+    const dx = new eig.Matrix(2, 1);
     const s = Math.sin(x.vGet(0))
     const ddx = (-p.m * p.g * p.l * s - p.mu * x.vGet(1) + u.vGet(0)) / (p.m * Math.pow(p.l, 2))
     dx.vSet(0, x.vGet(1))
@@ -50,14 +50,14 @@ class SimplePendulum {
 
   /**
    * Returns df/dx
-   * @param {DenseMatrix} x
-   * @param {DenseMatrix} u
-   * @returns {DenseMatrix} df/dx
+   * @param {Matrix} x
+   * @param {Matrix} u
+   * @returns {Matrix} df/dx
    */
   xJacobian(x, u) {
     const p = this.params
     const c = Math.cos(x.vGet(0))
-    return eig.DenseMatrix.fromArray([
+    return eig.Matrix.fromArray([
       [0, 1],
       [-p.g / p.l * c, - p.mu / p.m * p.l]
     ])
@@ -65,20 +65,20 @@ class SimplePendulum {
 
   /**
    * Returns df/du
-   * @param {DenseMatrix} x
-   * @param {DenseMatrix} u
-   * @returns {DenseMatrix} df/du
+   * @param {Matrix} x
+   * @param {Matrix} u
+   * @returns {Matrix} df/du
    */
   uJacobian(x, u) {
     const p = this.params
-    return eig.DenseMatrix.fromArray([
+    return eig.Matrix.fromArray([
       [0], [1 / p.m / sqr(p.l)]
     ])
   }
 
   /**
    * Execute a step
-   * @param {DenseMatrix} u controls effort
+   * @param {Matrix} u controls effort
    * @param {Number} dt delta time
    * @param {Array} mouseTarget optional mouse target
    */

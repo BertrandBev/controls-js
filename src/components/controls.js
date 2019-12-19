@@ -1,4 +1,4 @@
-const eig = require('@lib/eigen-js/eigen.js')
+const eig = require('@eigen')
 import _ from 'lodash'
 
 class LQR {
@@ -15,10 +15,10 @@ class LQR {
     const [xn, un] = system.shape()
     const [Jx, Ju] = LQR.linearize(system, this.x0, this.u0)
     // Solve LQR
-    const Q = eig.DenseMatrix.identity(xn, xn).mul(10);
-    const R = eig.DenseMatrix.identity(un, un);
-    const CareSolver = new eig.CareSolver(Jx, Ju, Q, R);
-    eig.GC.set(this, 'K', CareSolver.K())
+    const Q = eig.Matrix.identity(xn, xn).mul(10);
+    const R = eig.Matrix.identity(un, un);
+    const sol = eig.Solvers.careSolve(Jx, Ju, Q, R);
+    eig.GC.set(this, 'K', sol.K)
   }
 
   /**
@@ -34,9 +34,9 @@ class LQR {
   /**
    * Linearize system about x0 & u0
    * @param {Object} system system of interest
-   * @param {DenseMatrix} x0 equilibrium state
-   * @param {DenseMatrix} u0 equilibrium command
-   * @returns {DenseMatrix} [Jx, Ju]
+   * @param {Matrix} x0 equilibrium state
+   * @param {Matrix} u0 equilibrium command
+   * @returns {Matrix} [Jx, Ju]
    */
   static linearize(system, x0, u0) {
     const eps = 10e-8
@@ -50,17 +50,17 @@ class LQR {
       }
     }
     // Populate Jx matrix
-    let Jx = new eig.DenseMatrix(xn, xn);
+    let Jx = new eig.Matrix(xn, xn);
     for (let k = 0; k < xn; k += 1) {
-      const x = new eig.DenseMatrix(x0);
+      const x = new eig.Matrix(x0);
       x.vSet(k, x.vGet(k) + eps);
       const dx = system.dynamics(x, u0).matSub(dx0).div(eps);
       setCol(Jx, k, dx)
     }
     // Populate Ju matrix
-    let Ju = new eig.DenseMatrix(xn, un);
+    let Ju = new eig.Matrix(xn, un);
     for (let k = 0; k < un; k += 1) {
-      const u = new eig.DenseMatrix(u0);
+      const u = new eig.Matrix(u0);
       u.vSet(k, u.vGet(k) + eps)
       const du = system.dynamics(x0, u).matSub(dx0).div(eps)
       setCol(Ju, k, du)
@@ -75,11 +75,11 @@ class LQR {
    */
   static testJacobian(system) {
     const [xn, un] = system.shape()
-    const x0 = new eig.DenseMatrix(xn, 1);
+    const x0 = new eig.Matrix(xn, 1);
     for (let i = 0; i < xn; i++) {
       x0.vSet(i, i * 2.8 + 13.7);
     }
-    const u0 = new eig.DenseMatrix(un, 1);
+    const u0 = new eig.Matrix(un, 1);
     for (let i = 0; i < un; i++) {
       u0.vSet(i, i * 2.8 + 13.7);
     }

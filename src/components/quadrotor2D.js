@@ -1,4 +1,4 @@
-const eig = require('@lib/eigen-js/eigen.js')
+const eig = require('@eigen')
 import _ from 'lodash'
 import { LQR } from './controls.js'
 import { wrapAngle, sqr } from './math.js'
@@ -13,7 +13,7 @@ class Quadrotor2D {
       // mu: 0.5, TODO: add natural damping
       ...params
     }
-    const x = params.x0 || new eig.DenseMatrix(...this.shape());
+    const x = params.x0 || new eig.Matrix(...this.shape());
     eig.GC.set(this, 'x', x)
   }
 
@@ -35,16 +35,16 @@ class Quadrotor2D {
 
   /**
    * Returns dx/dt
-   * @param {DenseMatrix} x
-   * @param {DenseMatrix} u
-   * @returns {DenseMatrix} dx
+   * @param {Matrix} x
+   * @param {Matrix} u
+   * @returns {Matrix} dx
    */
   dynamics(x, u) {
     // x = [x, y, theta, dx, dy, dtheta]
     const p = this.params
     const [c, s] = [Math.cos(x.vGet(2)), Math.sin(x.vGet(2))]
     const [u1, u2] = [u.vGet(0), u.vGet(1)]
-    const ddx = eig.DenseMatrix.fromArray([
+    const ddx = eig.Matrix.fromArray([
       -(u1 + u2) * s / p.m,
       (u1 + u2) * c / p.m - p.g,
       p.l / 2 * (u1 - u2) / p.I
@@ -55,9 +55,9 @@ class Quadrotor2D {
 
   /**
    * Returns df/dx
-   * @param {DenseMatrix} x
-   * @param {DenseMatrix} u
-   * @returns {DenseMatrix} df/dx
+   * @param {Matrix} x
+   * @param {Matrix} u
+   * @returns {Matrix} df/dx
    */
   xJacobian(x, u) {
     const p = this.params
@@ -65,7 +65,7 @@ class Quadrotor2D {
     const [u1, u2] = [u.vGet(0), u.vGet(1)]
     const dx2dt = -(u1 + u2) * c / p.m
     const dy2dt = -(u1 + u2) * s / p.m
-    return eig.DenseMatrix.fromArray([
+    return eig.Matrix.fromArray([
       [0, 0, 0, 1, 0, 0],
       [0, 0, 0, 0, 1, 0],
       [0, 0, 0, 0, 0, 1],
@@ -77,9 +77,9 @@ class Quadrotor2D {
 
   /**
    * Returns df/du
-   * @param {DenseMatrix} x
-   * @param {DenseMatrix} u
-   * @returns {DenseMatrix} df/du
+   * @param {Matrix} x
+   * @param {Matrix} u
+   * @returns {Matrix} df/du
    */
   uJacobian(x, u) {
     const p = this.params
@@ -87,7 +87,7 @@ class Quadrotor2D {
     const dx2du1 = -s / p.m
     const dy2du1 = c / p.m
     const dt2du1 = p.l / 2 / p.I
-    return eig.DenseMatrix.fromArray([
+    return eig.Matrix.fromArray([
       [0, 0], [0, 0], [0, 0], [dx2du1, dx2du1], [dy2du1, dy2du1], [dt2du1, -dt2du1]
     ])
   }
@@ -97,7 +97,7 @@ class Quadrotor2D {
    */
   ssCommand() {
     const cmd = this.params.g * this.params.m / 2
-    return eig.DenseMatrix.fromArray([
+    return eig.Matrix.fromArray([
       cmd, cmd
     ])
   }
@@ -105,7 +105,7 @@ class Quadrotor2D {
 
   /**
    * Execute a step
-   * @param {DenseMatrix} u controls effort
+   * @param {Matrix} u controls effort
    * @param {Number} dt delta time
    * @param {Array} mouseTarget optional mouse target
    */
@@ -113,12 +113,12 @@ class Quadrotor2D {
     let dx = this.dynamics(this.x, u)
     // Override x if target tracking
     if (mouseTarget) {
-      const dxo = eig.DenseMatrix.fromArray([
+      const dxo = eig.Matrix.fromArray([
         mouseTarget[0] - this.x.vGet(0),
         mouseTarget[1] - this.x.vGet(1),
         -this.x.vGet(2)
       ]).mul(10).clamp(-10, 10)
-      dx = dxo.vcat(new eig.DenseMatrix(3, 1))
+      dx = dxo.vcat(new eig.Matrix(3, 1))
       for (let k = 0; k < dxo.rows(); k++) {
         this.x.vSet(k + 3, dxo.vGet(k))
       }
@@ -177,7 +177,7 @@ class Quadrotor2D {
     const ddxy = this.differenciate(dxy, dt, 1, true)
     const theta = ddxy.map(val => {
       const t = Math.atan(-val.vGet(0) / (val.vGet(1) + p.g))
-      return eig.DenseMatrix.fromArray([t])
+      return eig.Matrix.fromArray([t])
     })
     const dtheta = this.differenciate(theta, dt, 1, true)
     const ddtheta = this.differenciate(dtheta, dt, 1, true)
@@ -185,32 +185,35 @@ class Quadrotor2D {
       // compute u
       const a = p.m * Math.sqrt(sqr(ddxy[idx].vGet(0)) + sqr(ddxy[idx].vGet(1) + p.g)) / 2
       const b = p.I * ddtheta[idx].vGet(0) / p.l
-      const u = eig.DenseMatrix.fromArray([a + b, a - b])
+      const u = eig.Matrix.fromArray([a + b, a - b])
       return val.vcat(theta[idx]).vcat(dxy[idx]).vcat(dtheta[idx]).vcat(u)
     })
   }
 }
 
-const flipTraj =
-  [[-2.0000, -1.5000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 30.0000],
-  [-1.9995, -1.4464, -0.0399, 0.0291, 1.4715, -1.0935, 0.0000, 30.0000],
-  [-1.9915, -1.2857, -0.1594, 0.2320, 2.9326, -2.1870, 0.0000, 30.0000],
-  [-1.9573, -1.0202, -0.3587, 0.7773, 4.3316, -3.2805, 0.0000, 30.0000],
-  [-1.8664, -0.6587, -0.6377, 1.8063, 5.5383, -4.3740, 0.0000, 30.0000],
-  [-1.6805, -0.2229, -0.9965, 3.3825, 6.3223, -5.4675, 0.0000, 30.0000],
-  [-1.3868, 0.2359, -1.4216, 4.3690, 6.0666, -6.0143, 0.0000, 0.0000],
-  [-1.0648, 0.6518, -1.8618, 4.5108, 5.3309, -6.0863, 0.0000, 3.9518],
-  [-0.7064, 0.9986, -2.3223, 5.5409, 3.9463, -6.7051, 0.0000, 30.0000],
-  [-0.2546, 1.1970, -2.8507, 6.6950, 1.3965, -7.7863, 0.4181, 29.7424],
-  [0.2412, 1.1939, -3.4310, 6.6970, -1.4810, -7.7740, 30.0000, 0.0000],
-  [0.6939, 0.9901, -3.9583, 5.5690, -4.0022, -6.6968, 29.1014, 0.0000],
-  [1.0587, 0.6419, -4.4207, 4.6969, -5.3097, -6.1665, 0.0000, 0.0000],
-  [1.3945, 0.2283, -4.8669, 4.4272, -6.0231, -6.0309, 7.4379, 0.0000],
-  [1.6826, -0.2249, -5.2882, 3.2915, -6.2465, -5.4081, 26.7367, 0.0000],
-  [1.8664, -0.6587, -5.6454, 1.8063, -5.5383, -4.3740, 30.0000, 0.0000],
-  [1.9573, -1.0202, -5.9245, 0.7773, -4.3316, -3.2805, 30.0000, 0.0000],
-  [1.9915, -1.2857, -6.1238, 0.2320, -2.9326, -2.1870, 30.0000, 0.0000],
-  [1.9995, -1.4464, -6.2433, 0.0291, -1.4715, -1.0935, 30.0000, 0.0000],
-  [2.0000, -1.5000, -6.2832, 0.0000, 0.0000, 0.0000, 30.0000, 0.0000]];
+const flipTraj = {
+  dt: 0.1162028035978925,
+  x: [[-2.0000, -1.5000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 10.0000],
+  [-1.9995, -1.4986, -0.0374, 0.0152, 0.0231, -0.6116, 0.0000, 10.0000],
+  [-1.9918, -1.4848, -0.1447, 0.1452, 0.2797, -1.1032, 3.9228, 10.0000],
+  [-1.9509, -1.4075, -0.2946, 0.5990, 1.0888, -1.2825, 10.0000, 9.7854],
+  [-1.8364, -1.2313, -0.4384, 1.2433, 1.5911, -0.9702, 10.0000, 0.0000],
+  [-1.6503, -1.0434, -0.5197, 1.8137, 1.4728, -0.3586, 10.0000, 0.0000],
+  [-1.3908, -0.8721, -0.5261, 2.4312, 1.3287, 0.2530, 10.0000, 0.0000],
+  [-1.0569, -0.7176, -0.4578, 3.0155, 1.2031, 0.8646, 10.0000, 0.0000],
+  [-0.6578, -0.5755, -0.3146, 3.4829, 1.1323, 1.4762, 10.0000, 0.0000],
+  [-0.2187, -0.4623, -0.1091, 3.6336, 0.5245, 1.7820, 0.0000, 0.0000],
+  [0.2258, -0.4700, 0.1081, 3.6323, -0.6374, 1.7629, 0.0000, 0.6247],
+  [0.6643, -0.5939, 0.3097, 3.4768, -1.2072, 1.4380, 0.0000, 10.0000],
+  [1.0631, -0.7450, 0.4482, 3.0176, -1.2744, 0.8264, 0.0000, 10.0000],
+  [1.3979, -0.9078, 0.5119, 2.4461, -1.3932, 0.2148, 0.0000, 10.0000],
+  [1.6603, -1.0865, 0.5007, 1.8463, -1.5271, -0.3968, 0.0000, 10.0000],
+  [1.8474, -1.2717, 0.4196, 1.1948, -1.4220, -0.8904, 3.8566, 10.0000],
+  [1.9528, -1.4166, 0.2910, 0.5478, -0.8844, -1.1859, 6.4810, 10.0000],
+  [1.9918, -1.4850, 0.1448, 0.1448, -0.2753, -1.1054, 10.0000, 3.8502],
+  [1.9995, -1.4986, 0.0374, 0.0152, -0.0231, -0.6116, 10.0000, 0.0000],
+  [2.0000, -1.5000, 0.0000, 0.0000, 0.0000, 0.0000, 10.0000, 0.0000]]
+}
+
 
 export { Quadrotor2D, flipTraj }

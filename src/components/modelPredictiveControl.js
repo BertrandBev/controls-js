@@ -1,4 +1,4 @@
-import eig from '@lib/eigen-js/eigen.js'
+import eig from '@eigen'
 
 class ModelPredictiveControl {
   /**
@@ -38,12 +38,12 @@ class ModelPredictiveControl {
       P.set(n, n, 0.01)
     }
     // P.print('P (cost)')
-    const q = new eig.DenseMatrix(dim, 1)
+    const q = new eig.Matrix(dim, 1)
     // Create dynamics constraint: CE^T x + ce0 = 0
     const At = new eig.TripletVector(10) // TODO figure out reserve
-    // new eig.DenseMatrix(this.n * xn, dim)
-    const In = eig.DenseMatrix.identity(xn, xn)
-    const negOnes = eig.DenseMatrix.ones(xn, 1).mul(-1)
+    // new eig.Matrix(this.n * xn, dim)
+    const In = eig.Matrix.identity(xn, xn)
+    const negOnes = eig.Matrix.ones(xn, 1).mul(-1)
     const [x0list, u0list] = [[], []]
     for (let n = 0; n < this.n; n++) {
       const pt = this.trajectory.get(t + n * this.dt)
@@ -64,15 +64,15 @@ class ModelPredictiveControl {
       At.addBlock(n * xn, this.n * xn + n * un, Bb)
     }
     At.addDiag((this.n - 1) * xn, 0, negOnes.mul(-1))
-    const uDiag = eig.DenseMatrix.ones(un, 1)
+    const uDiag = eig.Matrix.ones(un, 1)
     At.addDiag(this.n * xn, this.n * xn, uDiag)
     const A = new eig.SparseMatrix(dim, dim, At)
     const AA = new eig.SparseMatrix(A)
     // A.print("At")
 
 
-    const lb = new eig.DenseMatrix(dim, 1)
-    const ub = new eig.DenseMatrix(dim, 1)
+    const lb = new eig.Matrix(dim, 1)
+    const ub = new eig.Matrix(dim, 1)
     const dx0 = this.system.x.matSub(x0list[0])
     this.system.bound(dx0)
     lb.setBlock((this.n - 1) * xn, 0, dx0);
@@ -92,8 +92,8 @@ class ModelPredictiveControl {
     const xTraj = []
     for (let k = 0; k < this.n; k += 1) {
       // x.transpose().print(`x_${k}`)
-      const xk = x.block(k * xn, 0, xn, 1).matAdd(x0list[k])
-      const uk = x.block(this.n * xn + k * un, 0, un, 1).matAdd(u0list[k])
+      const xk = x0list[k] // x.block(k * xn, 0, xn, 1).matAdd(x0list[k])
+      const uk = u0list[k] //x.block(this.n * xn + k * un, 0, un, 1).matAdd(u0list[k])
       // x.block(this.n * xn + k * un, 0, un, 1).print(`u_${k}`)
       xTraj.push(xk.vcat(uk))
       // if (k == 0)
@@ -115,18 +115,18 @@ class ModelPredictiveControl {
     const [xn, un] = this.system.shape()
     const dim = (xn + un) * this.n
     // Create cost matrix
-    const G = eig.DenseMatrix.identity(dim, dim).mul(10)
+    const G = eig.Matrix.identity(dim, dim).mul(10)
     for (let n = 0; n < xn * this.n; n += 2) {
       // G.set(n, n, 10)
     }
     for (let n = xn * this.n; n < dim; n++) {
       G.set(n, n, 0.1)
     }
-    const g0 = new eig.DenseMatrix(dim, 1)
+    const g0 = new eig.Matrix(dim, 1)
     // Create dynamics constraint: CE^T x + ce0 = 0
-    const CEt = new eig.DenseMatrix(this.n * xn, dim)
-    const In = eig.DenseMatrix.identity(xn, xn)
-    const Ineg = eig.DenseMatrix.identity(xn, xn).mul(-1)
+    const CEt = new eig.Matrix(this.n * xn, dim)
+    const In = eig.Matrix.identity(xn, xn)
+    const Ineg = eig.Matrix.identity(xn, xn).mul(-1)
     const [x0list, u0list] = [[], []]
     for (let n = 0; n < this.n; n++) {
       const pt = this.trajectory.get(t + n * this.dt)
@@ -148,7 +148,7 @@ class ModelPredictiveControl {
     }
     CEt.setBlock((this.n - 1) * xn, 0, Ineg)
     const CE = CEt.transpose()
-    const ce0 = new eig.DenseMatrix(this.n * xn, 1);
+    const ce0 = new eig.Matrix(this.n * xn, 1);
     const dx0 = this.system.x.matSub(x0list[0])
     // dx0.print('dx0')
     ce0.setBlock((this.n - 1) * xn, 0, dx0);
@@ -158,8 +158,8 @@ class ModelPredictiveControl {
 
 
     // Create inequality constraints: CI^T x + ci0 >= 0
-    const CIt = new eig.DenseMatrix(2 * this.n * un, dim)
-    const ci0 = new eig.DenseMatrix(2 * this.n * un, 1)
+    const CIt = new eig.Matrix(2 * this.n * un, dim)
+    const ci0 = new eig.Matrix(2 * this.n * un, 1)
     for (let n = 0; n < this.n * un; n++) {
       // CIt.set(2 * n, this.n * xn + n, 1)
       // ci0.vSet(2 * n, -this.uBounds.min[n % un])
@@ -171,7 +171,7 @@ class ModelPredictiveControl {
     const CI = CIt.transpose()
 
     // Solve quadratic program
-    const x = new eig.DenseMatrix(dim, 1)
+    const x = new eig.Matrix(dim, 1)
     const res = eig.QuadProgSolver.solve(G, g0, CE, ce0, CI, ci0, x)
     const xTraj = []
     for (let k = 0; k < this.n; k += 1) {

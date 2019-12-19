@@ -9,7 +9,7 @@ import worldMixin from "@/components/worldMixin.js";
 import { Acrobot } from "@/components/acrobot.js";
 import { LQR } from "@/components/controls.js";
 import _ from "lodash";
-const eig = require("../../lib/eigen-js/eigen.js");
+import eig from "@eigen";
 
 const COLOR = "#00897B";
 const COLOR_DARK = "#1565C0";
@@ -42,8 +42,8 @@ export default {
 
   created() {
     const params = {
-      x0: eig.DenseMatrix.fromArray([Math.PI, 0, 0, 0]),
-      u0: eig.DenseMatrix.fromArray([0])
+      x0: eig.Matrix.fromArray([Math.PI, 0, 0, 0]),
+      u0: eig.Matrix.fromArray([0])
     };
     this.system = new Acrobot(params);
     this.controller = new LQR(this.system, params.x0, params.u0);

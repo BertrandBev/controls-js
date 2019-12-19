@@ -1,4 +1,4 @@
-const eig = require('@lib/eigen-js/eigen.js')
+const eig = require('@eigen')
 import _ from 'lodash'
 import { LQR, wrapAngle, sqr } from './controls.js'
 
@@ -32,7 +32,7 @@ class Acrobot {
       mu2: 0.5,
       ...params
     }
-    const x = params.x0 || new eig.DenseMatrix(4, 1);
+    const x = params.x0 || new eig.Matrix(4, 1);
     eig.GC.set(this, 'x', x);
     this.target = null
   }
@@ -47,9 +47,9 @@ class Acrobot {
 
   /**
    * Returns dx/dt
-   * @param {DenseMatrix} x
-   * @param {DenseMatrix} u
-   * @returns {DenseMatrix} dx
+   * @param {Matrix} x
+   * @param {Matrix} u
+   * @returns {Matrix} dx
    */
   dynamics(x, u) {
     // x = [theta1, theta2, dtheta1, dtheta2]
@@ -60,7 +60,7 @@ class Acrobot {
     const s12 = Math.sin(x.vGet(0) + x.vGet(1))
 
     // Mass matrix
-    const M = eig.DenseMatrix.fromArray([[
+    const M = eig.Matrix.fromArray([[
       p.I1 + p.I2 + p.m2 * sqr(p.l1) + 2 * p.m2 * p.l1 * p.lc2 * c2,
       p.I2 + p.m2 * p.l1 * p.lc2 * c2
     ], [
@@ -69,24 +69,24 @@ class Acrobot {
     ]])
     const Minv = M.inverse()
     // Coriolis matrix
-    const C = eig.DenseMatrix.fromArray([[
+    const C = eig.Matrix.fromArray([[
       -2 * p.m2 * p.l1 * p.lc2 * s2 * q2, -p.m2 * p.l1 * p.lc2 * s2 * q2
     ], [
       p.m2 * p.l1 * p.lc2 * s2 * q1, 0
     ]])
     // Gravity matrix
-    const G = eig.DenseMatrix.fromArray([
+    const G = eig.Matrix.fromArray([
       -p.m1 * p.g * p.lc1 * s1 - p.m2 * p.g * (p.l1 * s1 + p.lc2 * s12),
       - p.m2 * p.g * p.l2 * s12
     ])
     // Controls matrix
-    const B = eig.DenseMatrix.fromArray([0, 1])
+    const B = eig.Matrix.fromArray([0, 1])
     // Damping matrix
-    const D = eig.DenseMatrix.fromArray([[-p.mu1, 0], [0, -p.mu2]])
+    const D = eig.Matrix.fromArray([[-p.mu1, 0], [0, -p.mu2]])
     // From standard manipulator form
     // M(q)ddq + C(q, dq)dq = Tg(q) + Bu
     // http://underactuated.mit.edu/underactuated.html?chapter=acrobot
-    const dx = eig.DenseMatrix.fromArray([q1, q2])
+    const dx = eig.Matrix.fromArray([q1, q2])
     const ddx = Minv.matMul(G.matAdd(B.matMul(u)).matSub(C.matMul(dx))).matAdd(D.matMul(dx))
     return dx.vcat(ddx)
   }
@@ -94,7 +94,7 @@ class Acrobot {
 
   /**
    * Execute a step
-   * @param {DenseMatrix} u controls effort
+   * @param {Matrix} u controls effort
    * @param {Number} dt delta time
    */
   step(u, dt) {

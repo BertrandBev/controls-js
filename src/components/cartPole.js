@@ -1,4 +1,4 @@
-const eig = require('@lib/eigen-js/eigen.js')
+const eig = require('@eigen')
 import _ from 'lodash'
 import { wrapAngle, sqr } from './math.js'
 
@@ -23,7 +23,7 @@ class CartPole {
       mu: 0.5,
       ...params
     }
-    const x = params.x0 || new eig.DenseMatrix(4, 1);
+    const x = params.x0 || new eig.Matrix(4, 1);
     eig.GC.set(this, 'x', x)
   }
 
@@ -53,7 +53,7 @@ class CartPole {
    * Get steady-state command
    */
   ssCommand() {
-    return eig.DenseMatrix.fromArray([0])
+    return eig.Matrix.fromArray([0])
   }
 
   /**
@@ -66,9 +66,9 @@ class CartPole {
 
   /**
    * Returns dx/dt
-   * @param {DenseMatrix} x
-   * @param {DenseMatrix} u
-   * @returns {DenseMatrix} dx
+   * @param {Matrix} x
+   * @param {Matrix} u
+   * @returns {Matrix} dx
    */
   dynamics(x, u) {
     // x = [x, theta, dx, dtheta]
@@ -76,7 +76,7 @@ class CartPole {
     const [c, s] = [Math.cos(x.vGet(1)), Math.sin(x.vGet(1))]
     const dx = x.block(2, 0, 2, 1)
     const den = p.mc + p.mp * sqr(s)
-    const ddx = eig.DenseMatrix.fromArray([
+    const ddx = eig.Matrix.fromArray([
       (u.vGet(0) + p.mp * s * (p.l * sqr(x.vGet(3)) + p.g * c)) / den, //- p.mu * x.vGet(2),
       -(u.vGet(0) * c + p.mp * p.l * sqr(x.vGet(3)) * c * s + (p.mp + p.mc) * p.g * s) / p.l / den //- p.mu * x.vGet(3)
     ])
@@ -85,9 +85,9 @@ class CartPole {
 
   /**
    * Returns df/dx
-   * @param {DenseMatrix} x
-   * @param {DenseMatrix} u
-   * @returns {DenseMatrix} df/dx
+   * @param {Matrix} x
+   * @param {Matrix} u
+   * @returns {Matrix} df/dx
    */
   xJacobian(x, u) {
     const p = this.params
@@ -100,7 +100,7 @@ class CartPole {
     const dx2dt1 = (2 * p.l * p.mp * td * s) / den
     const dt2dt = (f * s - p.g * c * (p.mc + p.mp) - p.l * p.mp * td2 * c2 + p.l * p.mp * td2 * s2) / (p.l * den) + (2 * p.mp * c * s * (p.l * p.mp * c * s * td2 + f * c + p.g * s * (p.mc + p.mp))) / (p.l * sqr(den))
     const dt2dt1 = -(2 * p.mp * td * c * s) / den
-    return eig.DenseMatrix.fromArray([
+    return eig.Matrix.fromArray([
       [0, 0, 1, 0],
       [0, 0, 0, 1],
       [0, dx2dt, 0, dx2dt1],
@@ -110,9 +110,9 @@ class CartPole {
 
   /**
    * Returns df/du
-   * @param {DenseMatrix} x
-   * @param {DenseMatrix} u
-   * @returns {DenseMatrix} df/du
+   * @param {Matrix} x
+   * @param {Matrix} u
+   * @returns {Matrix} df/du
    */
   uJacobian(x, u) {
     const p = this.params
@@ -120,14 +120,14 @@ class CartPole {
     const s2 = sqr(s)
     const dx2du = 1 / (p.mp * s2 + p.mc)
     const dt2du = -c / (p.l * (p.mp * s2 + p.mc))
-    return eig.DenseMatrix.fromArray([
+    return eig.Matrix.fromArray([
       [0], [0], [dx2du], [dt2du]
     ])
   }
 
   /**
    * Execute a step
-   * @param {DenseMatrix} u controls effort
+   * @param {Matrix} u controls effort
    * @param {Number} dt delta time
    * @param {Array} mouseTarget optional mouse target
    */

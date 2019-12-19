@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import nlopt from '@lib/nlopt-js/nlopt.js'
-import eig from '@lib/eigen-js/eigen.js'
+import eig from '@eigen'
 
 class DirectCollocation {
   static FREE = 1.23e-123
@@ -41,7 +41,7 @@ class DirectCollocation {
     // Set bounds
     this.setBounds(uBounds, anchors)
 
-    const mat = new eig.DenseMatrix(2, 2)
+    const mat = new eig.Matrix(2, 2)
     console.log(mat)
   }
 
@@ -93,7 +93,7 @@ class DirectCollocation {
   }
 
   getVector(arr, idx, len) {
-    const vec = new eig.DenseMatrix(len, 1)
+    const vec = new eig.Matrix(len, 1)
     for (let k = 0; k < len; k++) {
       vec.vSet(k, arr[idx + k])
     }
@@ -163,7 +163,7 @@ class DirectCollocation {
         let Jxck = this.system.xJacobian(xck, uck)
         let Juck = this.system.uJacobian(xck, uck)
         // Compute derivatives
-        const Inx = eig.DenseMatrix.identity(nx, nx)
+        const Inx = eig.Matrix.identity(nx, nx)
         const dXckdXk = Inx.div(2).matAdd(Jxk.mul(h / 8))
         const dXckdXkn = Inx.div(2).matSub(Jxkn.mul(h / 8))
         const dXckdUk = Juk.mul(h / 8)
@@ -280,14 +280,14 @@ class DirectCollocation {
     }), tolVec)
   }
 
-  optimize() {
-    this.opt.set_maxtime(30)
+  optimize(maxTime = 15) {
+    this.opt.set_maxtime(maxTime)
     const res = this.opt.optimize(this.x0)
     const [xList, uList, tEnd] = this.unpack(res.x)
-    console.log('xList', xList, 'uList', uList)
-    return xList.map((x, idx) => {
-      return eig.DenseMatrix.fromArray(x).vcat(eig.DenseMatrix.fromArray(uList[idx]))
-    })
+    // console.log('xList', xList, 'uList', uList)
+    return [xList.map((x, idx) => {
+      return eig.Matrix.fromArray(x).vcat(eig.Matrix.fromArray(uList[idx]))
+    }), tEnd]
   }
 
   unpack(vector) {
@@ -309,51 +309,4 @@ class DirectCollocation {
   }
 }
 
-class SecondOrderSystem {
-  constructor() {
-    this.params = {
-      m: 1
-    }
-  }
-
-  shape() {
-    return [2, 1]
-  }
-
-  dynamics(x, u) {
-    return eig.DenseMatrix.fromArray([
-      x.vGet(1),
-      u.vGet(0) / this.params.m
-    ])
-  }
-
-  xJacobian(x, u) {
-    return eig.DenseMatrix.fromArray([
-      [0, 1], [0, 0]
-    ])
-  }
-
-  uJacobian(x, u) {
-    return eig.DenseMatrix.fromArray([
-      [0], [1 / this.params.m]
-    ])
-  }
-}
-
-// TEST FUNCTION
-function test() {
-  console.log('test called')
-  const system = new SecondOrderSystem()
-  const xStart = eig.DenseMatrix.fromArray([0, 0])
-  const xEnd = eig.DenseMatrix.fromArray([1, 0])
-  const uMax = 1
-  const nPoints = 30
-  const anchors = [{ t: 0, x: xStart }, { t: 1, x: xEnd }]
-  const collocation = new DirectCollocation(system, nPoints, uMax, anchors)
-  collocation.optimize()
-  collocation.delete()
-  console.log('test deleted')
-  // collocation.testGrad()
-}
-
-export { test, DirectCollocation }
+export { DirectCollocation }

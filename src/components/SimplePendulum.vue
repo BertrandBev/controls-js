@@ -12,7 +12,7 @@ import { SimplePendulum } from "@/components/simplePendulum.js";
 import { LQR } from "@/components/controls.js";
 import worldMixin from "@/components/worldMixin.js";
 import _ from "lodash";
-const eig = require("../../lib/eigen-js/eigen.js");
+import eig from "@eigen";
 import { ValueIterationPlanner } from "@/components/valueIterationPlanner.js";
 import { Interpolator } from "./utils.js";
 import { ModelPredictiveControl } from "@/components/modelPredictiveControl.js";
@@ -62,10 +62,10 @@ export default {
   },
 
   created() {
-    const xTop = eig.DenseMatrix.fromArray([Math.PI, 0]);
+    const xTop = eig.Matrix.fromArray([Math.PI, 0]);
     const params = {
-      x0: eig.DenseMatrix.fromArray([Math.PI - 0.2, 0]), // xTop,
-      u0: eig.DenseMatrix.fromArray([0])
+      x0: eig.Matrix.fromArray([Math.PI - 0.2, 0]), // xTop,
+      u0: eig.Matrix.fromArray([0])
     };
     this.system = new SimplePendulum(params);
     this.controller = new LQR(this.system, params.x0, params.u0);
@@ -109,14 +109,14 @@ export default {
 
     // Setup MPD
     this.interpolator = new Interpolator(true);
-    const top = eig.DenseMatrix.fromArray([Math.PI, 0, 0]);
+    const top = eig.Matrix.fromArray([Math.PI, 0, 0]);
     this.interpolator.set([top, top], 0.1);
     this.mdp = new ModelPredictiveControl(
       this.system,
       this.interpolator,
       0.05,
       10,
-      { min: [-20], max: [20] }
+      { min: [-10], max: [10] }
     );
     this.mdp.getCommand(); // TEMP
     eig.GC.flush();
@@ -130,7 +130,7 @@ export default {
         return;
       }
 
-      let u = new eig.DenseMatrix(1, 1)
+      let u = new eig.Matrix(1, 1)
       if (this.mode == "Controls" || this.mouseDragging) {
         // TODO: hook to mode selector
         u = this.controller.getCommand();

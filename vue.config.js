@@ -27,5 +27,6 @@ module.exports = {
     config.resolve.alias.set('@src', path.resolve(__dirname, 'src'))
     config.resolve.alias.set('@assets', path.resolve(__dirname, 'src/assets'))
     config.resolve.alias.set('@lib', path.resolve(__dirname, 'lib'))
+    config.resolve.alias.set('@eigen', path.resolve(__dirname, 'lib/eigen-js/index.js'))
   }
 }
