@@ -3,22 +3,22 @@ div.frame(ref='cont')
   v-btn(@click='optimize') optimize
   div.canvas(ref='canvas'
              style='flex: 0 0 auto')
-  TimeGraph(ref='graph'
+  TrajPlot(ref='graph'
             style='flex: 1 0 auto'
             :system='system'
-            :interpolator='interpolator')
+            :trajectory='trajectory')
 </template>
 
 <script>
 import _ from "lodash";
 import eig from "@eigen";
 import { CartPole } from "@/components/cartPole.js";
-import { LQR } from "@/components/controls.js";
+import LQR from "@/components/controllers/LQR.js";
 import worldMixin from "@/components/worldMixin.js";
 import { test } from "@/components/directCollocation.js";
-import { Interpolator } from "@/components/utils.js";
+import { Trajectory } from "@/components/trajectory.js";
 import { DirectCollocation } from "@/components/directCollocation.js";
-import TimeGraph from "@/components/TimeGraph.vue";
+import TrajPlot from "@/components/TrajPlot.vue";
 
 const COLOR = "#00897B";
 const COLOR_DARK = "#1565C0";
@@ -37,7 +37,7 @@ export default {
 
   mixins: [worldMixin],
 
-  components: { TimeGraph },
+  components: { TrajPlot },
 
   data: () => ({
     // Graphics
@@ -47,7 +47,7 @@ export default {
     controller: null,
     updateTime: Date.now(),
     mode: "Interp",
-    interpolator: null
+    trajectory: null
   }),
 
   computed: {
@@ -68,7 +68,7 @@ export default {
     };
     this.system = new CartPole(params);
     this.controller = new LQR(this.system, params.x0, params.u0);
-    this.interpolator = new Interpolator(true);
+    this.trajectory = new Trajectory(true);
   },
 
   mounted() {
@@ -101,7 +101,7 @@ export default {
       fHead.fill = COLOR_RED;
       return { group: this.two.makeGroup(fLine, fHead), fLine, fHead };
     });
-    this.graphics.showControl = u => {
+    this.graphics.setControl = u => {
       sides.forEach((side, idx) => {
         const uh = _.clamp(u.vGet(0) * 5, -100, 100);
         side.group.visible = (idx - 0.5) * uh > 0;
@@ -144,7 +144,7 @@ export default {
         anchors
       );
       const x = collocation.optimize();
-      this.interpolator.set(x, 0.1);
+      this.trajectory.set(x, 0.1);
       this.$refs.graph.plot();
     },
 
@@ -157,9 +157,9 @@ export default {
         // const u = this.controller.getCommand();
         u = new eig.Matrix(1, 1);
         this.system.step(u, dt, this.mouseTarget);
-      } else if (this.interpolator.ready()) {
-        const x = this.interpolator.get(Date.now() / 1000);
-        for (let k = 0; k < this.system.shape()[0]; k++) {
+      } else if (this.trajectory.ready()) {
+        const x = this.trajectory.get(Date.now() / 1000);
+        for (let k = 0; k < this.system.shape[0]; k++) {
           this.system.x.vSet(k, x.vGet(k));
         }
         u = x.block(4, 0, 1, 1);
@@ -168,7 +168,7 @@ export default {
       const x = this.system.x;
       this.graphics.pole.rotation = -x.vGet(1);
       this.graphics.cart.translation.set(...this.worldToCanvas([x.vGet(0), 0]));
-      this.graphics.showControl(u);
+      this.graphics.setControl(u);
       this.updateTime = Date.now();
       // Run GC
       eig.GC.flush();
@@ -178,14 +178,4 @@ export default {
 </script>
 
 <style>
-.frame {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  height: 100%;
-}
-.canvas {
-  background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAATUlEQVRYR+3VMQoAMAhD0Xq3HNs75QgtdOqsg1C+u5C8JWF7r8ELAiCAAAIIIIBARyAz75BLKg96a47HA5RrP48tAQIggAACCCDwhcABvG5/oRsc6n0AAAAASUVORK5CYII=")
-    center center;
-}
 </style>

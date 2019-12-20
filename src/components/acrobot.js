@@ -1,6 +1,6 @@
-const eig = require('@eigen')
+import eig from '@eigen'
 import _ from 'lodash'
-import { LQR, wrapAngle, sqr } from './controls.js'
+import LQR, { wrapAngle, sqr } from './controllers/LQR.js'
 
 class Acrobot {
   constructor(params = {}) {

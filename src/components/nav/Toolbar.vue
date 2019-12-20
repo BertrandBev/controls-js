@@ -1,14 +1,16 @@
 <template lang="pug">
-v-app-bar(app clipped-left
+v-app-bar(app clipped-left clipped-right
           :color='color'
           :dark='dark'
           dense)
+  //* Left action
   v-app-bar-nav-icon(v-if='!showBack'
                      @click.stop="$emit('toggleDrawer')")
   v-toolbar-items(v-else
                   style='margin-left: 0px')
     v-btn.mr-2(icon @click='navBack')
       v-icon(small) fas fa-chevron-left
+  //* Content
   v-toolbar-title.headline
     span.font-weight-light {{ title }}
   v-spacer
@@ -16,6 +18,12 @@ v-app-bar(app clipped-left
     v-btn(href='https://github.com/BertrandBev/eigen-js', target='_blank', text)
       span.mr-2 Github
       v-icon mdi-open-in-new
+  //* Right action
+  v-btn(v-if='showRightDrawer'
+        icon
+        dark
+        @click.stop="$bus.$emit('toggleDrawer')")
+    v-icon mdi-tune
 </template>
 
 <script>
@@ -23,13 +31,15 @@ import _ from "lodash";
 import { routes } from "@/router/index.js";
 
 export default {
-  props: {
-  },
+  props: {},
 
   computed: {
+    route() {
+      return _.find(routes, r => r.name === this.routeName);
+    },
+
     title() {
-      const route = _.find(routes, r => r.name === this.routeName);
-      return _.get(route, "title");
+      return _.get(this.route, "title");
     },
 
     showBack() {
@@ -38,6 +48,10 @@ export default {
 
     dark() {
       return true;
+    },
+
+    routeName() {
+      return _.get(this.$route, "name");
     },
 
     color() {
@@ -50,12 +64,12 @@ export default {
       );
     },
 
-    routeName() {
-      return _.get(this.$route, "name", null);
-    },
-
     routeQuery() {
       return _.get(this.$route, "query", {});
+    },
+
+    showRightDrawer() {
+      return _.get(this.route, "rightDrawer", false);
     }
   },
 

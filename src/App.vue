@@ -29,7 +29,7 @@ export default {
   },
 
   data: () => ({
-    loading: false // TEMP
+    loading: true // TEMP
   }),
 
   created() {
@@ -45,7 +45,9 @@ export default {
   methods: {
     onResize() {
       this.$store.windowSize.x =
-        window.innerWidth - this.$vuetify.application.left;
+        window.innerWidth -
+        this.$vuetify.application.left -
+        this.$vuetify.application.right;
       this.$store.windowSize.y =
         window.innerHeight - this.$vuetify.application.top;
     },

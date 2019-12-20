@@ -1,13 +1,15 @@
 import eig from '@eigen'
+import Controller from './controller.js'
 
-class ModelPredictiveControl {
+class MPC extends Controller {
   /**
    * Create a MPC instance
    * @param {Object} system 
-   * @param {Interpolator} trajectory 
+   * @param {Trajectory} trajectory 
    * @param {Number} dt 
    */
   constructor(system, trajectory, dt, n, uBounds) {
+    super(system)
     this.system = system
     this.trajectory = trajectory
     this.dt = dt
@@ -15,19 +17,13 @@ class ModelPredictiveControl {
     this.uBounds = uBounds
   }
 
-  reset() {
-    this.t = Date.now() / 1000
-    this.trajectory.reset()
-  }
-
-  getCommand() {
+  optimise(t) {
     // Minimize 0.5 xT.P.x + qT.x
     // Suject to l <= Ax <= u
 
     // Solve MPC starting at t
     const a = Date.now()
-    const t = Date.now() / 1000
-    const [xn, un] = this.system.shape()
+    const [xn, un] = this.system.shape
     const dim = (xn + un) * this.n
     // Create cost matrix
     const P = eig.SparseMatrix.identity(dim, dim).mul(1)
@@ -70,7 +66,6 @@ class ModelPredictiveControl {
     const AA = new eig.SparseMatrix(A)
     // A.print("At")
 
-
     const lb = new eig.Matrix(dim, 1)
     const ub = new eig.Matrix(dim, 1)
     const dx0 = this.system.x.matSub(x0list[0])
@@ -86,14 +81,15 @@ class ModelPredictiveControl {
     // ub.print('ub')
 
     // Solve quadratic program
-    const x = eig.QuadProgSolver.solve(P, q, A, lb, ub);
+    const x = eig.Solvers.quadProgSolve(P, q, A, lb, ub);
+
     // x.print('result')
     // console.log('done')
     const xTraj = []
     for (let k = 0; k < this.n; k += 1) {
       // x.transpose().print(`x_${k}`)
-      const xk = x0list[k] // x.block(k * xn, 0, xn, 1).matAdd(x0list[k])
-      const uk = u0list[k] //x.block(this.n * xn + k * un, 0, un, 1).matAdd(u0list[k])
+      const xk = x.block(k * xn, 0, xn, 1).matAdd(x0list[k])
+      const uk = x.block(this.n * xn + k * un, 0, un, 1).matAdd(u0list[k])
       // x.block(this.n * xn + k * un, 0, un, 1).print(`u_${k}`)
       xTraj.push(xk.vcat(uk))
       // if (k == 0)
@@ -108,11 +104,17 @@ class ModelPredictiveControl {
     return xTraj
   }
 
+  getCommand(t) {
+    const [xn, un] = this.system.shape
+    const xTraj = this.optimise(t)
+    return xTraj[0].block(xn, 0, un, 1);
+  }
+
   getCommandOld() {
     // const a = Date.now()
     // Solve MPC starting at t
     const t = Date.now() / 1000
-    const [xn, un] = this.system.shape()
+    const [xn, un] = this.system.shape
     const dim = (xn + un) * this.n
     // Create cost matrix
     const G = eig.Matrix.identity(dim, dim).mul(10)
@@ -191,4 +193,4 @@ class ModelPredictiveControl {
   }
 }
 
-export { ModelPredictiveControl }
+export default MPC

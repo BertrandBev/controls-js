@@ -1,11 +1,9 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
+import SecondOrder from "@/components/models/secondOrder/SecondOrder.vue";
 import SimplePendulum from "@/components/SimplePendulum.vue";
 import Quadrotor2D from "@/components/Quadrotor2D.vue";
 import CartPole from "@/components/CartPole.vue";
-import SecondOrder from "@/components/SecondOrder.vue";
-import LineChart from "@/components/LineChart.vue";
-import ModelPanel from "@/views/ModelPanel.vue";
 
 Vue.use(VueRouter)
 
@@ -19,7 +17,8 @@ const routes = [
     name: 'secondOrder',
     title: 'Second Order System',
     group: 'Pages',
-    component: ModelPanel,
+    component: SecondOrder,
+    rightDrawer: true,
     icon: 'mdi-lambda'
   }
 ]

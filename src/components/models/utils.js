@@ -1,0 +1,4 @@
+const COLORS = {
+}
+
+export { COLORS }

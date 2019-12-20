@@ -1,4 +1,4 @@
-const eig = require('@eigen')
+import eig from '@eigen'
 import _ from 'lodash'
 import { wrapAngle, sqr } from './math.js'
 

@@ -1,6 +1,6 @@
-const eig = require('@eigen')
+import eig from '@eigen'
 import _ from 'lodash'
-import { LQR } from './controls.js'
+import { LQR } from './controllers/LQR.js'
 import { wrapAngle, sqr } from './math.js'
 
 class Quadrotor2D {
@@ -13,7 +13,7 @@ class Quadrotor2D {
       // mu: 0.5, TODO: add natural damping
       ...params
     }
-    const x = params.x0 || new eig.Matrix(...this.shape());
+    const x = params.x0 || new eig.Matrix(...this.shape);
     eig.GC.set(this, 'x', x)
   }
 

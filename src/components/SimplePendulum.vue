@@ -9,13 +9,13 @@ v-row(ref='container'
 <script>
 import Two from "two.js";
 import { SimplePendulum } from "@/components/simplePendulum.js";
-import { LQR } from "@/components/controls.js";
+import LQR from "@/components/controllers/LQR.js";
 import worldMixin from "@/components/worldMixin.js";
 import _ from "lodash";
 import eig from "@eigen";
 import { ValueIterationPlanner } from "@/components/valueIterationPlanner.js";
-import { Interpolator } from "./utils.js";
-import { ModelPredictiveControl } from "@/components/modelPredictiveControl.js";
+import { Trajectory } from "@/components/trajectory.js";
+import MPC from "@/components/controllers/MPC.js";
 
 const COLOR = "#00897B";
 const COLOR_DARK = "#1565C0";
@@ -108,12 +108,12 @@ export default {
     // this.VI.plot(this.$refs.plot);
 
     // Setup MPD
-    this.interpolator = new Interpolator(true);
+    this.trajectory = new Trajectory(true);
     const top = eig.Matrix.fromArray([Math.PI, 0, 0]);
-    this.interpolator.set([top, top], 0.1);
-    this.mdp = new ModelPredictiveControl(
+    this.trajectory.set([top, top], 0.1);
+    this.mdp = new MPC(
       this.system,
-      this.interpolator,
+      this.trajectory,
       0.05,
       10,
       { min: [-10], max: [10] }
@@ -137,7 +137,7 @@ export default {
         this.system.step(u, dt, this.mouseTarget);
       } else if (this.mode == "MPC" && this.mdp) {
         const xTraj = this.mdp.getCommand();
-        const [xn, un] = this.system.shape();
+        const [xn, un] = this.system.shape;
         u = xTraj[0].block(xn, 0, un, 1);
         this.system.step(u, dt, this.mouseTarget);
       } else {
@@ -157,8 +157,4 @@ export default {
 </script>
 
 <style>
-.canvas {
-  background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAATUlEQVRYR+3VMQoAMAhD0Xq3HNs75QgtdOqsg1C+u5C8JWF7r8ELAiCAAAIIIIBARyAz75BLKg96a47HA5RrP48tAQIggAACCCDwhcABvG5/oRsc6n0AAAAASUVORK5CYII=")
-    center center;
-}
 </style>

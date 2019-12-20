@@ -11,14 +11,14 @@ v-row(ref='container'
 
 <script>
 import { Quadrotor2D, flipTraj } from "@/components/quadrotor2D.js";
-import { LQR } from "@/components/controls.js";
+import LQR from "@/components/controllers/LQR.js";
 import worldMixin from "@/components/worldMixin.js";
 import _ from "lodash";
 import eig from "@eigen";
 import { InteractivePath } from "@/components/interactivePath.js";
-import { Interpolator } from "./utils.js";
+import { Trajectory } from "@/components/trajectory.js";
 import { DirectCollocation } from "@/components/directCollocation.js";
-import { ModelPredictiveControl } from "@/components/modelPredictiveControl.js";
+import MPC from "@/components/controllers/MPC.js";
 
 const COLOR = "#00897B";
 const COLOR_DARK = "#1565C0";
@@ -45,7 +45,7 @@ export default {
     system: null,
     controller: null,
     // updateTime: Date.now(),
-    interpolator: null,
+    trajectory: null,
     mdp: null
   }),
 
@@ -107,7 +107,7 @@ export default {
         fHead
       };
     });
-    this.graphics.showControl = u => {
+    this.graphics.setControl = u => {
       sides.forEach((side, idx) => {
         const uh = _.clamp(u.vGet(idx) * 5, -100, 100);
         side.fHead.translation.y = propHeight - uh;
@@ -138,19 +138,19 @@ export default {
       sides[1].prop
     );
 
-    // Setup interpolator
-    this.interpolator = new Interpolator(true);
+    // Setup trajectory
+    this.trajectory = new Trajectory(true);
     const trajRev = [...flipTraj.x];
     trajRev.reverse();
     const symTraj = [...flipTraj.x, ...trajRev];
-    this.interpolator.set(
+    this.trajectory.set(
       symTraj.map(vec => eig.Matrix.fromArray(vec)),
       flipTraj.dt
     );
     this.dt = flipTraj.dt
-    this.mdp = new ModelPredictiveControl(
+    this.mdp = new MPC(
       this.system,
-      this.interpolator,
+      this.trajectory,
       1 / 60,
       20,
       { min: [-20, -20], max: [20, 20] }
@@ -203,12 +203,12 @@ export default {
       );
       const [x, tEnd] = collocation.optimize(30);
       const dt = tEnd / nPoints;
-      this.interpolator.set(x, tEnd / nPoints);
-      this.interpolator.print();
+      this.trajectory.set(x, tEnd / nPoints);
+      this.trajectory.print();
     },
 
     download() {
-      const str = this.interpolator.toString();
+      const str = this.trajectory.toString();
       const blob = new Blob([str], { type: "text/plain" });
       const link = document.createElement("a");
       link.href = window.URL.createObjectURL(blob);
@@ -217,8 +217,8 @@ export default {
     },
 
     reset() {
-      if (this.interpolator.ready()) {
-        const x = this.interpolator.get(Date.now() / 1000);
+      if (this.trajectory.ready()) {
+        const x = this.trajectory.get(Date.now() / 1000);
         this.system.x.setBlock(0, 0, x.block(0, 0, 6, 1));
       }
     },
@@ -233,7 +233,7 @@ export default {
       });
       const x = this.system.fitTrajectory(xy, dt);
       // Init rollout
-      this.interpolator.set(x, dt);
+      this.trajectory.set(x, dt);
     },
 
     update() {
@@ -243,17 +243,17 @@ export default {
       //   return;
       // }
       let u = this.system.ssCommand();
-      if (this.mode === "Flatness" && this.interpolator.ready()) {
+      if (this.mode === "Flatness" && this.trajectory.ready()) {
         // Flatness mode
-        const x = this.interpolator.get(Date.now() / 1000);
+        const x = this.trajectory.get(Date.now() / 1000);
         this.system.x.setBlock(0, 0, x.block(0, 0, 6, 1));
         u = x.block(6, 0, 2, 1);
         // this.system.step(u, this.dt, this.mouseTarget);
       
-      } else if (this.mode === "MDP" && this.interpolator.ready()) {
+      } else if (this.mode === "MDP" && this.trajectory.ready()) {
         // Temp mdp command
         const xTraj = this.mdp.getCommand();
-        const [xn, un] = this.system.shape();
+        const [xn, un] = this.system.shape;
         u = xTraj[0].block(xn, 0, un, 1);
         // u.print('u')
         this.system.step(u, this.dt, this.mouseTarget);
@@ -270,7 +270,7 @@ export default {
       this.graphics.system.translation.set(
         ...this.worldToCanvas([x.vGet(0), x.vGet(1)])
       );
-      this.graphics.showControl(u);
+      this.graphics.setControl(u);
       // this.updateTime = Date.now();
       // Run GC
       eig.GC.flush();
@@ -280,8 +280,4 @@ export default {
 </script>
 
 <style>
-.canvas {
-  background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAATUlEQVRYR+3VMQoAMAhD0Xq3HNs75QgtdOqsg1C+u5C8JWF7r8ELAiCAAAIIIIBARyAz75BLKg96a47HA5RrP48tAQIggAACCCDwhcABvG5/oRsc6n0AAAAASUVORK5CYII=")
-    center center;
-}
 </style>

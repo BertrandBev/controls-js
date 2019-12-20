@@ -18,7 +18,7 @@ class DirectCollocation {
     this.n = n
 
     // Compute dimensionality
-    this.shape = system.shape()
+    this.shape = system.shape
     this.dim = (this.shape[0] + this.shape[1]) * this.n + 1
     const algorithm = nlopt.Algorithm.LD_SLSQP // LD_SLSQP LD_MMA LN_COBYLA
     this.opt = new nlopt.Optimize(algorithm, this.dim)
@@ -108,7 +108,7 @@ class DirectCollocation {
     const nu = this.shape[1]
     const nConst = (this.n - 1) * nx
 
-    let tstart = Date.now()
+    const a = Date.now()
     // Retreive initial values
     const dhdt = 1 / (this.n - 1)
     const h = x[this.dim - 1] * dhdt
@@ -135,8 +135,6 @@ class DirectCollocation {
         grad[i] = 0;
       }
     }
-
-    const t1 = Date.now() - tstart;
 
     // Loop for all colocation points
     let max = 0
@@ -219,8 +217,7 @@ class DirectCollocation {
 
 
     }
-    const t2 = Date.now() - tstart - t1;
-    // console.log('iteration time', t1, t2)
+    // console.log('iteration time', Date.now() - a);
 
     // TEMP
 

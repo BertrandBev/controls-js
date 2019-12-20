@@ -1,7 +1,8 @@
-const eig = require('@eigen')
+import eig from '@eigen'
 import _ from 'lodash'
+import Controller from './controller.js'
 
-class LQR {
+class LQR extends Controller {
   /**
    * Build a LQR controller to stabilize the system around x0
    * @param {Object} system system of interest
@@ -9,10 +10,11 @@ class LQR {
    * @param {Array} u0 equilibrium command
    */
   constructor(system, x0, u0) {
+    super(system)
     this.system = system
     eig.GC.set(this, 'x0', x0)
     eig.GC.set(this, 'u0', u0)
-    const [xn, un] = system.shape()
+    const [xn, un] = system.shape
     const [Jx, Ju] = LQR.linearize(system, this.x0, this.u0)
     // Solve LQR
     const Q = eig.Matrix.identity(xn, xn).mul(10);
@@ -40,7 +42,7 @@ class LQR {
    */
   static linearize(system, x0, u0) {
     const eps = 10e-8
-    const [xn, un] = system.shape()
+    const [xn, un] = system.shape
     // Get nominal value
     const dx0 = system.dynamics(x0, u0)
     // TODO: extract in C lib ?
@@ -74,7 +76,7 @@ class LQR {
    * Test jacobian functions
    */
   static testJacobian(system) {
-    const [xn, un] = system.shape()
+    const [xn, un] = system.shape
     const x0 = new eig.Matrix(xn, 1);
     for (let i = 0; i < xn; i++) {
       x0.vSet(i, i * 2.8 + 13.7);
@@ -91,6 +93,4 @@ class LQR {
   }
 }
 
-export {
-  LQR
-}
+export default LQR

@@ -1,12 +1,19 @@
 import Two from "two.js";
 
 const HEIGHT = 512;
+const FPS_ALPHA = 0.95;
 const FRAME_COLOR = "#455A64";
 
 export default {
   data: () => ({
+    // FPS computation
+    fps: 0,
+    lastUpdate: Date.now(),
+    // Private variables
+    t: 0, // Simulated time
     two: null,
-    mouseTarget: null
+    mouseTarget: null,
+    loop: null,
   }),
 
   computed: {
@@ -27,6 +34,10 @@ export default {
     },
 
     scale() {
+      throw new Error('This method must be overidden')
+    },
+
+    dt() {
       throw new Error('This method must be overidden')
     }
   },
@@ -58,6 +69,33 @@ export default {
     );
     frame.translation.set(this.width / 2, this.height / 2);
     frame.fill = FRAME_COLOR;
+
+    // Start loop
+    const updateFun = () => {
+      const now = Date.now();
+      this.t += this.dt
+      try {
+        this.update();
+      } catch (e) {
+        console.error(e)
+      }
+      this.two.update();
+      const dtMeas = (Date.now() - this.lastUpdate) / 1000
+      this.fps = this.fps * FPS_ALPHA + (1 - FPS_ALPHA) / dtMeas
+      this.lastUpdate = Date.now();
+      const updateTimeMs = Date.now() - now
+      const targetDtMs = Math.max(0, this.dt * 1000 - updateTimeMs)
+      this.loop = setTimeout(updateFun, targetDtMs);
+    };
+
+    this.$nextTick(() => {
+      updateFun();
+    })
+  },
+
+  beforeDestroy() {
+    console.log("BEFORE DESTROY")
+    clearTimeout(this.loop)
   },
 
   methods: {
@@ -74,5 +112,13 @@ export default {
         -pos[1] * this.scale + this.height / 2
       ];
     },
+
+    update() {
+      throw new Error('This method must be overidden')
+    },
+
+    reset() {
+      this.t = 0
+    }
   }
 }

@@ -2,7 +2,7 @@ import _ from 'lodash'
 import eig from "@eigen";
 import { wrapAngle } from './math.js'
 import Plotly from 'plotly.js-dist'
-import { Interpolator } from './utils.js'
+import { Trajectory } from '@/components/trajectory.js'
 
 class Tensor {
   /**
@@ -116,7 +116,6 @@ class ValueIterationPlanner {
     this.xEqInds = xEqs.map(x => this.toGrid(this.xGrid, x))
     this.dt = dt
     this.createTransitionTable()
-    this.interp = new Interpolator(true)
   }
 
   /**
@@ -256,16 +255,9 @@ class ValueIterationPlanner {
       // this.fromGrid(this.xGrid, this.V.unpack(xInd)).print('')
       sequence.push(this.fromGrid(this.xGrid, this.V.unpack(xInd)))
     }
-    this.interp.set(sequence, Date.now() / 1000, this.dt)
-  }
-
-  /**
-   * Sample rollout a time t
-   * @param {Number} t
-   */
-  sampleRollout(t) {
-    // Rescale t
-    return this.interp.get(t)
+    const traj = new Trajectory(true)
+    traj.set(sequence, Date.now() / 1000, this.dt)
+    return traj
   }
 
   /**
@@ -294,12 +286,4 @@ class ValueIterationPlanner {
   }
 }
 
-function test() {
-  // const VI = new ValueIterationPlanner({}, [
-  //   { min: -0.2, max: 0.2, count: 3 },
-  //   { min: -3, max: 3, count: 7 }
-  // ])
-  // VI.step()
-}
-
-export { ValueIterationPlanner, test }
+export { ValueIterationPlanner }

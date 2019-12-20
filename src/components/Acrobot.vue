@@ -7,7 +7,7 @@ v-row(ref='container'
 <script>
 import worldMixin from "@/components/worldMixin.js";
 import { Acrobot } from "@/components/acrobot.js";
-import { LQR } from "@/components/controls.js";
+import LQR from "@/components/controllers/LQR.js";
 import _ from "lodash";
 import eig from "@eigen";
 
@@ -104,8 +104,4 @@ export default {
 </script>
 
 <style>
-.canvas {
-  background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAATUlEQVRYR+3VMQoAMAhD0Xq3HNs75QgtdOqsg1C+u5C8JWF7r8ELAiCAAAIIIIBARyAz75BLKg96a47HA5RrP48tAQIggAACCCDwhcABvG5/oRsc6n0AAAAASUVORK5CYII=")
-    center center;
-}
 </style>
