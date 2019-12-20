@@ -13,8 +13,8 @@ import LQR from "@/components/controllers/LQR.js";
 import worldMixin from "@/components/worldMixin.js";
 import _ from "lodash";
 import eig from "@eigen";
-import { ValueIterationPlanner } from "@/components/valueIterationPlanner.js";
-import { Trajectory } from "@/components/trajectory.js";
+import ValueIterationPlanner from "@/components/planners/valueIterationPlanner.js";
+import Trajectory from '@/components/planners/trajectory.js'
 import MPC from "@/components/controllers/MPC.js";
 
 const COLOR = "#00897B";

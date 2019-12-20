@@ -1,12 +1,5 @@
 <template lang="pug">
-  div.red(style='width: 100%; height: 100%;')
-    //- div.pb-2(style='display: flex; flex: 0 0 auto; align-content: center; background: white')
-    //-   v-checkbox.ml-2(v-for='serie, idx in series'
-    //-                   :key='`serie_${idx}`'
-    //-                   v-model='serie.show'
-    //-                   :label='serie.name'
-    //-                   hide-details
-    //-                   dense)
+  div(style='width: 100%; height: 100%;')
     div(style='width: 100%; height: 100%;'
         ref='div')
 </template>
@@ -35,7 +28,8 @@ export default {
       displaylogo: false,
       displayModeBar: false,
       scrollZoom: false,
-      showAxisDragHandles: false
+      showAxisDragHandles: false,
+      responsive: true
     };
     Plotly.newPlot(this.$refs.div, [], [], config);
 

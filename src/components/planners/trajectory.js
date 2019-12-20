@@ -116,4 +116,4 @@ function testTrajectory() {
   console.log('Test successful')
 }
 
-export { Trajectory }
+export default Trajectory

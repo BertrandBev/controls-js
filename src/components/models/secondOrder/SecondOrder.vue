@@ -9,6 +9,15 @@ ModelLayout
              :system='system'
              :trajectories='[trajectory, simTrajectory]')
   template(v-slot:bar)
+    //- div(style='display: flex; align-items: center; overflow: hide')
+    v-select(style='max-width: 100px'
+             :items="['time', 'VI']"
+             label='plot'
+             filled
+             dark
+             dense
+             solo
+             hide-details)
     v-btn(text dark
           @click='plot') plot
     v-btn(text dark
@@ -28,10 +37,11 @@ import LQR from "@/components/controllers/LQR.js";
 import OpenLoopController from "@/components/controllers/openLoopController.js";
 import worldMixin from "@/components/worldMixin.js";
 import { test } from "@/components/directCollocation.js";
-import { Trajectory } from "@/components/trajectory.js";
+import Trajectory from "@/components/planners/trajectory.js";
 import { DirectCollocation } from "@/components/directCollocation.js";
 import MPC from "@/components/controllers/MPC.js";
-import TrajPlot from "@/components/TrajPlot.vue";
+import TrajPlot from "@/components/planners/TrajPlot.vue";
+import ValueIterationPlanner from "@/components/planners/valueIterationPlanner.js";
 
 export default {
   name: "SecondOrder",
@@ -63,7 +73,7 @@ export default {
     },
 
     dt() {
-      return 0.01;
+      return 1 / 60;
     }
   },
 

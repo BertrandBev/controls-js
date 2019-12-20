@@ -1,4 +1,4 @@
-import { Trajectory } from '@/components/trajectory.js'
+import Trajectory from '@/components/planners/trajectory.js'
 
 class Controller {
   constructor(system) {
