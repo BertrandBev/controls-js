@@ -9,7 +9,7 @@ class Trajectory {
   constructor(loop = false) {
     this.array = []
     this.loop = loop
-    this.watchers = []
+    this.watchers = new Set()
   }
 
   /**
@@ -36,8 +36,15 @@ class Trajectory {
   /**
    * Add update callback
    */
-  onChange(fun) {
-    this.watchers.push(fun)
+  addWatcher(fun) {
+    this.watchers.add(fun)
+  }
+
+  /**
+   * Add update callback
+   */
+  removeWatcher(fun) {
+    this.watchers.delete(fun)
   }
 
   /**

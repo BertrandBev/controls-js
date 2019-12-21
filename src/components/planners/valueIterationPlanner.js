@@ -1,9 +1,9 @@
 import _ from 'lodash'
 import eig from "@eigen";
-import { wrapAngle } from '@/components/math.js'
-import Plotly from 'plotly.js-dist'
 import Trajectory from '@/components/planners/trajectory.js'
-import { Tensor } from './utils.js'
+import { Grid } from './utils.js'
+
+
 
 class ValueIterationPlanner {
   /**
@@ -12,75 +12,66 @@ class ValueIterationPlanner {
    * @param {Array} xGrid [{min, max, count}, ...] spec for each dimension
    * @param {Array} uGrid [{min, max, count}, ...] spec for each dimension
    */
-  constructor(system, xGrid, uGrid, xEqs, dt) {
+  constructor(system, xGrid, uGrid, xTargets, dt) {
     this.system = system;
-    [this.xGrid, this.uGrid] = [xGrid, uGrid]
-    this.V = new Tensor(xGrid.map(val => val.count))
-    this.U = new Tensor(uGrid.map(val => val.count))
-    this.xEqInds = xEqs.map(x => this.toGrid(this.xGrid, x))
+    this.V = new Grid(xGrid)
+    this.U = new Grid(uGrid)
+    this.kxTargets = xTargets.map(x => this.V.pack(x))
     this.dt = dt
+    this.watchers = new Set()
     this.createTransitionTable()
+  }
+
+  /**
+   * Add update callback
+   */
+  addWatcher(fun) {
+    this.watchers.add(fun)
+  }
+
+  /**
+   * Add update callback
+   */
+  removeWatcher(fun) {
+    this.watchers.delete(fun)
+  }
+
+  getMatrix() {
+    return this.V.tensor.getMatrix();
+  }
+
+  isTarget(x) {
+    const kx = this.V.pack(x)
+    return _.some(this.kxTargets.map(k => _.isEqual(k, kx)))
   }
 
   /**
    * Create transition table
    */
   createTransitionTable() {
+    const a = Date.now()
     this.table = {}
     let stationnaryCount = 0
     let updateCount = 0
-    for (let k = 0; k < this.V.length; k++) {
-      const xInd = this.V.unpack(k)
-      const x = this.fromGrid(this.xGrid, xInd) // TODO: create iterator helper
-      const isEq = _.some(this.xEqInds.map(ind => _.isEqual(ind, xInd)))
-      if (isEq) {
-        // Terminal state, no updated needed
-        continue
+    this.V.forEach((kx, x) => {
+      if (!this.isTarget(x)) {
+        this.table[kx] = {}
+        this.U.forEach((ku, u) => {
+          const xNext = this.system.xNext(x, u, this.dt)
+          const kxn = this.V.pack(xNext)
+          updateCount += 1
+          if (kxn === kx) {
+            stationnaryCount += 1
+          } else if (kxn) {
+            this.table[kx][ku] = kxn
+          }
+        })
       }
-      this.table[k] = {}
-      for (let l = 0; l < this.U.length; l++) {
-        const uInd = this.U.unpack(l)
-        const u = this.fromGrid(this.uGrid, uInd) // TODO: create iterator helper
-        const dx = this.system.dynamics(x, u)
-        const newX = x.matAdd(dx.mul(this.dt)) // TODO: add RK4 schema
-        newX.vSet(0, wrapAngle(newX.vGet(0))) // TODO: extract away in system utility function
-        const newInd = this.toGrid(this.xGrid, newX);
-        updateCount += 1
-        if (_.isEqual(newInd, xInd)) {
-          stationnaryCount += 1
-          continue
-        }
-        this.table[k][l] = this.V.pack(newInd)
-      }
-      eig.GC.flush()
-    }
+    })
+    eig.GC.flush()
+    console.log('Table creation time:', Date.now() - a, 'ms')
+    // console.log('table', this.table)
     console.log(`stationnary ${stationnaryCount / updateCount * 100}%`)
-  }
-
-  /**
-   * Snap vector value to grid indices
-   * @param {Array} grid [xGrid, uGrid]
-   * @param {Matrix} vec
-   */
-  toGrid(grid, vec) {
-    return grid.map((val, idx) => {
-      const scalar = (vec.vGet(idx) - val.min) / (val.max - val.min)
-      return Math.max(0, Math.min(val.count - 1, Math.floor(scalar * val.count)))
-    })
-  }
-
-  /**
-   * Get cell mean position
-   * @param {Array} grid [xGrid, uGrid]
-   * @param {Array} indices
-   */
-  fromGrid(grid, indices) {
-    const vec = grid.map((val, idx) => {
-      const interval = (val.max - val.min) / val.count
-      const factor = Math.max(0, Math.min(val.count, indices[idx]))
-      return val.min + interval * (factor + .5)
-    })
-    return eig.Matrix.fromArray(vec)
   }
 
   /**
@@ -93,15 +84,22 @@ class ValueIterationPlanner {
   /**
    * Run a step of value iteration
    */
-  step(iter = 0) {
+  valueIterationStep(iter) {
     let maxUpdate = 0
-    _.forEach(this.table, (val, xIdx) => {
+    this.policy = []
+    _.forEach(this.table, (val, kx) => {
+      let bestU = 0 // TODO: pick random U
       let minV = Infinity
-      _.forEach(val, (newIdx, uIdx) => {
-        minV = Math.min(minV, this.cost() + this.V.data[newIdx])
+      _.forEach(val, (kxn, ku) => {
+        const nextV = this.cost() + this.V.tensor.data[kxn]
+        if (nextV < minV) {
+          minV = nextV;
+          bestU = ku;
+        }
       })
-      maxUpdate = Math.max(maxUpdate, Math.abs(this.V.data[xIdx] - minV) || 0)
-      this.V.data[xIdx] = minV
+      maxUpdate = Math.max(maxUpdate, Math.abs(this.V.tensor.data[kx] - minV) || 0)
+      this.V.tensor.data[kx] = minV
+      this.policy.push(bestU)
     })
     if (iter % 100 === 0) {
       console.log('max update', maxUpdate)
@@ -109,54 +107,41 @@ class ValueIterationPlanner {
     return maxUpdate < 10e-8;
   }
 
-  run(nIter) {
-    for (let k = 0; k < nIter; k++) {
-      const converged = this.step(k)
+  run(maxIter = 1000) {
+    for (let k = 0; k < maxIter; k++) {
+      const converged = this.valueIterationStep(k)
       if (converged) {
         console.log(`Converged in ${k + 1} iterations`)
-        this.buildPolicy()
-        // this.V.print()
+        // this.V.tensor.print()
         return
       }
     }
-    console.log(`Not converged after ${nIter} iterations`)
+    console.log(`Not converged after ${maxIter} iterations`)
+    this.watchers.forEach(fun => fun())
   }
 
-
-  buildPolicy() {
-    this.policy = []
-    for (let k = 0; k < this.V.length; k++) {
-      let bestU = 0 // TODO: pick random U
-      let minCost = Infinity
-      _.forEach(this.table[k] || {}, (newIdx, uIdx) => {
-        const cost = this.V.data[newIdx]
-        if (cost < minCost) {
-          minCost = cost;
-          bestU = uIdx
-        }
-      })
-      this.policy.push(bestU)
-    }
+  getControl(x) {
+    x = this.V.clamp(x)
+    const kx = this.V.pack(x)
+    return this.U.unpack(this.policy[kx])
   }
 
   /**
-   * Rollout
+   * Simulate
    * @param {Number} duration
    */
-  rollout(duration) {
+  simulate(duration) {
     const sequence = []
-    let x = this.system.x
-    let xInd = this.V.pack(this.toGrid(this.xGrid, x))
-    sequence.push(new eig.Matrix(x))
+    let x = new eig.Matrix(this.system.x)
+    sequence.push(x)
     for (let t = 0; t <= duration; t += this.dt) {
-      const u = this.policy[xInd]
-      xInd = (this.table[xInd] || {})[u];
-      if (!xInd) {
+      const u = this.getControl(x)
+      x = this.system.xNext(x, u, this.dt)
+      sequence.push(x)
+      if (this.isTarget(x)) {
         // Fixed point found, return
         break;
       }
-      // this.fromGrid(this.xGrid, this.V.unpack(xInd)).print('')
-      sequence.push(this.fromGrid(this.xGrid, this.V.unpack(xInd)))
     }
     const traj = new Trajectory(true)
     traj.set(sequence, Date.now() / 1000, this.dt)

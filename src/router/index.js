@@ -1,6 +1,7 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
 import SecondOrder from "@/components/models/secondOrder/SecondOrder.vue";
+import DoublePendulum from "@/components/models/doublePendulum/DoublePendulum.vue";
 import SimplePendulum from "@/components/SimplePendulum.vue";
 import Quadrotor2D from "@/components/Quadrotor2D.vue";
 import CartPole from "@/components/CartPole.vue";
@@ -18,6 +19,15 @@ const routes = [
     title: 'Second Order System',
     group: 'Pages',
     component: SecondOrder,
+    rightDrawer: true,
+    icon: 'mdi-lambda'
+  },
+  {
+    path: '/doublePendulum',
+    name: 'doublePendulum',
+    title: 'Second Order System',
+    group: 'Pages',
+    component: DoublePendulum,
     rightDrawer: true,
     icon: 'mdi-lambda'
   }

@@ -34,20 +34,24 @@ export default {
     Plotly.newPlot(this.$refs.div, [], [], config);
 
     // Add watchers
-    this.valueIterationPlanner.onChange(() => {
-      this.update();
-    });
+    this.valueIterationPlanner.addWatcher(this.update);
+    this.update();
+  },
+
+  beforeDestroy() {
+    this.valueIterationPlanner.removeWatcher(this.update);
   },
 
   methods: {
     update() {
+      const xGrid = this.valueIterationPlanner.V.grid;
       const data = [
         {
-          z: this.valueTensor.getMatrix(),
-          x0: this.xGrid[0].min,
-          dx: (this.xGrid[0].max - this.xGrid[0].min) / this.xGrid[0].count,
-          y0: this.xGrid[1].min,
-          dy: (this.xGrid[1].max - this.xGrid[1].min) / this.xGrid[1].count,
+          z: this.valueIterationPlanner.getMatrix(),
+          x0: xGrid[0].min,
+          dx: (xGrid[0].max - xGrid[0].min) / xGrid[0].count,
+          y0: xGrid[1].min,
+          dy: (xGrid[1].max - xGrid[1].min) / xGrid[1].count,
           type: "heatmap"
         }
       ];
@@ -55,7 +59,7 @@ export default {
         xaxis: { title: "theta (rad)" },
         yaxis: { title: "thetaDot (rad)" },
         margin: {
-          l: 40,
+          l: 70,
           r: 100,
           b: 60,
           t: 30,

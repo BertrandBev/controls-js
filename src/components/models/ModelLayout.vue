@@ -131,5 +131,6 @@ export default {
   display: flex;
   flex-direction: row;
   background-color: #1875d2;
+  overflow: hidden;
 }
 </style>

@@ -4,14 +4,14 @@ ModelLayout
     div.canvas(ref='canvas')
   template(v-slot:overlay)
     span.ma-2 fps: {{ fps.toFixed(0) }}
-  template(v-slot:sheet)
-    TrajPlot(v-if='plotType === "time"'
-             ref='trajPlot'
-             :system='system'
-             :trajectories='[trajectory, simTrajectory]')
-    ValueIterationPlot(v-if='plotType === "VI" && viPlanner'
-                       ref='trajPlot'
-                       :valueIterationPlanner='viPlanner')
+  //- template(v-slot:sheet)
+  //-   TrajPlot(v-if='plotType === "time"'
+  //-            ref='trajPlot'
+  //-            :system='system'
+  //-            :trajectories='[trajectory, simTrajectory]')
+  //-   ValueIterationPlot(v-if='plotType === "VI" && viPlanner'
+  //-                      ref='trajPlot'
+  //-                      :valueIterationPlanner='viPlanner')
   template(v-slot:bar)
     //- div(style='display: flex; align-items: center; overflow: hide')
     v-select(v-model='plotType'
@@ -34,10 +34,10 @@ ModelLayout
 </template>
 
 <script>
+import { DoublePendulum } from "./doublePendulum.js";
 import _ from "lodash";
 import eig from "@eigen";
 import ModelLayout from "@/components/models/ModelLayout.vue";
-import { SecondOrder, traj } from "./secondOrder.js";
 import LQR from "@/components/controllers/LQR.js";
 import OpenLoopController from "@/components/controllers/openLoopController.js";
 import worldMixin from "@/components/worldMixin.js";
@@ -50,7 +50,7 @@ import ValueIterationPlot from "@/components/planners/ValueIterationPlot.vue";
 import ValueIterationPlanner from "@/components/planners/valueIterationPlanner.js";
 
 export default {
-  name: "SecondOrder",
+  name: "DoublePendulum",
 
   components: {
     ModelLayout,
@@ -65,7 +65,7 @@ export default {
     // State
     system: null,
     controller: null,
-    mode: "MPC",
+    mode: "Controls",
     trajectory: null,
     simTrajectory: null,
     mpc: null,
@@ -88,33 +88,34 @@ export default {
 
   created() {
     const params = {
-      x0: eig.Matrix.fromArray([0, 0]),
-      u0: eig.Matrix.fromArray([0])
+      x0: eig.Matrix.fromArray([0, 0, 0, 0]),
+      u0: eig.Matrix.fromArray([0, 0])
     };
-    this.system = new SecondOrder(params);
+    this.system = new DoublePendulum(params);
     this.controller = new LQR(this.system, params.x0, params.u0);
-    this.trajectory = new Trajectory(true);
-    this.trajectory.set(traj.x.map(eig.Matrix.fromArray), traj.dt);
-    this.trajectory.setLegend(this.system.statesCommands);
-    // Get open loop traj
-    const openLoopController = new OpenLoopController(
-      this.system,
-      this.trajectory
-    );
-    // openLoopController.reset();
-    // Get model predictive traj
-    this.mpc = new MPC(this.system, this.trajectory, traj.dt, 10, {
-      min: [-5],
-      max: [5]
-    });
-    const [xn, un] = this.system.shape;
-    const x0 = this.trajectory.get(0).block(0, 0, xn, 1);
-    this.system.setState(x0);
-    this.simTrajectory = this.mpc.simulate(
-      this.trajectory.dt,
-      this.trajectory.duration
-    );
-    this.simTrajectory.setLegend(this.system.statesCommands);
+
+    // this.trajectory = new Trajectory(true);
+    // this.trajectory.set(traj.x.map(eig.Matrix.fromArray), traj.dt);
+    // this.trajectory.setLegend(this.system.statesCommands);
+    // // Get open loop traj
+    // const openLoopController = new OpenLoopController(
+    //   this.system,
+    //   this.trajectory
+    // );
+    // // openLoopController.reset();
+    // // Get model predictive traj
+    // this.mpc = new MPC(this.system, this.trajectory, traj.dt, 10, {
+    //   min: [-5],
+    //   max: [5]
+    // });
+    // const [xn, un] = this.system.shape;
+    // const x0 = this.trajectory.get(0).block(0, 0, xn, 1);
+    // this.system.setState(x0);
+    // this.simTrajectory = this.mpc.simulate(
+    //   this.trajectory.dt,
+    //   this.trajectory.duration
+    // );
+    // this.simTrajectory.setLegend(this.system.statesCommands);
   },
 
   mounted() {
@@ -123,22 +124,22 @@ export default {
 
   methods: {
     runValueIteration() {
-      this.viPlanner = new ValueIterationPlanner(
-        this.system,
-        [{ min: -4, max: 4, count: 50 }, { min: -5, max: 5, count: 50 }],
-        [{ min: -2, max: 2, count: 2 }],
-        [eig.Matrix.fromArray([0, 0])],
-        0.11
-      );
-      this.viPlanner.run();
-      this.viPlanner.simulate(5);
+      // this.viPlanner = new ValueIterationPlanner(
+      //   this.system,
+      //   [{ min: -4, max: 4, count: 50 }, { min: -5, max: 5, count: 50 }],
+      //   [{ min: -2, max: 2, count: 2 }],
+      //   [eig.Matrix.fromArray([0, 0])],
+      //   0.11
+      // );
+      // this.viPlanner.run();
+      // this.viPlanner.simulate(5);
     },
 
     reset() {
       worldMixin.methods.reset.call(this);
-      const [xn, un] = this.system.shape;
-      const x0 = this.trajectory.get(0).block(0, 0, xn, 1);
-      this.system.setState(x0);
+      // const [xn, un] = this.system.shape;
+      // const x0 = this.trajectory.get(0).block(0, 0, xn, 1);
+      // this.system.setState(x0);
     },
 
     plot() {
@@ -177,23 +178,23 @@ export default {
     update() {
       // TODO: add FPS meter
       let u = new eig.Matrix(1, 1);
-      const trajX = this.trajectory.ready()
-        ? this.trajectory.get(this.t)
-        : null;
+      // const trajX = this.trajectory.ready()
+      //   ? this.trajectory.get(this.t)
+      //   : null;
       if (this.mode === "Controls" || this.mouseDragging) {
         // TODO: hook to mode selector
         // const u = this.controller.getCommand();
         this.system.step(u, this.dt, this.mouseTarget);
       } else if (this.mode === "Optim" && this.trajectory.ready()) {
-        this.system.x.vSet(0, trajX.vGet(0));
-        this.system.x.vSet(1, trajX.vGet(1));
-        u = trajX.block(2, 0, 1, 1);
+        // this.system.x.vSet(0, trajX.vGet(0));
+        // this.system.x.vSet(1, trajX.vGet(1));
+        // u = trajX.block(2, 0, 1, 1);
       } else if (this.mode === "MPC") {
-        u = this.mpc.getCommand(this.t);
-        this.system.step(u, this.dt, this.mouseTarget);
+        // u = this.mpc.getCommand(this.t);
+        // this.system.step(u, this.dt, this.mouseTarget);
       }
       // Graphic update
-      this.system.updateGraphics(this.worldToCanvas, u, trajX);
+      this.system.updateGraphics(this.worldToCanvas, u);
       // Run GC
       eig.GC.flush();
     }

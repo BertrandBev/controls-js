@@ -34,11 +34,11 @@ export default {
     Plotly.newPlot(this.$refs.div, [], [], config);
 
     // Add watchers
-    this.trajectories.forEach(traj =>
-      traj.onChange(() => {
-        this.update();
-      })
-    );
+    this.trajectories.forEach(traj => traj.addWatcher(this.update));
+  },
+
+  beforeDestroy() {
+    this.trajectories.forEach(traj => traj.removeWatcher(this.update));
   },
 
   methods: {

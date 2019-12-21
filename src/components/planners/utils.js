@@ -1,4 +1,5 @@
 import _ from 'lodash'
+import eig from '@eigen'
 
 class Tensor {
   /**
@@ -56,11 +57,21 @@ class Tensor {
   }
 
   /**
+   * Iterator
+   */
+  forEach(fun) {
+    for (let k = 0; k < this.length; k++) {
+      const ind = this.unpack(k)
+      fun(k, ind)
+    }
+  }
+
+  /**
    * Print tensor
    * @param {String} title 
    */
-  print(title) {
-    console.log(title, this.data)
+  print() {
+    console.log(this.data)
   }
 
   /**
@@ -95,4 +106,102 @@ function testTensor() {
   console.log('Test successful')
 }
 
-export { Tensor }
+class Grid {
+  /**
+   * 
+   * @param {Array} grid [{min, max, count}, ...] spec for each dimension
+   */
+  constructor(grid) {
+    this.grid = grid
+    this.tensor = new Tensor(grid.map(val => val.count))
+  }
+
+  /**
+   * Clamp vector to bounds
+   * @param {Matrix} vec 
+   */
+  clamp(vec) {
+    const clamped = new eig.Matrix(vec)
+    this.grid.forEach((val, idx) => {
+      const v = Math.max(val.min, Math.min(val.max, clamped.vGet(idx)))
+      clamped.vSet(idx, v)
+    })
+    return clamped
+  }
+
+  /**
+   * Snap vector value to tensor index
+   * @param {Matrix} vec
+   */
+  pack(vec) {
+    const ind = this.toGrid(vec)
+    return ind ? this.tensor.pack(ind) : null;
+  }
+
+  /**
+   * Unpack tensor idx
+   * @param {Number} idx 
+   */
+  unpack(idx) {
+    const ind = this.tensor.unpack(idx)
+    return this.fromGrid(ind)
+  }
+
+  /**
+   * Snap vector value to grid indices
+   * @param {Matrix} vec
+   */
+  toGrid(vec) {
+    let oob = false
+    const ind = this.grid.map((val, idx) => {
+      const scalar = (vec.vGet(idx) - val.min) / (val.max - val.min)
+      const k = Math.floor(scalar * val.count)
+      oob |= k < 0 || k >= val.count
+      return Math.max(0, Math.min(val.count - 1, k))
+    })
+    return oob ? null : ind
+  }
+
+  /**
+   * Get cell mean position
+   * @param {Array} indices
+   */
+  fromGrid(indices) {
+    const vec = this.grid.map((val, idx) => {
+      const interval = (val.max - val.min) / val.count
+      const factor = Math.max(0, Math.min(val.count, indices[idx]))
+      return val.min + interval * (factor + .5)
+    })
+    return eig.Matrix.fromArray(vec)
+  }
+
+  /**
+   * Get tensor value at
+   * @param {Matrix} vec 
+   */
+  get(vec) {
+    const ind = this.toGrid(vec)
+    return this.tensor.get(ind)
+  }
+
+  /**
+   * Set tensor value at
+   */
+  set(vec, val) {
+    const ind = this.toGrid(vec)
+    return this.tensor.set(ind, val)
+  }
+
+  /**
+   * Iterator
+   * @param {Function} fun - (k: Number, vec: Matrix)
+   */
+  forEach(fun) {
+    this.tensor.forEach((k, ind) => {
+      const vec = this.fromGrid(ind)
+      fun(k, vec)
+    })
+  }
+}
+
+export { Tensor, Grid }

@@ -21,6 +21,37 @@ class Model {
   }
 
   /**
+   * Bound state x to appropriate domain
+   * @param {Matrix} x 
+   */
+  bound(x) {
+    // Override if needed  
+  }
+
+  /**
+   * Returns dx/dt
+   * @param {Matrix} x
+   * @param {Matrix} u
+   * @returns {Matrix} dx
+   */
+  dynamics(x, u) {
+    throw new Error('Must be overridden')
+  }
+
+  /**
+   * Get next state from some state
+   * @param {Matrix} x - State
+   * @param {Matrix} u - Command
+   * @param {Number} dt - Timestep
+   */
+  xNext(x, u, dt) {
+    const dx = this.dynamics(x, u)
+    const xNext = x.matAdd(dx.mul(dt))
+    this.bound(xNext)
+    return xNext
+  }
+
+  /**
    * Reverse trajectory array
    * @param {Array} array
    */
