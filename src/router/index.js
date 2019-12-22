@@ -25,11 +25,11 @@ const routes = [
   {
     path: '/doublePendulum',
     name: 'doublePendulum',
-    title: 'Second Order System',
+    title: 'Second pendulum',
     group: 'Pages',
     component: DoublePendulum,
     rightDrawer: true,
-    icon: 'mdi-lambda'
+    icon: 'mdi-beta'
   }
 ]
 

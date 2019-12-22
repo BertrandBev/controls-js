@@ -93,6 +93,7 @@ export default {
     };
     this.system = new DoublePendulum(params);
     this.controller = new LQR(this.system, params.x0, params.u0);
+    LQR.testJacobian(this.system);
 
     // this.trajectory = new Trajectory(true);
     // this.trajectory.set(traj.x.map(eig.Matrix.fromArray), traj.dt);
@@ -177,7 +178,7 @@ export default {
 
     update() {
       // TODO: add FPS meter
-      let u = new eig.Matrix(1, 1);
+      let u = new eig.Matrix(2, 1);
       // const trajX = this.trajectory.ready()
       //   ? this.trajectory.get(this.t)
       //   : null;

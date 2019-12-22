@@ -50,22 +50,23 @@ class DoublePendulum extends Model {
   dynamics(x, u) {
     // https://diego.assencio.com/?index=1500c66ae7ab27bb0106467c68feebc6
     const p = this.params
-    const [c1, s1] = [Math.cos(x.vGet(0)), Math.sin(x.vGet(0))]
-    const [c2, s2] = [Math.cos(x.vGet(1)), Math.sin(x.vGet(1))]
-    const dt = x.vGet(0) - x.vGet(1)
+    const [t1, t2, t1d, t2d] = [x.vGet(0), x.vGet(1), x.vGet(2), x.vGet(3)]
+    const [s1, s2] = [Math.sin(x.vGet(0)), Math.sin(x.vGet(1))]
+    const dt = t1 - t2
     const [cdt, sdt] = [Math.cos(dt), Math.sin(dt)]
     const M = p.m2 / (p.m1 + p.m2)
-    const a1 = p.l2 / p.l1 * M * cdt
-    const a2 = p.l1 / p.l2 * cdt
-    const t1 = -p.mu * x.vGet(2)
-    const t2 = -p.mu * (x.vGet(3) - x.vGet(2))
-    const f1 = -p.l2 / p.l1 * M * sqr(x.vGet(3)) * sdt - p.g / p.l1 * s1 + t1 / sqr(p.l1) / (p.m1 + p.m2)
-    const f2 = p.l1 / p.l2 * sqr(x.vGet(2)) * sdt - p.g / p.l2 * s2 + t2 / p.m2 / sqr(p.l2)
+    const L = p.l2 / p.l1;
+    const a1 = L * M * cdt
+    const a2 = cdt / L
+    const tau1 = -p.mu * t1d + u.vGet(0)
+    const tau2 = -p.mu * (t2d - t1d) + u.vGet(1)
+    const f1 = -L * M * sqr(t2d) * sdt - p.g / p.l1 * s1 + tau1 / sqr(p.l1) / (p.m1 + p.m2)
+    const f2 = sqr(t1d) * sdt / L - p.g / p.l2 * s2 + tau2 / p.m2 / sqr(p.l2)
     const g1 = (f1 - a1 * f2) / (1 - a1 * a2)
     const g2 = (-a2 * f1 + f2) / (1 - a1 * a2)
     return eig.Matrix.fromArray([
-      x.vGet(2),
-      x.vGet(3),
+      t1d,
+      t2d,
       g1,
       g2
     ])
@@ -78,8 +79,35 @@ class DoublePendulum extends Model {
    * @returns {Matrix} df/dx
    */
   xJacobian(x, u) {
+    const p = this.params
+    const [t1, t2, t1d, t2d] = [x.vGet(0), x.vGet(1), x.vGet(2), x.vGet(3)]
+    const [u1, u2] = [u.vGet(0), u.vGet(1)]
+    const [s1, s2] = [Math.sin(x.vGet(0)), Math.sin(x.vGet(1))]
+    const dt = t1 - t2
+    const [cdt, sdt] = [Math.cos(dt), Math.sin(dt)]
+    // const M = p.m2 / (p.m1 + p.m2)
+    // const L = p.l2 / p.l1;
+
+    const c2dt = Math.cos(2 * t1 - 2 * t2)
+    const s2dt = Math.sin(2 * t1 - 2 * t2)
+    // const cdtp1 = Math.cos(2 * t1 - t2)
+    const cdtp2 = Math.cos(t1 - 2 * t2)
+    const [c1, c2] = [Math.cos(t1), Math.cos(t2)]
+
+    const dx1dt1 = ((p.g * c1) / p.l1 + (p.m2 * sqr(t1d) * sqr(cdt)) / (p.m1 + p.m2) - (p.l2 * p.m2 * sdt * ((u2 + p.mu * (t1d - t2d)) / (sqr(p.l2) * p.m2) - (p.g * s2) / p.l2 + (p.l1 * sqr(t1d) * sdt) / p.l2)) / (p.l1 * (p.m1 + p.m2)) + (p.l2 * p.m2 * sqr(t2d) * cdt) / (p.l1 * (p.m1 + p.m2))) / ((p.m2 * sqr(cdt)) / (p.m1 + p.m2) - 1) + (2 * p.m2 * cdt * sdt * ((p.g * s1) / p.l1 - (u1 - p.mu * t1d) / (sqr(p.l1) * (p.m1 + p.m2)) + (p.l2 * p.m2 * cdt * ((u2 + p.mu * (t1d - t2d)) / (sqr(p.l2) * p.m2) - (p.g * s2) / p.l2 + (p.l1 * sqr(t1d) * sdt) / p.l2)) / (p.l1 * (p.m1 + p.m2)) + (p.l2 * p.m2 * sqr(t2d) * sdt) / (p.l1 * (p.m1 + p.m2)))) / (sqr((p.m2 * sqr(cdt)) / (p.m1 + p.m2) - 1) * (p.m1 + p.m2))
+    const dx1dt2 = (2 * (p.m2 * cdt * sqr(p.l2) * sqr(t2d) + p.l1 * p.m2 * c2dt * p.l2 * sqr(t1d) + p.g * p.m2 * cdtp2 * p.l2 - p.mu * sdt * t1d + p.mu * sdt * t2d - u2 * sdt)) / (p.l1 * p.l2 * (2 * p.m1 + p.m2 - p.m2 * c2dt)) - (2 * p.m2 * cdt * sdt * (p.m1 + p.m2) * ((p.g * s1) / p.l1 - (u1 - p.mu * t1d) / (sqr(p.l1) * (p.m1 + p.m2)) + (cdt * (p.l1 * p.l2 * p.m2 * sdt * sqr(t1d) + p.mu * t1d + u2 - p.mu * t2d - p.g * p.l2 * p.m2 * s2)) / (p.l1 * p.l2 * (p.m1 + p.m2)) + (p.l2 * p.m2 * sqr(t2d) * sdt) / (p.l1 * (p.m1 + p.m2)))) / sqr(- p.m2 * sqr(cdt) + p.m1 + p.m2)
+    const dx1dt1d = -(p.l2 * p.m2 * t1d * s2dt * sqr(p.l1) + p.mu * cdt * p.l1 + p.l2 * p.mu) / (sqr(p.l1) * p.l2 * (p.m1 + p.m2 - p.m2 * sqr(cdt)))
+    const dx1dt2d = (- 2 * p.m2 * t2d * sdt * sqr(p.l2) + p.mu * cdt) / (p.l1 * p.l2 * (p.m1 + p.m2 - p.m2 * sqr(cdt)))
+    const dx2dt1 = - ((p.l1 * cdt * ((p.l2 * p.m2 * cdt * sqr(t2d)) / (p.l1 * (p.m1 + p.m2)) + (p.g * c1) / p.l1)) / p.l2 - (p.l1 * sdt * ((p.l2 * p.m2 * sdt * sqr(t2d)) / (p.l1 * (p.m1 + p.m2)) + (p.g * s1) / p.l1 - (u1 - p.mu * t1d) / (sqr(p.l1) * (p.m1 + p.m2)))) / p.l2 + (p.l1 * sqr(t1d) * cdt) / p.l2) / ((p.m2 * sqr(cdt)) / (p.m1 + p.m2) - 1) - (2 * p.m2 * cdt * sdt * ((u2 + p.mu * (t1d - t2d)) / (sqr(p.l2) * p.m2) - (p.g * s2) / p.l2 + (p.l1 * cdt * ((p.l2 * p.m2 * sdt * sqr(t2d)) / (p.l1 * (p.m1 + p.m2)) + (p.g * s1) / p.l1 - (u1 - p.mu * t1d) / (sqr(p.l1) * (p.m1 + p.m2)))) / p.l2 + (p.l1 * sqr(t1d) * sdt) / p.l2)) / (sqr((p.m2 * sqr(cdt)) / (p.m1 + p.m2) - 1) * (p.m1 + p.m2))
+    const dx2dt2 = ((p.g * c2) / p.l2 - (p.l1 * sdt * ((p.l2 * p.m2 * sdt * sqr(t2d)) / (p.l1 * (p.m1 + p.m2)) + (p.g * s1) / p.l1 - (u1 - p.mu * t1d) / (sqr(p.l1) * (p.m1 + p.m2)))) / p.l2 + (p.l1 * sqr(t1d) * cdt) / p.l2 + (p.m2 * sqr(t2d) * sqr(cdt)) / (p.m1 + p.m2)) / ((p.m2 * sqr(cdt)) / (p.m1 + p.m2) - 1) + (2 * p.m2 * cdt * sdt * ((u2 + p.mu * (t1d - t2d)) / (sqr(p.l2) * p.m2) - (p.g * s2) / p.l2 + (p.l1 * cdt * ((p.l2 * p.m2 * sdt * sqr(t2d)) / (p.l1 * (p.m1 + p.m2)) + (p.g * s1) / p.l1 - (u1 - p.mu * t1d) / (sqr(p.l1) * (p.m1 + p.m2)))) / p.l2 + (p.l1 * sqr(t1d) * sdt) / p.l2)) / (sqr((p.m2 * sqr(cdt)) / (p.m1 + p.m2) - 1) * (p.m1 + p.m2))
+    const dx2dt1d = ((p.m1 + p.m2) * (p.mu / (sqr(p.l2) * p.m2) + (2 * p.l1 * t1d * sdt) / p.l2) + (p.mu * cdt) / (p.l1 * p.l2)) / (p.m1 + p.m2 - p.m2 * sqr(cdt))
+    const dx2dt2d = -(- t2d * s2dt * sqr(p.l2) * sqr(p.m2) + p.mu * p.m2 + p.m1 * p.mu) / (sqr(p.l2) * p.m2 * (p.m1 + p.m2 - p.m2 * sqr(cdt)))
+
     return eig.Matrix.fromArray([
-      [0, 1], [0, 0]
+      [0, 0, 1, 0],
+      [0, 0, 0, 1],
+      [dx1dt1, dx1dt2, dx1dt1d, dx1dt2d],
+      [dx2dt1, dx2dt2, dx2dt1d, dx2dt2d]
     ])
   }
 
@@ -90,8 +118,16 @@ class DoublePendulum extends Model {
    * @returns {Matrix} df/du
    */
   uJacobian(x, u) {
+    const p = this.params
+    const [t1, t2] = [x.vGet(0), x.vGet(1)]
+    const dt = t1 - t2
+    const cdt = Math.cos(dt)
+    const dx1du1 = 1 / (sqr(p.l1) * (p.m1 + p.m2 - p.m2 * sqr(cdt)))
+    const dx1du2 = -cdt / (p.l1 * p.l2 * (p.m1 + p.m2 - p.m2 * sqr(cdt)))
+    const dx2du1 = -cdt / (p.l1 * p.l2 * (p.m1 + p.m2 - p.m2 * sqr(cdt)))
+    const dx2du2 = (p.m1 + p.m2) / (sqr(p.l2) * p.m2 * (p.m1 + p.m2 - p.m2 * sqr(cdt)))
     return eig.Matrix.fromArray([
-      [0], [1 / this.params.m]
+      [0, 0], [0, 0], [dx1du1, dx1du2], [dx2du1, dx2du2]
     ])
   }
 
