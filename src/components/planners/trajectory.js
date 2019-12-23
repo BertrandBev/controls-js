@@ -6,10 +6,15 @@ class Trajectory {
    * Constructor
    * @param {Bool} loop whether the time wraps around
    */
-  constructor(loop = false) {
+  constructor(system, loop = true) {
     this.array = []
     this.loop = loop
     this.watchers = new Set()
+    this.system = system
+  }
+
+  getLegend() {
+    return this.system.statesCommands
   }
 
   /**
@@ -81,6 +86,22 @@ class Trajectory {
   }
 
   /**
+   * Get interpolated state
+   * @param {Number} t 
+   */
+  getState(t) {
+    return this.get(t).block(0, 0, this.system.shape[0], 1)
+  }
+
+  /**
+   * Get interpolated command
+   * @param {Number} t 
+   */
+  getCommand(t) {
+    return this.get(t).block(this.system.shape[0], 0, this.system.shape[1], 1)
+  }
+
+  /**
    * Delete trajectory
    */
   delete() {
@@ -89,9 +110,17 @@ class Trajectory {
   }
 
   /**
+   * Load trajectory from a dump
+   * @param {Object} dump 
+   */
+  load(dump) {
+    this.set(dump.x.map(eig.Matrix.fromArray), dump.dt);
+  }
+
+  /**
    * Get a string version of the trajectory
    */
-  print() {
+  dump() {
     let rows = `dt: ${this.dt},\n` + 'x: ['
     this.array.forEach((vec, idx) => {
       rows += '['
@@ -101,13 +130,6 @@ class Trajectory {
       rows += ']' + (idx === this.array.length - 1 ? ']' : ',\n')
     })
     console.log(rows)
-  }
-
-  /**
-   * Legend
-   */
-  setLegend(legend) {
-    this.legend = legend
   }
 }
 

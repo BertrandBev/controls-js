@@ -29,7 +29,6 @@ div(:style='containerStyle')
 
 <script>
 import anime from "animejs";
-const SHEET_HEIGHT = 512;
 
 export default {
   components: {},
@@ -43,13 +42,13 @@ export default {
     sheet() {
       anime({
         targets: this.$refs.sheet,
-        translateY: this.sheet ? 0 : SHEET_HEIGHT,
+        translateY: this.sheet ? 0 : this.sheetHeight,
         easing: "easeInOutCubic",
         duration: 300
       });
       anime({
         targets: this.$refs.canvas,
-        translateY: this.sheet ? -SHEET_HEIGHT / 2 : 0,
+        translateY: this.sheet ? -this.sheetHeight / 2 : 0,
         easing: "easeInOutCubic",
         duration: 300
       });
@@ -57,6 +56,10 @@ export default {
   },
 
   computed: {
+    sheetHeight() {
+      return this.$store.windowSize.y / 2;
+    },
+
     overlayStyle() {
       return {
         position: "absolute",
@@ -66,10 +69,10 @@ export default {
     },
 
     sheetStyle() {
-      const translateY = 0; // this.sheet ? 0 : SHEET_HEIGHT;
+      const translateY = 0; // this.sheet ? 0 : this.sheetHeight;
       return {
         width: `${this.$store.windowSize.x}px`,
-        height: `${SHEET_HEIGHT}px`,
+        height: `${this.sheetHeight}px`,
         position: "absolute",
         bottom: `0px`,
         transform: `translateY(${translateY}px)`
@@ -77,7 +80,7 @@ export default {
     },
 
     canvasStyle() {
-      const translateY = -SHEET_HEIGHT / 2; // this.sheet ? -SHEET_HEIGHT / 2 : 0;
+      const translateY = -this.sheetHeight / 2; // this.sheet ? -this.sheetHeight / 2 : 0;
       return {
         width: `${this.$store.windowSize.x}px`,
         height: `${this.$store.windowSize.y}px`,

@@ -37,7 +37,7 @@ ModelLayout
 import _ from "lodash";
 import eig from "@eigen";
 import ModelLayout from "@/components/models/ModelLayout.vue";
-import { SecondOrder, traj } from "./secondOrder.js";
+import SecondOrder, { traj } from "./secondOrder.js";
 import LQR from "@/components/controllers/LQR.js";
 import OpenLoopController from "@/components/controllers/openLoopController.js";
 import worldMixin from "@/components/worldMixin.js";
@@ -93,9 +93,8 @@ export default {
     };
     this.system = new SecondOrder(params);
     this.controller = new LQR(this.system, params.x0, params.u0);
-    this.trajectory = new Trajectory(true);
-    this.trajectory.set(traj.x.map(eig.Matrix.fromArray), traj.dt);
-    this.trajectory.setLegend(this.system.statesCommands);
+    this.trajectory = new Trajectory(this.system);
+    this.trajectory.load(traj);
     // Get open loop traj
     const openLoopController = new OpenLoopController(
       this.system,
@@ -108,13 +107,12 @@ export default {
       max: [5]
     });
     const [xn, un] = this.system.shape;
-    const x0 = this.trajectory.get(0).block(0, 0, xn, 1);
+    const x0 = this.trajectory.getState(0);
     this.system.setState(x0);
     this.simTrajectory = this.mpc.simulate(
       this.trajectory.dt,
       this.trajectory.duration
     );
-    this.simTrajectory.setLegend(this.system.statesCommands);
   },
 
   mounted() {
@@ -137,7 +135,7 @@ export default {
     reset() {
       worldMixin.methods.reset.call(this);
       const [xn, un] = this.system.shape;
-      const x0 = this.trajectory.get(0).block(0, 0, xn, 1);
+      const x0 = this.trajectory.getState(0);
       this.system.setState(x0);
     },
 
@@ -185,9 +183,9 @@ export default {
         // const u = this.controller.getCommand();
         this.system.step(u, this.dt, this.mouseTarget);
       } else if (this.mode === "Optim" && this.trajectory.ready()) {
-        this.system.x.vSet(0, trajX.vGet(0));
-        this.system.x.vSet(1, trajX.vGet(1));
-        u = trajX.block(2, 0, 1, 1);
+        const x = this.trajectory.getState();
+        u = this.trajectory.getCommand();
+        this.system.setState(x);
       } else if (this.mode === "MPC") {
         u = this.mpc.getCommand(this.t);
         this.system.step(u, this.dt, this.mouseTarget);

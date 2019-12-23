@@ -11,6 +11,7 @@
     "animejs": "^3.1.0",
     "arraybuffer-loader": "^1.0.8",
     "chart.js": "^2.9.3",
+    "chroma-js": "^2.1.0",
     "core-js": "^3.3.2",
     "lodash": "^4.17.15",
     "plotly.js-dist": "^1.51.2",

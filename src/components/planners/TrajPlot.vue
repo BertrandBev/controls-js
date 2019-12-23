@@ -59,9 +59,9 @@ export default {
         const dim = traj.dim();
         for (let idx = 0; idx < dim; idx++) {
           const [t, x] = this.getSeries(traj, idx);
-          let name = _.get(traj.legend, `[${idx}].name`, `${idx}`);
+          let name = _.get(traj.getLegend(), `[${idx}].name`, `${idx}`);
           name = this.trajectories.length > 0 ? `t${trajId}_${name}` : name;
-          const show = _.get(traj.legend, `[${idx}].show`, false);
+          const show = _.get(traj.getLegend(), `[${idx}].show`, false);
           data.push({
             x: t,
             y: x,

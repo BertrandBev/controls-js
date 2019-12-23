@@ -256,4 +256,5 @@ const traj = {
   [-2.0000, 0.0000, 5.0000]]
 }
 
-export { SecondOrder, traj }
+export { traj }
+export default SecondOrder

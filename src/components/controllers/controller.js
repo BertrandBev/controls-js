@@ -21,7 +21,7 @@ class Controller {
       arr.push(x.vcat(u))
       x.matAddSelf(dx.mul(dt))
     }
-    const traj = new Trajectory(arr)
+    const traj = new Trajectory(this.system)
     traj.set(arr, dt)
     return traj
   }

@@ -4,11 +4,11 @@ ModelLayout
     div.canvas(ref='canvas')
   template(v-slot:overlay)
     span.ma-2 fps: {{ fps.toFixed(0) }}
-  //- template(v-slot:sheet)
-  //-   TrajPlot(v-if='plotType === "time"'
-  //-            ref='trajPlot'
-  //-            :system='system'
-  //-            :trajectories='[trajectory, simTrajectory]')
+  template(v-slot:sheet)
+    TrajPlot(v-if='plotType === "time"'
+             ref='trajPlot'
+             :system='system'
+             :trajectories='[trajectory, simTrajectory]')
   //-   ValueIterationPlot(v-if='plotType === "VI" && viPlanner'
   //-                      ref='trajPlot'
   //-                      :valueIterationPlanner='viPlanner')
@@ -16,7 +16,13 @@ ModelLayout
     //- div(style='display: flex; align-items: center; overflow: hide')
     v-select(v-model='plotType'
              style='max-width: 100px'
-             :items="['time', 'VI']"
+             :items="['time']"
+             label='plot'
+             filled dark dense solo
+             hide-details)
+    v-select(v-model='mode'
+             style='max-width: 120px'
+             :items="['Controls', 'Optim', 'MPC']"
              label='plot'
              filled dark dense solo
              hide-details)
@@ -28,13 +34,12 @@ ModelLayout
           @click='download') download
     v-btn(text dark
       @click='runValueIteration') valueIteration
-    v-spacer
     v-btn(text dark
           @click='reset') reset
 </template>
 
 <script>
-import { DoublePendulum } from "./doublePendulum.js";
+import DoublePendulum, { traj } from "./doublePendulum.js";
 import _ from "lodash";
 import eig from "@eigen";
 import ModelLayout from "@/components/models/ModelLayout.vue";
@@ -61,7 +66,7 @@ export default {
   mixins: [worldMixin],
 
   data: () => ({
-    plotType: "VI",
+    plotType: "time",
     // State
     system: null,
     controller: null,
@@ -88,16 +93,15 @@ export default {
 
   created() {
     const params = {
-      x0: eig.Matrix.fromArray([0, 0, 0, 0]),
+      x0: eig.Matrix.fromArray([Math.PI, Math.PI, 0, 0]),
       u0: eig.Matrix.fromArray([0, 0])
     };
     this.system = new DoublePendulum(params);
     this.controller = new LQR(this.system, params.x0, params.u0);
     LQR.testJacobian(this.system);
 
-    // this.trajectory = new Trajectory(true);
-    // this.trajectory.set(traj.x.map(eig.Matrix.fromArray), traj.dt);
-    // this.trajectory.setLegend(this.system.statesCommands);
+    this.trajectory = new Trajectory(this.system);
+    this.trajectory.load(traj);
     // // Get open loop traj
     // const openLoopController = new OpenLoopController(
     //   this.system,
@@ -105,17 +109,18 @@ export default {
     // );
     // // openLoopController.reset();
     // // Get model predictive traj
-    // this.mpc = new MPC(this.system, this.trajectory, traj.dt, 10, {
-    //   min: [-5],
-    //   max: [5]
-    // });
-    // const [xn, un] = this.system.shape;
-    // const x0 = this.trajectory.get(0).block(0, 0, xn, 1);
-    // this.system.setState(x0);
-    // this.simTrajectory = this.mpc.simulate(
-    //   this.trajectory.dt,
-    //   this.trajectory.duration
-    // );
+    this.mpc = new MPC(this.system, this.trajectory, traj.dt, 10, {
+      min: [-20, -20],
+      max: [20, 20]
+    });
+    const [xn, un] = this.system.shape;
+    const x0 = this.trajectory.getState(0);
+    this.system.setState(x0);
+    this.simTrajectory = this.mpc.simulate(
+      this.trajectory.dt,
+      this.trajectory.duration
+    );
+    console.log("sim", this.simTrajectory);
     // this.simTrajectory.setLegend(this.system.statesCommands);
   },
 
@@ -124,6 +129,31 @@ export default {
   },
 
   methods: {
+    optimize() {
+      const xStart = eig.Matrix.fromArray([0, 0, 0, 0]);
+      const xEnd = eig.Matrix.fromArray([Math.PI, Math.PI, 0, 0]);
+      const uMax = 8;
+      const nPoints = 50;
+      const anchors = [
+        { t: 0, x: xStart },
+        // { t: 0.5, x: xEnd },
+        { t: 1, x: xEnd }
+      ];
+
+      const collocation = new DirectCollocation(
+        this.system,
+        nPoints,
+        {
+          min: eig.Matrix.fromArray([-uMax, -uMax]),
+          max: eig.Matrix.fromArray([uMax, uMax])
+        },
+        anchors
+      );
+      let [x, t] = collocation.optimize(30);
+      x = this.system.reverse(x);
+      this.trajectory.set(x, (2 * t) / x.length);
+    },
+
     runValueIteration() {
       // this.viPlanner = new ValueIterationPlanner(
       //   this.system,
@@ -147,55 +177,29 @@ export default {
       this.$refs.trajPlot.update();
     },
 
-    optimize() {
-      const xStart = eig.Matrix.fromArray([-2, 0]);
-      const xEnd = eig.Matrix.fromArray([2, 0]);
-      const uMax = 5;
-      const nPoints = 50;
-      const anchors = [
-        { t: 0, x: xStart },
-        // { t: 0.5, x: xEnd },
-        { t: 1, x: xEnd }
-      ];
-
-      const collocation = new DirectCollocation(
-        this.system,
-        nPoints,
-        {
-          min: eig.Matrix.fromArray([-uMax]),
-          max: eig.Matrix.fromArray([uMax])
-        },
-        anchors
-      );
-      let [x, t] = collocation.optimize();
-      x = this.system.reverse(x);
-      this.trajectory.set(x, (2 * t) / x.length);
-    },
-
     download() {
-      this.trajectory.print();
+      this.trajectory.dump();
     },
 
     update() {
       // TODO: add FPS meter
       let u = new eig.Matrix(2, 1);
-      // const trajX = this.trajectory.ready()
-      //   ? this.trajectory.get(this.t)
-      //   : null;
+      const xTraj = this.trajectory.ready()
+        ? this.trajectory.getState(this.t)
+        : null;
       if (this.mode === "Controls" || this.mouseDragging) {
         // TODO: hook to mode selector
-        // const u = this.controller.getCommand();
+        const u = this.controller.getCommand();
         this.system.step(u, this.dt, this.mouseTarget);
       } else if (this.mode === "Optim" && this.trajectory.ready()) {
-        // this.system.x.vSet(0, trajX.vGet(0));
-        // this.system.x.vSet(1, trajX.vGet(1));
-        // u = trajX.block(2, 0, 1, 1);
+        u = this.trajectory.getCommand(this.t);
+        this.system.setState(xTraj);
       } else if (this.mode === "MPC") {
-        // u = this.mpc.getCommand(this.t);
-        // this.system.step(u, this.dt, this.mouseTarget);
+        u = this.mpc.getCommand(this.t);
+        this.system.step(u, this.dt, this.mouseTarget);
       }
       // Graphic update
-      this.system.updateGraphics(this.worldToCanvas, u);
+      this.system.updateGraphics(this.worldToCanvas, xTraj);
       // Run GC
       eig.GC.flush();
     }
