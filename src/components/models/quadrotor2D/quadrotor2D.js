@@ -1,10 +1,27 @@
 import eig from '@eigen'
 import _ from 'lodash'
-import { LQR } from './controllers/LQR.js'
-import { wrapAngle, sqr } from './math.js'
+import chroma from 'chroma-js'
+import colors from 'vuetify/lib/util/colors'
+import Model from '@/components/models/model.js'
+import { wrapAngle, sqr } from '@/components/math.js'
 
-class Quadrotor2D {
+class Quadrotor2D extends Model {
+  static STATES = Object.freeze([
+    { name: 'x', show: true },
+    { name: 'y', show: true },
+    { name: 'theta', show: true },
+    { name: 'yDot', derivative: true },
+    { name: 'xDot', derivative: true },
+    { name: 'thetaDot', derivative: true },
+  ])
+
+  static COMMANDS = Object.freeze([
+    { name: 't1' },
+    { name: 't2' }
+  ])
+
   constructor(params = {}) {
+    super(Quadrotor2D.STATES, Quadrotor2D.COMMANDS, params)
     this.params = {
       g: 9.81,
       l: 1,
@@ -13,16 +30,7 @@ class Quadrotor2D {
       // mu: 0.5, TODO: add natural damping
       ...params
     }
-    const x = params.x0 || new eig.Matrix(...this.shape);
-    eig.GC.set(this, 'x', x)
-  }
-
-  /**
-   * Get the shape of a system
-   * @returns {Array} shape [xn, un]
-   */
-  shape() {
-    return [6, 2]
+    this.graphics = {}
   }
 
   /**

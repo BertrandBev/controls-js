@@ -9,7 +9,7 @@ import Plotly from "plotly.js-dist";
 import _ from "lodash";
 
 export default {
-  name: "TrajPlot",
+  name: "ValueIterationPlot",
 
   props: {
     valueIterationPlanner: Object // [ trajs ]
@@ -19,7 +19,11 @@ export default {
     series: []
   }),
 
-  computed: {},
+  computed: {
+    names() {
+      return this.valueIterationPlanner.system.states.map(st => st.name);
+    }
+  },
 
   watch: {},
 
@@ -44,20 +48,23 @@ export default {
 
   methods: {
     update() {
+      if (!this.valueIterationPlanner.V) {
+        return;
+      }
       const xGrid = this.valueIterationPlanner.V.grid;
       const data = [
         {
           z: this.valueIterationPlanner.getMatrix(),
           x0: xGrid[0].min,
-          dx: (xGrid[0].max - xGrid[0].min) / xGrid[0].count,
+          dx: (xGrid[0].max - xGrid[0].min) / xGrid[0].nPts,
           y0: xGrid[1].min,
-          dy: (xGrid[1].max - xGrid[1].min) / xGrid[1].count,
+          dy: (xGrid[1].max - xGrid[1].min) / xGrid[1].nPts,
           type: "heatmap"
         }
       ];
       const layout = {
-        xaxis: { title: "theta (rad)" },
-        yaxis: { title: "thetaDot (rad)" },
+        xaxis: { title: this.names[0] },
+        yaxis: { title: this.names[1] },
         margin: {
           l: 70,
           r: 100,
@@ -67,6 +74,7 @@ export default {
         }
       };
       Plotly.react(this.$refs.div, data, layout);
+      this.$emit("update");
     }
   }
 };

@@ -104,92 +104,10 @@ class MPC extends Controller {
     return xTraj
   }
 
-  getCommand(t) {
+  getCommand(x, t) {
     const [xn, un] = this.system.shape
     const xTraj = this.optimise(t)
     return xTraj[0].block(xn, 0, un, 1);
-  }
-
-  getCommandOld() {
-    // const a = Date.now()
-    // Solve MPC starting at t
-    const t = Date.now() / 1000
-    const [xn, un] = this.system.shape
-    const dim = (xn + un) * this.n
-    // Create cost matrix
-    const G = eig.Matrix.identity(dim, dim).mul(10)
-    for (let n = 0; n < xn * this.n; n += 2) {
-      // G.set(n, n, 10)
-    }
-    for (let n = xn * this.n; n < dim; n++) {
-      G.set(n, n, 0.1)
-    }
-    const g0 = new eig.Matrix(dim, 1)
-    // Create dynamics constraint: CE^T x + ce0 = 0
-    const CEt = new eig.Matrix(this.n * xn, dim)
-    const In = eig.Matrix.identity(xn, xn)
-    const Ineg = eig.Matrix.identity(xn, xn).mul(-1)
-    const [x0list, u0list] = [[], []]
-    for (let n = 0; n < this.n; n++) {
-      const pt = this.trajectory.get(t + n * this.dt)
-      const x0 = pt.block(0, 0, xn, 1);
-      const u0 = pt.block(xn, 0, un, 1);
-      x0list.push(x0)
-      u0list.push(u0)
-      if (n >= this.n - 1) {
-        continue
-      }
-      // Build constraint matrices
-      const Ab = this.system.xJacobian(x0, u0).mul(this.dt).matAdd(In)
-      const Bb = this.system.uJacobian(x0, u0).mul(this.dt)
-      // Ab.print(`A_${n}`)
-      // Bb.print(`B_${n}`)
-      CEt.setBlock(n * xn, n * xn, Ab)
-      CEt.setBlock(n * xn, (n + 1) * xn, Ineg)
-      CEt.setBlock(n * xn, this.n * xn + n * un, Bb)
-    }
-    CEt.setBlock((this.n - 1) * xn, 0, Ineg)
-    const CE = CEt.transpose()
-    const ce0 = new eig.Matrix(this.n * xn, 1);
-    const dx0 = this.system.x.matSub(x0list[0])
-    // dx0.print('dx0')
-    ce0.setBlock((this.n - 1) * xn, 0, dx0);
-
-    // CEt.print('CEt')
-    // ce0.print('ce0')
-
-
-    // Create inequality constraints: CI^T x + ci0 >= 0
-    const CIt = new eig.Matrix(2 * this.n * un, dim)
-    const ci0 = new eig.Matrix(2 * this.n * un, 1)
-    for (let n = 0; n < this.n * un; n++) {
-      // CIt.set(2 * n, this.n * xn + n, 1)
-      // ci0.vSet(2 * n, -this.uBounds.min[n % un])
-      // CIt.set(2 * n + 1, this.n * xn + n, -1)
-      // ci0.vSet(2 * n + 1, this.uBounds.max[n % un])
-    }
-    // CIt.print('CIt')
-    // ci0.print('ci0')
-    const CI = CIt.transpose()
-
-    // Solve quadratic program
-    const x = new eig.Matrix(dim, 1)
-    const res = eig.QuadProgSolver.solve(G, g0, CE, ce0, CI, ci0, x)
-    const xTraj = []
-    for (let k = 0; k < this.n; k += 1) {
-      // x.transpose().print(`x_${k}`)
-      const xk = x.block(k * xn, 0, xn, 1).matAdd(x0list[k])
-      const uk = x.block(this.n * xn + k * un, 0, un, 1).matAdd(u0list[k])
-      // x.block(this.n * xn + k * un, 0, un, 1).print(`u_${k}`)
-      xTraj.push(xk.vcat(uk))
-    }
-    // console.log('delta_t', Date.now() - a)
-
-    // TEMP CONTROL RESULT
-    // CEt.matMul(x).matAdd(ce0).print('CE validation')
-    // CIt.matMul(x).matAdd(ci0).print('CI validation')
-
-    return xTraj
   }
 }
 

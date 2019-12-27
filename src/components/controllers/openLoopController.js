@@ -16,10 +16,10 @@ class OpenLoopController extends Controller {
     this.system.setState(x);
   }
 
-  getCommand(t) {
+  getCommand(x, t) {
     let [xn, un] = this.system.shape
-    const x = this.trajectory.get(t)
-    return x.block(xn, 0, un, 1)
+    const xTraj = this.trajectory.get(t)
+    return xTraj.block(xn, 0, un, 1)
   }
 }
 

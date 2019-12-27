@@ -27,10 +27,15 @@ class DoublePendulum extends Model {
       l2: 1,
       g: 9.8,
       mu: 0.2,
+      s2: 0,
       ...params
     }
     // Init graphics
     this.graphics = {}
+  }
+
+  trim() {
+    return { x: eig.Matrix.fromArray([Math.PI, Math.PI, 0, 0]), u: eig.Matrix.fromArray([0, 0]) }
   }
 
   /**
@@ -38,6 +43,7 @@ class DoublePendulum extends Model {
    * @param {Matrix} x 
    */
   bound(x) {
+    super.bound(x)
     x.vSet(0, wrapAngle(x.vGet(0)))
     x.vSet(1, wrapAngle(x.vGet(1)))
   }
@@ -60,7 +66,7 @@ class DoublePendulum extends Model {
     const a1 = L * M * cdt
     const a2 = cdt / L
     const tau1 = -p.mu * t1d + u.vGet(0)
-    const tau2 = -p.mu * (t2d - t1d) + u.vGet(1)
+    const tau2 = -p.mu * (t2d - t1d) + p.s2 * u.vGet(1)
     const f1 = -L * M * sqr(t2d) * sdt - p.g / p.l1 * s1 + tau1 / sqr(p.l1) / (p.m1 + p.m2)
     const f2 = sqr(t1d) * sdt / L - p.g / p.l2 * s2 + tau2 / p.m2 / sqr(p.l2)
     const g1 = (f1 - a1 * f2) / (1 - a1 * a2)
@@ -82,7 +88,8 @@ class DoublePendulum extends Model {
   xJacobian(x, u) {
     const p = this.params
     const [t1, t2, t1d, t2d] = [x.vGet(0), x.vGet(1), x.vGet(2), x.vGet(3)]
-    const [u1, u2] = [u.vGet(0), u.vGet(1)]
+    let [u1, u2] = [u.vGet(0), u.vGet(1)]
+    u2 *= p.s2;
     const [s1, s2] = [Math.sin(x.vGet(0)), Math.sin(x.vGet(1))]
     const dt = t1 - t2
     const [cdt, sdt] = [Math.cos(dt), Math.sin(dt)]
@@ -91,7 +98,6 @@ class DoublePendulum extends Model {
 
     const c2dt = Math.cos(2 * t1 - 2 * t2)
     const s2dt = Math.sin(2 * t1 - 2 * t2)
-    // const cdtp1 = Math.cos(2 * t1 - t2)
     const cdtp2 = Math.cos(t1 - 2 * t2)
     const [c1, c2] = [Math.cos(t1), Math.cos(t2)]
 
@@ -128,7 +134,7 @@ class DoublePendulum extends Model {
     const dx2du1 = -cdt / (p.l1 * p.l2 * (p.m1 + p.m2 - p.m2 * sqr(cdt)))
     const dx2du2 = (p.m1 + p.m2) / (sqr(p.l2) * p.m2 * (p.m1 + p.m2 - p.m2 * sqr(cdt)))
     return eig.Matrix.fromArray([
-      [0, 0], [0, 0], [dx1du1, dx1du2], [dx2du1, dx2du2]
+      [0, 0], [0, 0], [dx1du1, dx1du2 * p.s2], [dx2du1, dx2du2 * p.s2]
     ])
   }
 
@@ -203,7 +209,7 @@ class DoublePendulum extends Model {
         root.rotation = -x.vGet(0)
         p2.rotation = -(x.vGet(1) - x.vGet(0))
       }
-      root.visibility = !!x
+      root.visible = !!x
     })
   }
 }

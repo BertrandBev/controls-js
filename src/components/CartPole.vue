@@ -15,9 +15,7 @@ import eig from "@eigen";
 import { CartPole } from "@/components/cartPole.js";
 import LQR from "@/components/controllers/LQR.js";
 import worldMixin from "@/components/worldMixin.js";
-import { test } from "@/components/directCollocation.js";
 import Trajectory from '@/components/planners/trajectory.js'
-import { DirectCollocation } from "@/components/directCollocation.js";
 import TrajPlot from "@/components/planners/TrajPlot.vue";
 
 const COLOR = "#00897B";

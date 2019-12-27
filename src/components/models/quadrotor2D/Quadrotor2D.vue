@@ -17,7 +17,6 @@ import _ from "lodash";
 import eig from "@eigen";
 import { InteractivePath } from "@/components/interactivePath.js";
 import Trajectory from '@/components/planners/trajectory.js'
-import { DirectCollocation } from "@/components/directCollocation.js";
 import MPC from "@/components/controllers/MPC.js";
 
 const COLOR = "#00897B";

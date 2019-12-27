@@ -2,23 +2,35 @@ import _ from 'lodash'
 import nlopt from '@lib/nlopt-js/nlopt.js'
 import eig from '@eigen'
 
-class DirectCollocation {
+class DirectCollocationParams {
   static FREE = 1.23e-123
 
   /**
-   * 
-   * @param {Object} system 
-   * @param {Number} n 
+   * @param {Number} nPts 
    * @param {Number} uBounds {min, max} 
    * @param {Array} anchors [{t in [0, 1], x}]
    */
-  constructor(system, n, uBounds, anchors) {
-    console.assert(n >= 2, "The number of points must be positive")
-    this.system = system
-    this.n = n
+  constructor(nPts, uBounds, anchors) {
+    this.nPts = nPts
+    this.uBounds = uBounds
+    this.anchors = anchors
+  }
+}
 
+class DirectCollocation {
+  /**
+   * 
+   * @param {Object} system 
+   */
+  constructor(system) {
+    this.system = system
+  }
+
+  setParams(params) {
+    console.assert(params.nPts >= 2, "The number of points must be positive")
+    this.n = params.nPts
     // Compute dimensionality
-    this.shape = system.shape
+    this.shape = this.system.shape
     this.dim = (this.shape[0] + this.shape[1]) * this.n + 1
     const algorithm = nlopt.Algorithm.LD_SLSQP // LD_SLSQP LD_MMA LN_COBYLA
     this.opt = new nlopt.Optimize(algorithm, this.dim)
@@ -39,7 +51,7 @@ class DirectCollocation {
     this.addDynamicContraints()
 
     // Set bounds
-    this.setBounds(uBounds, anchors)
+    this.setBounds(params.uBounds, params.anchors)
 
     const mat = new eig.Matrix(2, 2)
     console.log(mat)
@@ -67,8 +79,8 @@ class DirectCollocation {
         setPoint(-INF, INF, 0)
       } else if (k < tIdx) {
         // u
-        const min = uBounds.min.vGet((k - uIdx) % this.shape[1])
-        const max = uBounds.max.vGet((k - uIdx) % this.shape[1])
+        const min = uBounds.min[(k - uIdx) % this.shape[1]]
+        const max = uBounds.max[(k - uIdx) % this.shape[1]]
         setPoint(min, max, (min + max) / 2)
       } else {
         // tEnd
@@ -79,10 +91,10 @@ class DirectCollocation {
     anchors.forEach(a => {
       const idx = _.clamp(Math.floor(a.t * this.n), 0, this.n - 1) * this.shape[0]
       for (let k = 0; k < this.shape[0]; k++) {
-        if (a.x.vGet(k) !== DirectCollocation.FREE) {
-          upper.set(idx + k, a.x.vGet(k))
-          lower.set(idx + k, a.x.vGet(k))
-          x0.set(idx + k, a.x.vGet(k))
+        if (a.x[k] !== DirectCollocationParams.FREE) {
+          upper.set(idx + k, a.x[k])
+          lower.set(idx + k, a.x[k])
+          x0.set(idx + k, a.x[k])
         }
       }
     })
@@ -284,7 +296,7 @@ class DirectCollocation {
     // console.log('xList', xList, 'uList', uList)
     return [xList.map((x, idx) => {
       return eig.Matrix.fromArray(x).vcat(eig.Matrix.fromArray(uList[idx]))
-    }), tEnd]
+    }), tEnd / xList.length]
   }
 
   unpack(vector) {
@@ -306,4 +318,5 @@ class DirectCollocation {
   }
 }
 
-export { DirectCollocation }
+export { DirectCollocationParams }
+export default DirectCollocation

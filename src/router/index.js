@@ -2,16 +2,16 @@ import Vue from 'vue'
 import VueRouter from 'vue-router'
 import SecondOrder from "@/components/models/secondOrder/SecondOrder.vue";
 import DoublePendulum from "@/components/models/doublePendulum/DoublePendulum.vue";
-import SimplePendulum from "@/components/SimplePendulum.vue";
-import Quadrotor2D from "@/components/Quadrotor2D.vue";
-import CartPole from "@/components/CartPole.vue";
+// import SimplePendulum from "@/components/SimplePendulum.vue";
+// import Quadrotor2D from "@/components/Quadrotor2D.vue";
+// import CartPole from "@/components/CartPole.vue";
 
 Vue.use(VueRouter)
 
 const routes = [
   {
     path: '/',
-    redirect: 'doublePendulum'
+    redirect: 'secondOrder'
   },
   {
     path: '/secondOrder',
@@ -25,7 +25,7 @@ const routes = [
   {
     path: '/doublePendulum',
     name: 'doublePendulum',
-    title: 'Second pendulum',
+    title: 'Double pendulum',
     group: 'Pages',
     component: DoublePendulum,
     rightDrawer: true,

@@ -21,8 +21,6 @@ export default {
 
   computed: {},
 
-  watch: {},
-
   mounted() {
     const config = {
       displaylogo: false,
@@ -35,6 +33,7 @@ export default {
 
     // Add watchers
     this.trajectories.forEach(traj => traj.addWatcher(this.update));
+    this.update();
   },
 
   beforeDestroy() {
@@ -92,6 +91,7 @@ export default {
         // }
       };
       Plotly.react(this.$refs.div, data, layout);
+      this.$emit("update");
     }
   }
 };

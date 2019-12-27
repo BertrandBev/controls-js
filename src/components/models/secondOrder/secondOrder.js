@@ -2,6 +2,8 @@ import eig from '@eigen'
 import _ from 'lodash'
 import colors from 'vuetify/lib/util/colors'
 import Model from '@/components/models/model.js'
+import { ValueIterationParams } from '@/components/planners/valueIterationPlanner.js'
+import { DirectCollocationParams } from '@/components/planners/directCollocation.js'
 
 class SecondOrder extends Model {
   static STATES = Object.freeze([
@@ -150,6 +152,29 @@ class SecondOrder extends Model {
     this.graphics.setControl(u);
     this.graphics.showRef = !!trajX;
     if (trajX) this.graphics.setRef(...worldToCanvas([trajX.vGet(0), 0]))
+  }
+
+  /**
+   * Plugin params
+   */
+  valueIterationParams() {
+    return new ValueIterationParams(
+      [{ min: -4, max: 4, nPts: 50 }, { min: -5, max: 5, nPts: 50 }],
+      [{ min: -2, max: 2, nPts: 2 }],
+      [[0, 0]],
+      0.11
+    )
+  }
+
+  /**
+   * Direct collocation params
+   */
+  directCollocationParams() {
+    return new DirectCollocationParams(
+      50,
+      { min: [-5], max: [5] },
+      [{ t: 0, x: [-2, 0] }, { t: 1, x: [2, 0] }]
+    )
   }
 }
 

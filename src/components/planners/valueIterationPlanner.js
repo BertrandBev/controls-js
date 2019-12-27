@@ -3,23 +3,27 @@ import eig from "@eigen";
 import Trajectory from '@/components/planners/trajectory.js'
 import { Grid } from './utils.js'
 
-
+class ValueIterationParams {
+  /**
+   * @param {Array} xGrid [{min, max, count}, ...] spec for each dimension
+   * @param {Array} uGrid [{min, max, count}, ...] spec for each dimension
+   */
+  constructor(xGrid, uGrid, xTargets, dt) {
+    this.xGrid = xGrid
+    this.uGrid = uGrid
+    this.xTargets = xTargets
+    this.dt = dt
+  }
+}
 
 class ValueIterationPlanner {
   /**
    * Create a ValueIterationPlanner
    * @param {Object} system System of interest
-   * @param {Array} xGrid [{min, max, count}, ...] spec for each dimension
-   * @param {Array} uGrid [{min, max, count}, ...] spec for each dimension
    */
-  constructor(system, xGrid, uGrid, xTargets, dt) {
+  constructor(system) {
     this.system = system;
-    this.V = new Grid(xGrid)
-    this.U = new Grid(uGrid)
-    this.kxTargets = xTargets.map(x => this.V.pack(x))
-    this.dt = dt
     this.watchers = new Set()
-    this.createTransitionTable()
   }
 
   /**
@@ -107,17 +111,21 @@ class ValueIterationPlanner {
     return maxUpdate < 10e-8;
   }
 
-  run(maxIter = 1000) {
+  run(params, maxIter = 1000) {
+    this.V = new Grid(params.xGrid)
+    this.U = new Grid(params.uGrid)
+    this.kxTargets = params.xTargets.map(x => this.V.pack(eig.Matrix.fromArray(x)))
+    this.dt = params.dt
+    this.createTransitionTable()
     for (let k = 0; k < maxIter; k++) {
       const converged = this.valueIterationStep(k)
       if (converged) {
-        console.log(`Converged in ${k + 1} iterations`)
-        // this.V.tensor.print()
+        console.log(`Converged in ${k + 1} iterations`, this.watchers)
+        this.watchers.forEach(fun => fun())
         return
       }
     }
     console.log(`Not converged after ${maxIter} iterations`)
-    this.watchers.forEach(fun => fun())
   }
 
   getControl(x) {
@@ -149,4 +157,5 @@ class ValueIterationPlanner {
   }
 }
 
+export { ValueIterationParams }
 export default ValueIterationPlanner

@@ -1,6 +1,8 @@
 import eig from '@eigen'
 
 class Model {
+  static STATE_BOUNDS = 1000
+
   constructor(states, commands, params) {
     // Populate properties
     this.states = states
@@ -8,8 +10,12 @@ class Model {
     this.shape = [this.states.length, this.commands.length]
     this.statesCommands = [...states, ...commands]
     // Set state
-    const x0 = new eig.Matrix(params.x0) || new eig.Matrix(this.shape[0], 1);
+    const x0 = params.x0 ? new eig.Matrix(params.x0) : this.trim().x;
     this.setState(x0)
+  }
+
+  trim() {
+    return { x: new eig.Matrix(this.shape[0], 1), u: new eig.Matrix(this.shape[1], 1) }
   }
 
   /**
@@ -25,7 +31,7 @@ class Model {
    * @param {Matrix} x 
    */
   bound(x) {
-    // Override if needed  
+    x.clampSelf(-Model.STATE_BOUNDS, Model.STATE_BOUNDS)
   }
 
   /**
@@ -72,6 +78,21 @@ class Model {
     const forward = [...array]
     forward.splice(array.length - 1, 1)
     return [...forward, ...backward]
+  }
+
+  /**
+   * Simulate
+   */
+  simulate(controller, x0, dt, duration) {
+    let x = new eig.Matrix(x0)
+    const arr = []
+    for (let t = 0; t < duration; t += dt) {
+      const u = controller.getCommand(x, t);
+      const dx = this.dynamics(x, u);
+      arr.push(x.vcat(u))
+      x.matAddSelf(dx.mul(dt))
+    }
+    return arr
   }
 }
 

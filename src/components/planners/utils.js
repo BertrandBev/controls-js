@@ -109,11 +109,11 @@ function testTensor() {
 class Grid {
   /**
    * 
-   * @param {Array} grid [{min, max, count}, ...] spec for each dimension
+   * @param {Array} grid [{min, max, nPts}, ...] spec for each dimension
    */
   constructor(grid) {
     this.grid = grid
-    this.tensor = new Tensor(grid.map(val => val.count))
+    this.tensor = new Tensor(grid.map(val => val.nPts))
   }
 
   /**
@@ -155,9 +155,9 @@ class Grid {
     let oob = false
     const ind = this.grid.map((val, idx) => {
       const scalar = (vec.vGet(idx) - val.min) / (val.max - val.min)
-      const k = Math.floor(scalar * val.count)
-      oob |= k < 0 || k >= val.count
-      return Math.max(0, Math.min(val.count - 1, k))
+      const k = Math.floor(scalar * val.nPts)
+      oob |= k < 0 || k >= val.nPts
+      return Math.max(0, Math.min(val.nPts - 1, k))
     })
     return oob ? null : ind
   }
@@ -168,8 +168,8 @@ class Grid {
    */
   fromGrid(indices) {
     const vec = this.grid.map((val, idx) => {
-      const interval = (val.max - val.min) / val.count
-      const factor = Math.max(0, Math.min(val.count, indices[idx]))
+      const interval = (val.max - val.min) / val.nPts
+      const factor = Math.max(0, Math.min(val.nPts, indices[idx]))
       return val.min + interval * (factor + .5)
     })
     return eig.Matrix.fromArray(vec)
