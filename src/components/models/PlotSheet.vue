@@ -1,17 +1,15 @@
 <template lang="pug">
   div(style='width: 100%; height: 100%')
-    // LQR trajectories
-    TrajPlot(v-if='plot == "lqr"'
-             :trajectories='lqrTraj')
-    ValueIterationPlot(v-if='plot == "VI"'
+    TrajPlot(v-if='activeName === "LQRPlugin" || "DirectCollocationPlugin"'
+             :trajectories='trajectories')
+    ValueIterationPlot(v-if='activeName == "ValueIterationPlugin"'
                        :valueIterationPlanner='viPlanner')
-    TrajPlot(v-if='plot == "dircol"'
-             :trajectories='dircolTraj')
 </template>
 
 <script>
 import TrajPlot from "@/components/planners/TrajPlot.vue";
 import ValueIterationPlot from "@/components/planners/ValueIterationPlot.vue";
+import _ from "lodash";
 
 export default {
   name: "PlotSheet",
@@ -22,46 +20,36 @@ export default {
   },
 
   props: {
-    lqrPlugin: Object,
-    viPlugin: Object,
-    dircolPlugin: Object
+    active: Object,
+    plugins: Array
   },
 
-  data: () => ({
-    plot: ""
-  }),
+  data: () => ({}),
 
-  watch: {
-    plots() {
-      this.plot = this.plots.length > 0 ? this.plots[0] : "";
-    }
-  },
+  watch: {},
 
   computed: {
-    plots() {
-      const plots = [];
-      if (this.lqrPlugin) plots.push("lqr");
-      if (this.viPlugin) plots.push("VI");
-      if (this.dircolPlugin) plots.push("dircol");
-      return plots;
+    activeName() {
+      return _.get(this.active, "name");
     },
 
-    lqrTraj() {
-      return this.lqrPlugin
-        ? [this.lqrPlugin.linearTraj, this.lqrPlugin.simTraj]
-        : [];
-    },
-
-    dircolTraj() {
-      return this.dircolPlugin ? [this.dircolPlugin.simTraj] : [];
+    trajectories() {
+      switch (this.activeName) {
+        case "LQRPlugin":
+        case "DirectCollocationPlugin":
+          return this.active.trajectories;
+        default:
+          return [];
+      }
     },
 
     viPlanner() {
-      return this.viPlugin ? this.viPlugin.viPlanner : null;
+      return this.activeName === "ValueIterationPlugin"
+        ? this.active.viPlanner
+        : null;
     }
   },
 
-  methods: {
-  }
+  methods: {}
 };
 </script>

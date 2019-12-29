@@ -74,7 +74,6 @@ export default {
         }
       };
       Plotly.react(this.$refs.div, data, layout);
-      this.$emit("update");
     }
   }
 };

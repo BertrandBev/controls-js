@@ -70,20 +70,17 @@ class SecondOrder extends Model {
   }
 
   /**
-   * Execute a step
-   * @param {Matrix} u controls effort
-   * @param {Number} dt delta time
-   * @param {Array} mouseTarget optional mouse target
+   * Mouse step
+   * @param {Number} dt 
+   * @param {Array} mouseTarget 
    */
-  step(u, dt, mouseTarget) {
+  trackMouse(mouseTarget, dt) {
+    const { u } = this.trim()
     const dx = this.dynamics(this.x, u)
-    // Override x if target tracking
-    if (mouseTarget) {
-      // Control cart
-      const xVel = 10 * (mouseTarget[0] - this.x.vGet(0));
-      this.x.vSet(1, _.clamp(xVel, -15, 15))
-      dx.vSet(0, this.x.vGet(1))
-    }
+    const xVel = 10 * (mouseTarget[0] - this.x.vGet(0));
+    this.x.vSet(1, _.clamp(xVel, -15, 15))
+    dx.vSet(0, this.x.vGet(1))
+    // TODO: extract in schema
     const newX = this.x.matAdd(dx.mul(dt))
     this.bound(newX)
     this.setState(newX)

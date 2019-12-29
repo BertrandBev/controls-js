@@ -10,7 +10,7 @@ Block(title='Value Iteration')
               outlined
               dense
               hide-details)
-  v-btn.mt-2(@click='update'
+  v-btn.mt-2(@click='runValueIteration'
              outlined
              :disabled='running'
              :loading='running'
@@ -20,11 +20,16 @@ Block(title='Value Iteration')
 <script>
 import ValueIterationPlanner from "@/components/planners/valueIterationPlanner.js";
 import Trajectory from "@/components/planners/trajectory.js";
-import Block from "./Block.vue";
+import Block from "./utils/Block.vue";
 import eig from "@eigen";
 import _ from "lodash";
+import pluginMixin from "./pluginMixin.js";
 
 export default {
+  name: "ValueIterationPlugin",
+
+  mixins: [pluginMixin],
+
   components: {
     Block
   },
@@ -55,6 +60,10 @@ export default {
 
   methods: {
     update() {
+      
+    },
+
+    runValueIteration() {
       // Get from system
       const params = _.cloneDeep(this.params);
       params.xGrid.forEach(spec => (spec.nPts = this.nPts));
@@ -63,6 +72,7 @@ export default {
       setTimeout(() => {
         this.viPlanner.run(params);
         this.running = false;
+        this.$emit("update", this);
       }, 25);
     }
   }

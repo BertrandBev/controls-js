@@ -24,7 +24,7 @@ import _ from "lodash";
 
 export default {
   data: () => ({
-    drawer: true
+    drawer: false
   }),
 
   props: {

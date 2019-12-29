@@ -40,7 +40,7 @@ Block(title='Direct Collocation')
   v-btn(@click='addAnchor'
         outlined
         color='green') + add
-  v-btn.mt-2(@click='update'
+  v-btn.mt-2(@click='runCollocation'
              outlined
              :disabled='running'
              :loading='running'
@@ -50,11 +50,16 @@ Block(title='Direct Collocation')
 <script>
 import DirectCollocation from "@/components/planners/directCollocation.js";
 import Trajectory from "@/components/planners/trajectory.js";
-import Block from "./Block.vue";
+import Block from "./utils/Block.vue";
 import eig from "@eigen";
 import _ from "lodash";
+import pluginMixin from "./pluginMixin.js";
 
 export default {
+  name: "DirectCollocationPlugin",
+
+  mixins: [pluginMixin],
+
   components: {
     Block
   },
@@ -74,6 +79,10 @@ export default {
   }),
 
   computed: {
+    trajectories() {
+      return [this.simTraj];
+    },
+
     params() {
       return this.system.directCollocationParams();
     }
@@ -94,6 +103,20 @@ export default {
   },
 
   methods: {
+    reset() {
+      if (this.simTraj.ready()) {
+        const x0 = this.simTraj.getState(0);
+        this.system.setState(x0);
+      }
+    },
+
+    update(t, dt) {
+      if (this.simTraj.ready()) {
+        const x = this.simTraj.getState(t);
+        this.system.setState(x);
+      }
+    },
+
     parseArr(str) {
       return str.split(",").map(i => parseFloat(i));
     },
@@ -108,12 +131,13 @@ export default {
       this.anchors.splice(idx, 1);
     },
 
-    update() {
+    runCollocation() {
       // Get from system
       this.running = true;
       setTimeout(() => {
         this.optimize();
         this.running = false;
+        this.$emit("update", this);
       }, 25);
     },
 

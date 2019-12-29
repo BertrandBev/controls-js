@@ -58,6 +58,16 @@ class Model {
   }
 
   /**
+   * Propagate state one timestep forward
+   * @param {Matrix} u - Command
+   * @param {Number} dt - Timestep
+   */
+  step(u, dt) {
+    const xNext = this.xNext(this.x, u, dt)
+    this.setState(xNext)
+  }
+
+  /**
    * Reverse trajectory array
    * @param {Array} array
    */

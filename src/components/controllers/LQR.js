@@ -15,15 +15,14 @@ class LQR extends Controller {
     this.system = system
     eig.GC.set(this, 'x0', x0)
     eig.GC.set(this, 'u0', u0)
+    const [xn, un] = this.system.shape
+    eig.GC.set(this, 'Q', eig.Matrix.identity(xn, xn))
+    eig.GC.set(this, 'R', eig.Matrix.identity(un, un))
   }
 
   solve(qWeight, rWeight) {
-    const [xn, un] = this.system.shape
     const [Jx, Ju] = LinearSystem.linearize(this.system, this.x0, this.u0)
-    // Solve LQR
-    const Q = eig.Matrix.identity(xn, xn).mul(qWeight);
-    const R = eig.Matrix.identity(un, un).mul(rWeight);
-    const sol = eig.Solvers.careSolve(Jx, Ju, Q, R);
+    const sol = eig.Solvers.careSolve(Jx, Ju, this.Q, this.R);
     eig.GC.set(this, 'K', sol.K)
   }
 

@@ -21,6 +21,21 @@ export default {
 
   computed: {},
 
+  watch: {
+    trajectories: {
+      handler(newValue, oldValue) {
+        if (oldValue) {
+          oldValue.forEach(traj => traj.removeWatcher(this.update));
+        }
+        if (newValue) {
+          newValue.forEach(traj => traj.addWatcher(this.update));
+        }
+        this.update();
+      },
+      immediate: true
+    }
+  },
+
   mounted() {
     const config = {
       displaylogo: false,
@@ -30,10 +45,6 @@ export default {
       responsive: true
     };
     Plotly.newPlot(this.$refs.div, [], [], config);
-
-    // Add watchers
-    this.trajectories.forEach(traj => traj.addWatcher(this.update));
-    this.update();
   },
 
   beforeDestroy() {
@@ -53,6 +64,7 @@ export default {
 
     update() {
       const data = [];
+      if (!this.$refs.div) return;
       this.trajectories.forEach((traj, trajId) => {
         if (!traj.ready()) return;
         const dim = traj.dim();
@@ -91,7 +103,6 @@ export default {
         // }
       };
       Plotly.react(this.$refs.div, data, layout);
-      this.$emit("update");
     }
   }
 };

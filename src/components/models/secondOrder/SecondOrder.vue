@@ -5,24 +5,27 @@ ModelLayout
   template(v-slot:overlay)
     span.ma-2 fps: {{ fps.toFixed(0) }}
   template(v-slot:drawer)
-    LQRPlugin(ref='lqrPlugin'
-              :system='system')
-    ValueIterationPlugin(ref='viPlugin'
-                         :system='system')
-    DirectCollocationPlugin(ref='dircolPlugin'
-                            :system='system')
+    LQRPlugin(ref='LQRPlugin'
+              :system='system'
+              @update='pluginUpdate')
+    ValueIterationPlugin(ref='ValueIterationPlugin'
+                         :system='system'
+                         @update='pluginUpdate')
+    DirectCollocationPlugin(ref='DirectCollocationPlugin'
+                            :system='system'
+                            @update='pluginUpdate')
   template(v-slot:sheet)
     PlotSheet(ref='plotSheet'
-              :lqrPlugin='$refs.lqrPlugin'
-              :viPlugin='$refs.viPlugin'
-              :dircolPlugin='$refs.dircolPlugin')
+              :plugins='plugins',
+              :active='active')
   template(v-slot:bar)
-    ControlBar(:plotSheet='$refs.plotSheet')
+    ControlBar(:plugins='plugins'
+               :active.sync='active')
+    //* TEMP
     v-btn(text dark
           @click='optimize') optimize
     v-btn(text dark
           @click='download') download
-    v-spacer
     v-btn(text dark
           @click='reset') reset
 </template>
@@ -58,14 +61,11 @@ export default {
   mixins: [worldMixin],
 
   data: () => ({
-    plotType: "VI",
     // State
     system: null,
-    mode: "MPC",
-    trajectory: null,
-    simTrajectory: null,
-    mpc: null,
-    viPlanner: null
+    plugins: [],
+    active: null, // Active plugin
+    mode: "MPC"
   }),
 
   computed: {
@@ -88,39 +88,27 @@ export default {
       u0: eig.Matrix.fromArray([0])
     };
     this.system = new SecondOrder(params);
-    this.trajectory = new Trajectory(this.system);
-    this.trajectory.load(traj);
-    // Get open loop traj
-    const openLoopController = new OpenLoopController(
-      this.system,
-      this.trajectory
-    );
-    // openLoopController.reset();
-    // Get model predictive traj
-
-    // this.mpc = new MPC(this.system, this.trajectory, traj.dt, 10, {
-    //   min: [-5],
-    //   max: [5]
-    // });
-    // const [xn, un] = this.system.shape;
-    // const x0 = this.trajectory.getState(0);
-    // this.simTrajectory = this.mpc.simulate(
-    //   x0,
-    //   this.trajectory.dt,
-    //   this.trajectory.duration
-    // );
   },
 
   mounted() {
     this.system.createGraphics(this.two, this.scale);
+    this.plugins = [
+      "LQRPlugin",
+      "ValueIterationPlugin",
+      "DirectCollocationPlugin"
+    ]
+      .map(name => this.$refs[name])
+      .filter(plugin => !!plugin);
   },
 
   methods: {
+    pluginUpdate(plugin) {
+      this.active = plugin;
+    },
+
     reset() {
       worldMixin.methods.reset.call(this);
-      const [xn, un] = this.system.shape;
-      const x0 = this.trajectory.getState(0);
-      this.system.setState(x0);
+      if (this.active) this.active.reset();
     },
 
     plot() {
@@ -135,21 +123,21 @@ export default {
 
     update() {
       // TODO: add FPS meter
-      let u = new eig.Matrix(1, 1);
-      // const trajX = this.trajectory.ready()
-      //   ? this.trajectory.get(this.t)
-      //   : null;
-      if (this.mode === "Controls" || this.mouseDragging) {
-        // TODO: hook to mode selector
-        // const u = this.controller.getCommand();
-        this.system.step(u, this.dt, this.mouseTarget);
-      } else if (this.mode === "Optim") {
-        // const x = this.trajectory.getState();
-        // u = this.trajectory.getCommand();
-        // this.system.setState(x);
-      } else if (this.mode === "MPC") {
-        // u = this.mpc.getCommand(this.t);
-        // this.system.step(u, this.dt, this.mouseTarget);
+      let sim = false;
+      let { u } = this.system.trim();
+      // Update system
+      if (this.mouseTarget) {
+        this.system.trackMouse(this.mouseTarget, this.dt);
+      } else if (this.active) {
+        const uUpdate = this.active.update(this.t, this.dt);
+        if (!uUpdate) {
+          sim = true;
+        } else {
+          u = uUpdate;
+        }
+      }
+      if (sim) {
+        this.system.step(u, this.dt);
       }
       // Graphic update
       this.system.updateGraphics(this.worldToCanvas, u);
