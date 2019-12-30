@@ -46,7 +46,7 @@ export default {
   },
 
   mounted() {
-    this.onResize;
+    this.onResize();
   },
 
   methods: {

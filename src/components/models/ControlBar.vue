@@ -17,8 +17,7 @@ export default {
   }),
 
   props: {
-    plugins: Array,
-    active: Object
+    pluginGroup: Object
   },
 
   watch: {
@@ -27,15 +26,19 @@ export default {
     },
 
     selected() {
-      const plugin = this.plugins.find(p => p.name === this.selected);
-      this.$emit("update:active", plugin);
+      const plugin = this.pluginGroup.get(this.selected);
+      if (plugin) this.pluginGroup.activate(plugin);
     }
   },
 
   computed: {
+    active() {
+      return _.get(this.pluginGroup, "active");
+    },
+
     pluginNames() {
-      console.log("plugins", this.plugins);
-      return this.plugins.map(plugin => plugin.name);
+      const plugins = _.get(this.pluginGroup, "plugins", []);
+      return plugins.map(plugin => plugin.name);
     }
   }
 };

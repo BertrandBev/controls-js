@@ -20,7 +20,11 @@ class LQR extends Controller {
     eig.GC.set(this, 'R', eig.Matrix.identity(un, un))
   }
 
-  solve(qWeight, rWeight) {
+  ready() {
+    return !!this.K
+  }
+
+  solve() {
     const [Jx, Ju] = LinearSystem.linearize(this.system, this.x0, this.u0)
     const sol = eig.Solvers.careSolve(Jx, Ju, this.Q, this.R);
     eig.GC.set(this, 'K', sol.K)

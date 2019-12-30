@@ -24,7 +24,7 @@ import _ from "lodash";
 
 export default {
   data: () => ({
-    drawer: false
+    drawer: null
   }),
 
   props: {
@@ -42,6 +42,12 @@ export default {
         });
       return groups;
     }
+  },
+
+  mounted() {
+    this.$nextTick(() => {
+      // this.drawer = this.$store.windowSize.x > 1264;
+    })
   },
 
   methods: {

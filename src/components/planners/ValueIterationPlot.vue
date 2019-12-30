@@ -1,7 +1,7 @@
 <template lang="pug">
-  div(style='width: 100%; height: 100%;')
-    div(style='width: 100%; height: 100%;'
-        ref='div')
+  //- div(style='width: 100%; height: 100%;')
+  div(style='width: 100%; height: 100%;'
+      ref='div')
 </template>
 
 <script>

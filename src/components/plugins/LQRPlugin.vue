@@ -1,16 +1,19 @@
 <template lang="pug">
 Block(title='LQR')
-  MatrixInput(:matrix='this.controller.Q')
-  v-text-field.mt-3(v-model.number='qWeight'
-              label='Q weight'
-              outlined
-              dense
-              hide-details)
-  v-text-field.mt-3(v-model.number='rWeight'
-              label='R weight'
-              outlined
-              dense
-              hide-details)
+  MatrixInput(:matrix='this.controller.Q'
+              title='Q')
+  MatrixInput.mt-2(:matrix='this.controller.R'
+              title='R')
+  //- v-text-field.mt-3(v-model.number='qWeight'
+  //-             label='Q weight'
+  //-             outlined
+  //-             dense
+  //-             hide-details)
+  //- v-text-field.mt-3(v-model.number='rWeight'
+  //-             label='R weight'
+  //-             outlined
+  //-             dense
+  //-             hide-details)
   v-btn.mt-2(@click='runLQR'
              outlined
              color='primary') update LQR
@@ -70,22 +73,27 @@ export default {
       this.system.setState(x);
     },
 
+    ready() {
+      return this.controller.ready();
+    },
+
     update(t, dt) {
-      if (this.controller.K) {
+      if (this.ready()) {
         const u = this.controller.getCommand(this.system.x, t);
         this.system.step(u, dt);
+        return { u };
       }
     },
 
     runLQR() {
-      this.controller.solve(this.qWeight, this.rWeight);
+      this.controller.solve(); // INJECT PARAMS THERE
       // Simulate the system
       const duration = 10;
       let arr = this.controller.simulate(1, DT, duration);
       this.simTraj.set(arr, DT);
       arr = this.controller.linearSimulate(1, DT, duration);
       this.linearTraj.set(arr, DT);
-      this.$emit("update", this);
+      this.$emit("activate", this);
     }
   }
 };

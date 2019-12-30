@@ -23,7 +23,8 @@ div(:style='containerStyle')
     slot(name='sheet')
   //* Nav drawer
   v-navigation-drawer(v-model='drawer'
-                      clipped right app)
+                      app clipped right
+                      width='300px')
     slot(name='drawer')
 </template>
 
@@ -35,7 +36,7 @@ export default {
 
   data: () => ({
     sheet: true,
-    drawer: false
+    drawer: null
   }),
 
   watch: {
@@ -112,6 +113,9 @@ export default {
 
   mounted() {
     this.$bus.$on("toggleDrawer", this.toggleDrawer);
+    this.$nextTick(() => {
+      // this.drawer = this.$store.windowSize.x > 1264;
+    });
   },
 
   beforeDestroy() {

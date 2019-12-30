@@ -94,7 +94,6 @@ export default {
   },
 
   beforeDestroy() {
-    console.log("BEFORE DESTROY")
     clearTimeout(this.loop)
   },
 

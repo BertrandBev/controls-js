@@ -59,9 +59,11 @@ export default {
   },
 
   methods: {
-    update() {
-      
+    ready() {
+      return false;
     },
+
+    update() {},
 
     runValueIteration() {
       // Get from system
@@ -72,7 +74,7 @@ export default {
       setTimeout(() => {
         this.viPlanner.run(params);
         this.running = false;
-        this.$emit("update", this);
+        this.$emit("activate", this);
       }, 25);
     }
   }

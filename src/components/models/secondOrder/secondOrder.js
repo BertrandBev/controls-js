@@ -143,7 +143,8 @@ class SecondOrder extends Model {
   /**
    * Update model
    */
-  updateGraphics(worldToCanvas, u, trajX) {
+  updateGraphics(worldToCanvas, params) {
+    const { u, trajX } = params
     const x = this.x;
     this.graphics.cart.translation.set(...worldToCanvas([x.vGet(0), 0]));
     this.graphics.setControl(u);
@@ -168,7 +169,7 @@ class SecondOrder extends Model {
    */
   directCollocationParams() {
     return new DirectCollocationParams(
-      50,
+      20,
       { min: [-5], max: [5] },
       [{ t: 0, x: [-2, 0] }, { t: 1, x: [2, 0] }]
     )

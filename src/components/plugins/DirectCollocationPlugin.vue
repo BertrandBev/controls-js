@@ -45,6 +45,9 @@ Block(title='Direct Collocation')
              :disabled='running'
              :loading='running'
              color='primary') run collocation
+  v-btn.mt-2(@click='download'
+             outlined
+             color='primary') Download
 </template>
 
 <script>
@@ -110,10 +113,16 @@ export default {
       }
     },
 
+    ready() {
+      return this.simTraj.ready();
+    },
+
     update(t, dt) {
-      if (this.simTraj.ready()) {
+      if (this.ready()) {
+        const u = this.simTraj.getCommand(t);
         const x = this.simTraj.getState(t);
         this.system.setState(x);
+        return { u };
       }
     },
 
@@ -137,7 +146,7 @@ export default {
       setTimeout(() => {
         this.optimize();
         this.running = false;
-        this.$emit("update", this);
+        this.$emit("activate", this);
       }, 25);
     },
 
@@ -175,6 +184,10 @@ export default {
       let [x, dt] = this.collocation.optimize();
       x = this.system.reverse(x);
       this.simTraj.set(x, dt);
+    },
+
+    download() {
+      this.simTraj.dump();
     }
   }
 };

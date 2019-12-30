@@ -2,13 +2,15 @@
   div(style='display: flex; flex-direction: column;')
     //* Selector
     div(style='display: flex; justify-content: center')
+      span.ml-2.black--text(style='align-self: center') {{ title }}:
+      v-spacer
       v-btn(small
             @click='diagonal = true'
             color='blue'
             dark
             :depressed='diagonal'
             :outlined='!diagonal') diagonal
-      v-btn(small
+      v-btn.ml-1(small
             @click='diagonal = false'
             color='blue'
             dark
@@ -39,7 +41,8 @@ export default {
   }),
 
   props: {
-    matrix: Object
+    matrix: Object,
+    title: String
   },
 
   watch: {

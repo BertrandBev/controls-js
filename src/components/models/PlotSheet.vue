@@ -1,8 +1,8 @@
 <template lang="pug">
   div(style='width: 100%; height: 100%')
-    TrajPlot(v-if='activeName === "LQRPlugin" || "DirectCollocationPlugin"'
+    TrajPlot(v-if='pluginName === "LQRPlugin" || pluginName === "DirectCollocationPlugin"'
              :trajectories='trajectories')
-    ValueIterationPlot(v-if='activeName == "ValueIterationPlugin"'
+    ValueIterationPlot(v-if='pluginName == "ValueIterationPlugin"'
                        :valueIterationPlanner='viPlanner')
 </template>
 
@@ -20,8 +20,7 @@ export default {
   },
 
   props: {
-    active: Object,
-    plugins: Array
+    pluginGroup: Object
   },
 
   data: () => ({}),
@@ -29,12 +28,16 @@ export default {
   watch: {},
 
   computed: {
-    activeName() {
+    active() {
+      return _.get(this.pluginGroup, "active");
+    },
+
+    pluginName() {
       return _.get(this.active, "name");
     },
 
     trajectories() {
-      switch (this.activeName) {
+      switch (this.pluginName) {
         case "LQRPlugin":
         case "DirectCollocationPlugin":
           return this.active.trajectories;
@@ -44,7 +47,7 @@ export default {
     },
 
     viPlanner() {
-      return this.activeName === "ValueIterationPlugin"
+      return this.pluginName === "ValueIterationPlugin"
         ? this.active.viPlanner
         : null;
     }
