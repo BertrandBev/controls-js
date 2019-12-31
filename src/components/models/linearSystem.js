@@ -2,15 +2,16 @@ import eig from '@eigen'
 import Model from './model.js'
 
 class LinearSystem extends Model {
-  constructor(A, B, states, commands) {
+  constructor(x0, u0, A, B, states, commands) {
     super(states, commands, {})
+    eig.GC.set(this, 'x0', x0)
+    eig.GC.set(this, 'u0', u0)
     eig.GC.set(this, 'A', A)
     eig.GC.set(this, 'B', B)
   }
 
   delete() {
-    eig.GC.popException(this.A)
-    eig.GC.popException(this.B)
+    ['x0', 'u0', 'A', 'B'].forEach(k => eig.GC.popException(this[k]))
   }
 
   trim() {
@@ -24,7 +25,9 @@ class LinearSystem extends Model {
    * @returns {Matrix} dx
    */
   dynamics(x, u) {
-    return this.A.matMul(x).matAdd(this.B.matMul(u))
+    const dx = x.matSub(this.x0)
+    const du = u.matSub(this.u0)
+    return this.A.matMul(dx).matAdd(this.B.matMul(du))
   }
 
   /**
@@ -35,7 +38,7 @@ class LinearSystem extends Model {
    */
   static fromModel(system, x0, u0) {
     const [Jx, Ju] = LinearSystem.linearize(system, x0, u0)
-    return new LinearSystem(Jx, Ju, system.states, system.commands)
+    return new LinearSystem(x0, u0, Jx, Ju, system.states, system.commands)
   }
 
   /**

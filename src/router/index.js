@@ -2,8 +2,8 @@ import Vue from 'vue'
 import VueRouter from 'vue-router'
 import SecondOrder from "@/components/models/secondOrder/SecondOrder.vue";
 import DoublePendulum from "@/components/models/doublePendulum/DoublePendulum.vue";
+import Quadrotor2D from "@/components/models/quadrotor2D/Quadrotor2D.vue";
 // import SimplePendulum from "@/components/SimplePendulum.vue";
-// import Quadrotor2D from "@/components/Quadrotor2D.vue";
 // import CartPole from "@/components/CartPole.vue";
 
 Vue.use(VueRouter)
@@ -20,7 +20,7 @@ const routes = [
     group: 'Pages',
     component: SecondOrder,
     rightDrawer: true,
-    icon: 'mdi-lambda'
+    icon: 'mdi-alpha'
   },
   {
     path: '/doublePendulum',
@@ -30,6 +30,15 @@ const routes = [
     component: DoublePendulum,
     rightDrawer: true,
     icon: 'mdi-beta'
+  },
+  {
+    path: '/quadrotor2D',
+    name: 'quadrotor2D',
+    title: 'Quadrotor 2D',
+    group: 'Pages',
+    component: Quadrotor2D,
+    rightDrawer: true,
+    icon: 'mdi-gamma'
   }
 ]
 

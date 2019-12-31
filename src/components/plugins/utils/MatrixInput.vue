@@ -2,7 +2,7 @@
   div(style='display: flex; flex-direction: column;')
     //* Selector
     div(style='display: flex; justify-content: center')
-      span.ml-2.black--text(style='align-self: center') {{ title }}:
+      span.ml-2.black--text(style='align-self: center') {{ label }}:
       v-spacer
       v-btn(small
             @click='diagonal = true'
@@ -41,42 +41,42 @@ export default {
   }),
 
   props: {
-    matrix: Object,
-    title: String
+    matrix: Array,
+    label: String
   },
 
   watch: {
     diagonal() {
       if (!this.diagonal) return;
       // Clear off diagonal terms
-      for (let i = 0; i < this.matrix.rows(); i++)
-        for (let j = i + 1; j < this.matrix.cols(); j++) {
-          this.matrix.set(i, j, 0);
-          this.matrix.set(j, i, 0);
+      for (let i = 0; i < this.matrix.length; i++)
+        for (let j = i + 1; j < this.matrix[0].length; j++) {
+          this.matrix[i][j] = 0;
+          this.matrix[j][i] = 0;
         }
     }
   },
 
   computed: {
     rows() {
-      return this.diagonal ? 1 : this.matrix.rows();
+      return this.diagonal ? 1 : this.matrix.length;
     },
 
     cols() {
-      return this.matrix.cols();
+      return this.matrix[0].length;
     }
   },
 
   methods: {
     getVal(i, j) {
       if (this.diagonal) i = j;
-      return this.matrix.get(i, j);
+      return this.matrix[i][j];
     },
 
     setVal(i, j, value) {
       if (this.diagonal) i = j;
       const val = parseFloat(value) || 0;
-      this.matrix.set(i, j, val);
+      this.matrix[i][j] = val;
     }
   }
 };

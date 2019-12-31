@@ -45,6 +45,7 @@ export default {
       responsive: true
     };
     Plotly.newPlot(this.$refs.div, [], [], config);
+    this.update()
   },
 
   beforeDestroy() {

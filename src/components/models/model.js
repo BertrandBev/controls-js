@@ -9,9 +9,12 @@ class Model {
     this.commands = commands
     this.shape = [this.states.length, this.commands.length]
     this.statesCommands = [...states, ...commands]
+    this.params = params
     // Set state
     const x0 = params.x0 ? new eig.Matrix(params.x0) : this.trim().x;
     this.setState(x0)
+    // Init graphics
+    this.graphics = {}
   }
 
   trim() {

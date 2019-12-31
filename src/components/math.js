@@ -8,4 +8,13 @@ function sqr(val) {
   return Math.pow(val, 2)
 }
 
-export { wrapAngle, sqr }
+function matFromDiag(diag) {
+  const n = diag.length
+  const mat = [...Array(n)].map(() => [...Array(n)].map(() => 0))
+  for (let k = 0; k < n; k++) {
+    mat[k][k] = diag[k]
+  }
+  return mat
+}
+
+export { wrapAngle, sqr, matFromDiag }

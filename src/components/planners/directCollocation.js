@@ -1,23 +1,21 @@
 import _ from 'lodash'
-import nlopt from '@lib/nlopt-js/nlopt.js'
+import nlopt from '@lib/nlopt-js/index.js'
 import eig from '@eigen'
 
-class DirectCollocationParams {
-  static FREE = 1.23e-123
-
-  /**
-   * @param {Number} nPts 
-   * @param {Number} uBounds {min, max} 
-   * @param {Array} anchors [{t in [0, 1], x}]
-   */
-  constructor(nPts, uBounds, anchors) {
-    this.nPts = nPts
-    this.uBounds = uBounds
-    this.anchors = anchors
-  }
+/**
+ * Direct collocation params
+ * @param {Number} nPts 
+ * @param {Number} uBounds {min, max} 
+ * @param {Array} anchors [{t in [0, 1], x}]
+ */
+const defaultParams = {
+  maxTime: 15,
+  maxEval: 10
 }
 
 class DirectCollocation {
+  static FREE = 1.23e-123
+
   /**
    * 
    * @param {Object} system 
@@ -27,7 +25,12 @@ class DirectCollocation {
   }
 
   setParams(params) {
+    // Control params
     console.assert(params.nPts >= 2, "The number of points must be positive")
+    this.params = {
+      ...defaultParams,
+      ...params
+    }
     this.n = params.nPts
     // Compute dimensionality
     this.shape = this.system.shape
@@ -52,9 +55,6 @@ class DirectCollocation {
 
     // Set bounds
     this.setBounds(params.uBounds, params.anchors)
-
-    const mat = new eig.Matrix(2, 2)
-    console.log(mat)
   }
 
   delete() {
@@ -91,7 +91,7 @@ class DirectCollocation {
     anchors.forEach(a => {
       const idx = _.clamp(Math.floor(a.t * this.n), 0, this.n - 1) * this.shape[0]
       for (let k = 0; k < this.shape[0]; k++) {
-        if (a.x[k] !== DirectCollocationParams.FREE) {
+        if (a.x[k] !== DirectCollocation.FREE) {
           upper.set(idx + k, a.x[k])
           lower.set(idx + k, a.x[k])
           x0.set(idx + k, a.x[k])
@@ -289,14 +289,29 @@ class DirectCollocation {
     }), tolVec)
   }
 
-  optimize(maxTime = 15) {
-    this.opt.set_maxtime(maxTime)
+  optimize() {
+    this.opt.set_maxtime(this.params.maxTime)
+    this.opt.set_maxeval(this.params.maxEval)
     const res = this.opt.optimize(this.x0)
+    if (!res.success) {
+      return null
+    }
     const [xList, uList, tEnd] = this.unpack(res.x)
     // console.log('xList', xList, 'uList', uList)
-    return [xList.map((x, idx) => {
+    let arr = xList.map((x, idx) => {
       return eig.Matrix.fromArray(x).vcat(eig.Matrix.fromArray(uList[idx]))
-    }), tEnd / xList.length]
+    })
+    const dt = tEnd / xList.length
+    // Array hold
+    for (let k = 0; k < this.params.holdTime / dt; k++) {
+      arr.unshift(arr[0])
+      arr.push(arr[arr.length - 1])
+    }
+    // Array reverse
+    if (this.params.reverse) {
+      arr = this.system.reverse(arr)
+    }
+    return [arr, dt]
   }
 
   unpack(vector) {
@@ -318,5 +333,4 @@ class DirectCollocation {
   }
 }
 
-export { DirectCollocationParams }
 export default DirectCollocation

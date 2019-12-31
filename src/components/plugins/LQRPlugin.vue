@@ -1,19 +1,21 @@
 <template lang="pug">
 Block(title='LQR')
-  MatrixInput(:matrix='this.controller.Q'
-              title='Q')
-  MatrixInput.mt-2(:matrix='this.controller.R'
-              title='R')
-  //- v-text-field.mt-3(v-model.number='qWeight'
-  //-             label='Q weight'
-  //-             outlined
-  //-             dense
-  //-             hide-details)
-  //- v-text-field.mt-3(v-model.number='rWeight'
-  //-             label='R weight'
-  //-             outlined
-  //-             dense
-  //-             hide-details)
+  MatrixInput(:matrix='params.Q'
+              label='Q')
+  MatrixInput.mt-2(:matrix='params.R'
+              label='R')
+  ValueInput.mt-3(:value.sync='params.simDuration'
+             label='Sim duration')
+  ValueInput.mt-3(:value.sync='params.simEps'
+             label='Sim disturbance')
+  div.mt-3(style='display: flex; align-items: center')
+    v-checkbox.pa-0.pb-4(v-model='params.disengage'
+                         label='Auto disengage'
+                         hide-details
+                         small)
+    v-btn.ml-3(@click='enabled = true'
+               outlined color='red'
+               :disabled='enabled') Engage
   v-btn.mt-2(@click='runLQR'
              outlined
              color='primary') update LQR
@@ -25,7 +27,9 @@ import Trajectory from "@/components/planners/trajectory.js";
 import Block from "./utils/Block.vue";
 import pluginMixin from "./pluginMixin.js";
 import MatrixInput from "./utils/MatrixInput.vue";
+import ValueInput from "./utils/ValueInput.vue";
 import eig from "@eigen";
+import _ from "lodash";
 
 const DT = 0.01;
 
@@ -36,7 +40,8 @@ export default {
 
   components: {
     Block,
-    MatrixInput
+    MatrixInput,
+    ValueInput
   },
 
   props: {
@@ -44,13 +49,12 @@ export default {
   },
 
   data: () => ({
-    //
     controller: null,
     linearTraj: null,
     simTraj: null,
     // Parameters
-    qWeight: 10,
-    rWeight: 1
+    params: {},
+    enabled: true
   }),
 
   computed: {
@@ -61,6 +65,8 @@ export default {
 
   created() {
     const { x, u } = this.system.trim();
+    // Populate matrices
+    this.params = _.cloneDeep(this.system.lqrParams());
     this.controller = new LQR(this.system, x, u);
     this.simTraj = new Trajectory(this.system, false);
     this.linearTraj = new Trajectory(this.system, false);
@@ -71,27 +77,32 @@ export default {
     reset() {
       const { x } = this.system.trim();
       this.system.setState(x);
+      this.enabled = true;
     },
 
     ready() {
-      return this.controller.ready();
+      return this.enabled && this.controller.ready();
     },
 
     update(t, dt) {
-      if (this.ready()) {
+      if (this.ready() && this.enabled) {
         const u = this.controller.getCommand(this.system.x, t);
+        if (u.norm() > this.params.divergenceThres) {
+          this.enabled = false;
+        }
         this.system.step(u, dt);
         return { u };
       }
     },
 
     runLQR() {
-      this.controller.solve(); // INJECT PARAMS THERE
+      this.controller.solve(this.params);
       // Simulate the system
-      const duration = 10;
-      let arr = this.controller.simulate(1, DT, duration);
+      const duration = this.params.simDuration;
+      const dx = this.params.simEps;
+      let arr = this.controller.simulate(dx, DT, duration);
       this.simTraj.set(arr, DT);
-      arr = this.controller.linearSimulate(1, DT, duration);
+      arr = this.controller.linearSimulate(dx, DT, duration);
       this.linearTraj.set(arr, DT);
       this.$emit("activate", this);
     }

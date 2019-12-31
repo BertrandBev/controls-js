@@ -63,6 +63,8 @@ export default {
       return false;
     },
 
+    reset() {},
+
     update() {},
 
     runValueIteration() {

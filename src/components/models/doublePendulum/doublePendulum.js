@@ -2,8 +2,9 @@ import eig from '@eigen'
 import _ from 'lodash'
 import colors from 'vuetify/lib/util/colors'
 import Model from '@/components/models/model.js'
-import { wrapAngle, sqr } from '@/components/math.js'
+import { wrapAngle, sqr, matFromDiag } from '@/components/math.js'
 import chroma from 'chroma-js'
+import { ValueIterationParams } from '@/components/planners/valueIterationPlanner.js'
 
 class DoublePendulum extends Model {
   static STATES = Object.freeze([
@@ -19,8 +20,7 @@ class DoublePendulum extends Model {
   ])
 
   constructor(params = {}) {
-    super(DoublePendulum.STATES, DoublePendulum.COMMANDS, params)
-    this.params = {
+    super(DoublePendulum.STATES, DoublePendulum.COMMANDS, {
       m1: 1,
       l1: 1,
       m2: 1,
@@ -29,9 +29,7 @@ class DoublePendulum extends Model {
       mu: 0.2,
       s2: 0,
       ...params
-    }
-    // Init graphics
-    this.graphics = {}
+    })
   }
 
   trim() {
@@ -139,24 +137,23 @@ class DoublePendulum extends Model {
   }
 
   /**
-   * Execute a step
-   * @param {Matrix} u controls effort
-   * @param {Number} dt delta time
-   * @param {Array} mouseTarget optional mouse target
+   * Mouse step
+   * @param {Number} dt 
+   * @param {Array} mouseTarget 
    */
-  step(u, dt, mouseTarget) {
+  trackMouse(mouseTarget, dt) {
+    const { u } = this.trim()
     const dx = this.dynamics(this.x, u)
-    // Override x if target tracking
-    if (mouseTarget) {
-      const theta = Math.atan2(mouseTarget[1], mouseTarget[0]) + Math.PI / 2
-      this.x.vSet(2, 10 * wrapAngle(theta - this.x.vGet(0)))
-      dx.vSet(0, this.x.vGet(2))
-      dx.vSet(2, 0)
-    }
+    const theta = Math.atan2(mouseTarget[1], mouseTarget[0]) + Math.PI / 2
+    this.x.vSet(2, 10 * wrapAngle(theta - this.x.vGet(0)))
+    dx.vSet(0, this.x.vGet(2))
+    dx.vSet(2, 0)
+    // TODO: extract in schema
     const newX = this.x.matAdd(dx.mul(dt))
     this.bound(newX)
     this.setState(newX)
   }
+
 
   /**
    * Draw model
@@ -201,7 +198,8 @@ class DoublePendulum extends Model {
   /**
    * Update model
    */
-  updateGraphics(worldToCanvas, xRef) {
+  updateGraphics(worldToCanvas, params) {
+    const { y, xRef } = params;
     [{ x: this.x, obj: 'pendulum' }, { x: xRef, obj: 'ref' }].forEach(({ x, obj }) => {
       const { root, p2 } = this.graphics[obj];
       if (x) {
@@ -211,6 +209,33 @@ class DoublePendulum extends Model {
       }
       root.visible = !!x
     })
+  }
+
+  /**
+   * LQR Params
+   */
+  lqrParams() {
+    return {
+      Q: matFromDiag([10, 10, 1, 1]),
+      R: matFromDiag([1, 1]),
+      simEps: 1e-1,
+      simDuration: 4,
+      disengage: true,
+      divergenceThres: 500,
+    }
+  }
+
+  /**
+   * Direct collocation params
+   */
+  directCollocationParams() {
+    return {
+      nPts: 20,
+      uBounds: { min: [-20, -20], max: [20, 20] },
+      anchors: [{ t: 0, x: [0, 0, 0, 0] }, { t: 1, x: [3.14, 3.14, 0, 0] }],
+      holdTime: 1,
+      reverse: true
+    }
   }
 }
 

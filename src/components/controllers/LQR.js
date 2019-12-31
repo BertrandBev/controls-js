@@ -16,24 +16,27 @@ class LQR extends Controller {
     eig.GC.set(this, 'x0', x0)
     eig.GC.set(this, 'u0', u0)
     const [xn, un] = this.system.shape
-    eig.GC.set(this, 'Q', eig.Matrix.identity(xn, xn))
-    eig.GC.set(this, 'R', eig.Matrix.identity(un, un))
   }
 
   ready() {
     return !!this.K
   }
 
-  solve() {
+  solve(params) {
     const [Jx, Ju] = LinearSystem.linearize(this.system, this.x0, this.u0)
-    const sol = eig.Solvers.careSolve(Jx, Ju, this.Q, this.R);
+    const Q = eig.Matrix.fromArray(params.Q)
+    const R = eig.Matrix.fromArray(params.R)
+    const sol = eig.Solvers.careSolve(Jx, Ju, Q, R);
     eig.GC.set(this, 'K', sol.K)
   }
 
   simulate(dx, dt, duration) {
     const xn = this.system.shape[0]
     const x0 = this.x0.matAdd(eig.Matrix.ones(xn, 1).mul(dx))
-    return this.system.simulate(this, x0, dt, duration)
+    const arr = this.system.simulate(this, x0, dt, duration)
+    const xu0 = this.x0.vcat(this.u0)
+    arr.forEach(x => x.matSubSelf(xu0))
+    return arr
   }
 
   linearSimulate(dx, dt, duration) {
@@ -41,6 +44,8 @@ class LQR extends Controller {
     const xn = this.system.shape[0]
     const x0 = this.x0.matAdd(eig.Matrix.ones(xn, 1).mul(dx))
     const arr = linsys.simulate(this, x0, dt, duration)
+    const xu0 = this.x0.vcat(this.u0)
+    arr.forEach(x => x.matSubSelf(xu0))
     linsys.delete();
     return arr
   }

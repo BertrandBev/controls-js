@@ -1,38 +1,28 @@
 <template lang="pug">
 Block(title='Direct Collocation')
-  v-text-field.mb-3(v-model.number='nPts'
-                    label='Point count'
-                    outlined
-                    dense
-                    hide-details)
-  div.mb-3(style='display: flex; align-items: center')
-    v-text-field(style='flex: 1 0 auto; width: 0px'
-                 v-model='uBounds.min'
-                 label='uMax'
-                 outlined
-                 dense
-                 hide-details)
-    v-text-field.ml-3(style='flex: 1 0 auto; width: 0px'
-                      v-model='uBounds.max'
-                      label='uMin'
-                      outlined
-                      dense
-                      hide-details)
-  div.mb-3(v-for='anchor, idx in anchors'
+  ValueInput(ref='nPts'
+              :value.sync='params.nPts'
+              label='Point count')
+  div.mb-3.mt-3(style='display: flex; align-items: center')
+    ArrayInput(ref='uMin'
+               style='flex: 1 0 auto; width: 0px'
+               :array.sync='params.uBounds.min'
+               label='uMin')
+    ArrayInput.ml-2(ref='uMax'
+               style='flex: 1 0 auto; width: 0px'
+               :array.sync='params.uBounds.max'
+               label='uMax')
+  div.mb-3(v-for='anchor, idx in params.anchors'
       :key='`anchor_${idx}`'
       style='display: flex; align-items: center')
-    v-text-field(style='flex: 0 0 auto; width: 48px'
-                 v-model.number='anchor.t'
-                 label='t'
-                 outlined
-                 dense
-                 hide-details)
-    v-text-field.ml-3(style='flex: 1 0 auto; width: 0px'
-                      v-model='anchor.x'
-                      label='x'
-                      outlined
-                      dense
-                      hide-details)
+    ValueInput(:ref='`time_${idx}`'
+               style='flex: 0 0 auto; width: 48px'
+               :value.sync='anchor.t'
+               label='t')
+    ArrayInput.ml-2(:ref='`anchor_${idx}`'
+               style='flex: 1 0 auto; width: 0px'
+               :array.sync='anchor.x'
+               label='x')
     v-btn(icon
           color='red'
           @click='deleteAnchor(idx)')
@@ -54,6 +44,8 @@ Block(title='Direct Collocation')
 import DirectCollocation from "@/components/planners/directCollocation.js";
 import Trajectory from "@/components/planners/trajectory.js";
 import Block from "./utils/Block.vue";
+import ArrayInput from "./utils/ArrayInput.vue";
+import ValueInput from "./utils/ValueInput.vue";
 import eig from "@eigen";
 import _ from "lodash";
 import pluginMixin from "./pluginMixin.js";
@@ -64,7 +56,9 @@ export default {
   mixins: [pluginMixin],
 
   components: {
-    Block
+    Block,
+    ArrayInput,
+    ValueInput
   },
 
   props: {
@@ -75,32 +69,17 @@ export default {
     collocation: null,
     running: false,
     simTraj: null,
-    // Parameters
-    nPts: 0,
-    anchors: [],
-    uBounds: { min: [], max: [] }
+    params: {}
   }),
 
   computed: {
     trajectories() {
       return [this.simTraj];
-    },
-
-    params() {
-      return this.system.directCollocationParams();
     }
   },
 
   created() {
-    this.nPts = this.params.nPts;
-    this.uBounds = {
-      min: `${this.params.uBounds.min}`,
-      max: `${this.params.uBounds.max}`
-    };
-    this.anchors = this.params.anchors.map(anchor => ({
-      ...anchor,
-      x: `${anchor.x}`
-    }));
+    this.params = _.cloneDeep(this.system.directCollocationParams());
     this.collocation = new DirectCollocation(this.system);
     this.simTraj = new Trajectory(this.system, false);
   },
@@ -126,18 +105,14 @@ export default {
       }
     },
 
-    parseArr(str) {
-      return str.split(",").map(i => parseFloat(i));
-    },
-
     addAnchor() {
       const nx = this.system.shape[0];
-      const x0 = [...Array(nx)].map(() => 0).join(", ");
-      this.anchors.push({ t: 0, x: x0 });
+      const x0 = [...Array(nx)].map(() => 0);
+      this.params.anchors.push({ t: 0, x: x0 });
     },
 
     deleteAnchor(idx) {
-      this.anchors.splice(idx, 1);
+      this.params.anchors.splice(idx, 1);
     },
 
     runCollocation() {
@@ -152,38 +127,19 @@ export default {
 
     optimize() {
       // Parse parameters
-      const [nx, nu] = this.system.shape;
-      const params = _.cloneDeep(this.params);
-      params.nPts = this.nPts;
-      params.anchors = _.cloneDeep(this.anchors);
-      params.uBounds = _.cloneDeep(this.uBounds);
-      try {
-        params.anchors.forEach(anchor => {
-          anchor.x = this.parseArr(anchor.x);
-          if (anchor.x.length !== nx)
-            return this.$bus.notify(
-              "error",
-              `The state dimension should be ${nx}`
-            );
-        });
-        params.uBounds.min = this.parseArr(params.uBounds.min);
-        params.uBounds.max = this.parseArr(params.uBounds.max);
-        if (
-          params.uBounds.min.length !== nu ||
-          params.uBounds.max.length !== nu
-        )
-          return this.$bus.notify(
-            "error",
-            `The controls dimension should be ${nu}`
-          );
-      } catch (e) {
-        return this.$bus.notify("error", "The anchors could not be parsed");
+      const validation = _.values(this.$refs)
+        .filter(input => input.validate)
+        .map(input => input.validate());
+      if (_.every(validation)) {
+        const [nx, nu] = this.system.shape;
+        this.collocation.setParams(this.params);
+        const rtn = this.collocation.optimize();
+        if (rtn) {
+          this.simTraj.set(rtn[0], rtn[1]);
+        } else {
+          this.$bus.notify("error", "Optimization failed");
+        }
       }
-      params.nPts = this.nPts;
-      this.collocation.setParams(params);
-      let [x, dt] = this.collocation.optimize();
-      x = this.system.reverse(x);
-      this.simTraj.set(x, dt);
     },
 
     download() {

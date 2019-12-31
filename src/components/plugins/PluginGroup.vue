@@ -54,6 +54,7 @@ export default {
     this.plugins = ALL_PLUGINS.map(name => this.$refs[name]).filter(
       plugin => !!plugin
     );
+    if (this.plugins.length > 0) this.activate(this.plugins[0]);
   },
 
   methods: {
@@ -78,6 +79,7 @@ export default {
         plugin.active = false;
       });
       plugin.active = true;
+      this.reset();
     }
   }
 };

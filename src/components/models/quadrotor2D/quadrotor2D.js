@@ -3,7 +3,7 @@ import _ from 'lodash'
 import chroma from 'chroma-js'
 import colors from 'vuetify/lib/util/colors'
 import Model from '@/components/models/model.js'
-import { wrapAngle, sqr } from '@/components/math.js'
+import { wrapAngle, sqr, matFromDiag } from '@/components/math.js'
 
 class Quadrotor2D extends Model {
   static STATES = Object.freeze([
@@ -21,16 +21,19 @@ class Quadrotor2D extends Model {
   ])
 
   constructor(params = {}) {
-    super(Quadrotor2D.STATES, Quadrotor2D.COMMANDS, params)
-    this.params = {
+    super(Quadrotor2D.STATES, Quadrotor2D.COMMANDS, {
       g: 9.81,
       l: 1,
       m: 1,
       I: 1,
       // mu: 0.5, TODO: add natural damping
       ...params
-    }
-    this.graphics = {}
+    })
+  }
+
+  trim() {
+    const u0 = this.params.g * this.params.m / 2
+    return { x: new eig.Matrix(6, 1), u: eig.Matrix.fromArray([u0, u0]) }
   }
 
   /**
@@ -101,40 +104,139 @@ class Quadrotor2D extends Model {
   }
 
   /**
-   * Get steady state command
+   * Mouse step
+   * @param {Number} dt 
+   * @param {Array} mouseTarget 
    */
-  ssCommand() {
-    const cmd = this.params.g * this.params.m / 2
-    return eig.Matrix.fromArray([
-      cmd, cmd
-    ])
+  trackMouse(mouseTarget, dt) {
+    // const { u } = this.trim()
+    const dxo = eig.Matrix.fromArray([
+      mouseTarget[0] - this.x.vGet(0),
+      mouseTarget[1] - this.x.vGet(1),
+      -this.x.vGet(2)
+    ]).mul(10).clamp(-10, 10)
+    const dx = dxo.vcat(new eig.Matrix(3, 1))
+    this.x.setBlock(3, 0, dxo.block(0, 0, 3, 1))
+    // TODO: extract in schema
+    const newX = this.x.matAdd(dx.mul(dt))
+    this.bound(newX)
+    this.setState(newX)
   }
 
+  /**
+   * Draw model
+   */
+  createGraphics(two, scale) {
+    const GEOM = {
+      thickness: 8,
+      length: scale
+    };
+
+    const body = two.makeRectangle(0, 0, GEOM.length, GEOM.thickness);
+    body.fill = colors.blue.base;
+    body.linewidth = 2;
+
+    // Create propellers
+    const propHeight = -1.5 * GEOM.thickness;
+    const propLength = GEOM.length / 4;
+    this.graphics.force = [null, null];
+    const sides = [(3 * GEOM.length) / 7, (-3 * GEOM.length) / 7].map(x => {
+      const prop = two.makeLine(
+        x - propLength,
+        propHeight,
+        x + propLength,
+        propHeight
+      );
+      prop.linewidth = 3;
+      prop.fill = colors.green.base;
+      const shaft = two.makeLine(x, -3, x, propHeight);
+      shaft.linewidth = 2;
+      shaft.fill = colors.green.base;
+      // Motors?
+
+      // Forces
+      const fLine = two.makeLine(x, propHeight, x, propHeight - 10);
+      fLine.linewidth = 2;
+      fLine.stroke = colors.red.base;
+      const fHead = two.makePolygon(x, propHeight - 10, 6, 3);
+      fHead.fill = colors.red.base;
+
+      return {
+        prop: two.makeGroup(prop, shaft, fLine, fHead),
+        fLine,
+        fHead
+      };
+    });
+    this.graphics.showControl = true
+    this.graphics.setControl = u => {
+      sides.forEach((side, idx) => {
+        const uh = _.clamp(u.vGet(idx) * 5, -100, 100);
+        side.fHead.translation.y = propHeight - uh;
+        side.fHead.rotation = uh > 0 ? 0 : Math.PI;
+        side.fLine.vertices[1].y = side.fHead.translation.y;
+        side.fHead.visible = side.fLine.visible = this.graphics.showControl
+      });
+    };
+    // const trajLines = [...Array(20)].map(() => {
+    //   const line = two.makeLine(0, 0, 0, 0);
+    //   return line;
+    // });
+    // this.graphics.showTraj = traj => {
+    //   traj.forEach((x, idx) => {
+    //     const xy = this.worldToCanvas([x.vGet(0), x.vGet(1)]);
+    //     trajLines[idx].vertices[0].x = xy[0];
+    //     trajLines[idx].vertices[0].y = xy[1];
+    //     trajLines[idx].vertices[1].x = xy[0];
+    //     trajLines[idx].vertices[1].y = xy[1];
+    //     if (idx > 0) {
+    //       trajLines[idx - 1].vertices[1].x = xy[0];
+    //       trajLines[idx - 1].vertices[1].y = xy[1];
+    //     }
+    //   });
+    // };
+    this.graphics.system = two.makeGroup(
+      body,
+      sides[0].prop,
+      sides[1].prop
+    );
+  }
 
   /**
-   * Execute a step
-   * @param {Matrix} u controls effort
-   * @param {Number} dt delta time
-   * @param {Array} mouseTarget optional mouse target
+   * Update model
    */
-  step(u, dt, mouseTarget) {
-    let dx = this.dynamics(this.x, u)
-    // Override x if target tracking
-    if (mouseTarget) {
-      const dxo = eig.Matrix.fromArray([
-        mouseTarget[0] - this.x.vGet(0),
-        mouseTarget[1] - this.x.vGet(1),
-        -this.x.vGet(2)
-      ]).mul(10).clamp(-10, 10)
-      dx = dxo.vcat(new eig.Matrix(3, 1))
-      for (let k = 0; k < dxo.rows(); k++) {
-        this.x.vSet(k + 3, dxo.vGet(k))
-      }
+  updateGraphics(worldToCanvas, params) {
+    const { u } = params;
+    const x = this.x
+    this.graphics.system.translation.set(...worldToCanvas([x.vGet(0), x.vGet(1)]))
+    this.graphics.system.rotation = -x.vGet(2)
+    this.graphics.setControl(u)
+  }
+
+  /**
+   * LQR Params
+   */
+  lqrParams() {
+    return {
+      Q: matFromDiag([10, 10, 10, 1, 1, 1]),
+      R: matFromDiag([1, 1]),
+      simEps: 1,
+      simDuration: 4,
+      disengage: true,
+      divergenceThres: 200,
     }
-    // console.log('x', x, 'xDot', xDot)
-    const newX = this.x.matAdd(dx.mul(dt))
-    newX.vSet(2, wrapAngle(newX.vGet(2)))
-    eig.GC.set(this, 'x', newX)
+  }
+
+  /**
+   * Direct collocation params
+   */
+  directCollocationParams() {
+    return {
+      nPts: 20,
+      uBounds: { min: [0, 0], max: [20, 20] },
+      anchors: [{ t: 0, x: [0, 0, 0, 0, 0, 0] }, { t: 1, x: [0, 1, 0, 0, 0, 0] }],
+      holdTime: 1,
+      reverse: true
+    }
   }
 
   /**
@@ -199,29 +301,7 @@ class Quadrotor2D extends Model {
   }
 }
 
-const flipTraj = {
-  dt: 0.1162028035978925,
-  x: [[-2.0000, -1.5000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 10.0000],
-  [-1.9995, -1.4986, -0.0374, 0.0152, 0.0231, -0.6116, 0.0000, 10.0000],
-  [-1.9918, -1.4848, -0.1447, 0.1452, 0.2797, -1.1032, 3.9228, 10.0000],
-  [-1.9509, -1.4075, -0.2946, 0.5990, 1.0888, -1.2825, 10.0000, 9.7854],
-  [-1.8364, -1.2313, -0.4384, 1.2433, 1.5911, -0.9702, 10.0000, 0.0000],
-  [-1.6503, -1.0434, -0.5197, 1.8137, 1.4728, -0.3586, 10.0000, 0.0000],
-  [-1.3908, -0.8721, -0.5261, 2.4312, 1.3287, 0.2530, 10.0000, 0.0000],
-  [-1.0569, -0.7176, -0.4578, 3.0155, 1.2031, 0.8646, 10.0000, 0.0000],
-  [-0.6578, -0.5755, -0.3146, 3.4829, 1.1323, 1.4762, 10.0000, 0.0000],
-  [-0.2187, -0.4623, -0.1091, 3.6336, 0.5245, 1.7820, 0.0000, 0.0000],
-  [0.2258, -0.4700, 0.1081, 3.6323, -0.6374, 1.7629, 0.0000, 0.6247],
-  [0.6643, -0.5939, 0.3097, 3.4768, -1.2072, 1.4380, 0.0000, 10.0000],
-  [1.0631, -0.7450, 0.4482, 3.0176, -1.2744, 0.8264, 0.0000, 10.0000],
-  [1.3979, -0.9078, 0.5119, 2.4461, -1.3932, 0.2148, 0.0000, 10.0000],
-  [1.6603, -1.0865, 0.5007, 1.8463, -1.5271, -0.3968, 0.0000, 10.0000],
-  [1.8474, -1.2717, 0.4196, 1.1948, -1.4220, -0.8904, 3.8566, 10.0000],
-  [1.9528, -1.4166, 0.2910, 0.5478, -0.8844, -1.1859, 6.4810, 10.0000],
-  [1.9918, -1.4850, 0.1448, 0.1448, -0.2753, -1.1054, 10.0000, 3.8502],
-  [1.9995, -1.4986, 0.0374, 0.0152, -0.0231, -0.6116, 10.0000, 0.0000],
-  [2.0000, -1.5000, 0.0000, 0.0000, 0.0000, 0.0000, 10.0000, 0.0000]]
-}
+const traj = []
 
-
-export { Quadrotor2D, flipTraj }
+export { traj }
+export default Quadrotor2D
