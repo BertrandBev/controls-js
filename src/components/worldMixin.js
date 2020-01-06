@@ -26,7 +26,7 @@ export default {
     },
 
     height() {
-      return HEIGHT; // this.canvas.clientHeight;
+      return this.canvas.parentElement.clientHeight;
     },
 
     width() {

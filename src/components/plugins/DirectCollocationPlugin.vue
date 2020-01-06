@@ -13,8 +13,8 @@ Block(title='Direct Collocation')
                :array.sync='params.uBounds.max'
                label='uMax')
   div.mb-3(v-for='anchor, idx in params.anchors'
-      :key='`anchor_${idx}`'
-      style='display: flex; align-items: center')
+           :key='`anchor_${anchor.key || idx}`'
+           style='display: flex; align-items: center')
     ValueInput(:ref='`time_${idx}`'
                style='flex: 0 0 auto; width: 48px'
                :value.sync='anchor.t'
@@ -108,7 +108,7 @@ export default {
     addAnchor() {
       const nx = this.system.shape[0];
       const x0 = [...Array(nx)].map(() => 0);
-      this.params.anchors.push({ t: 0, x: x0 });
+      this.params.anchors.push({ t: 0, x: x0, key: Math.random() });
     },
 
     deleteAnchor(idx) {
@@ -135,7 +135,7 @@ export default {
         this.collocation.setParams(this.params);
         const rtn = this.collocation.optimize();
         if (rtn) {
-          this.simTraj.set(rtn[0], rtn[1]);
+          this.simTraj.set(rtn.x, rtn.dt);
         } else {
           this.$bus.notify("error", "Optimization failed");
         }

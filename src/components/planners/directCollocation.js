@@ -9,8 +9,8 @@ import eig from '@eigen'
  * @param {Array} anchors [{t in [0, 1], x}]
  */
 const defaultParams = {
-  maxTime: 15,
-  maxEval: 10
+  maxTime: 60,
+  maxEval: 1e6
 }
 
 class DirectCollocation {
@@ -35,7 +35,7 @@ class DirectCollocation {
     // Compute dimensionality
     this.shape = this.system.shape
     this.dim = (this.shape[0] + this.shape[1]) * this.n + 1
-    const algorithm = nlopt.Algorithm.LD_SLSQP // LD_SLSQP LD_MMA LN_COBYLA
+    const algorithm = nlopt.Algorithm.LD_SLSQP;
     this.opt = new nlopt.Optimize(algorithm, this.dim)
 
     // Set objective
@@ -84,7 +84,7 @@ class DirectCollocation {
         setPoint(min, max, (min + max) / 2)
       } else {
         // tEnd
-        setPoint(0, INF, 1)
+        setPoint(0.1, INF, 1)
       }
     }
     // Add anchors
@@ -114,7 +114,7 @@ class DirectCollocation {
 
   // res[nConst] = function(x)
 
-  constraint(x, grad, res) {
+  constraint(x, grad, res, iTol = 0) {
     // Not useful if put back in function below
     const nx = this.shape[0]
     const nu = this.shape[1]
@@ -162,7 +162,11 @@ class DirectCollocation {
       const c = xk.matSub(xkn).matAdd(fk.matAdd(fck.mul(4)).matAdd(fkn).mul(h / 6))
       for (let i = 0; i < nx; i++) {
         const cIdx = k * nx + i;
-        res[cIdx] = c.vGet(i)
+        if (iTol !== 0) {
+          res[cIdx] = - Math.sign(iTol) * c.vGet(i);
+        } else {
+          res[cIdx] = c.vGet(i);
+        }
         max = Math.max(max, Math.pow(c.vGet(i), 2))
       }
 
@@ -229,7 +233,7 @@ class DirectCollocation {
 
 
     }
-    // console.log('iteration time', Date.now() - a);
+    console.log('iteration time', Date.now() - a);
 
     // TEMP
 
@@ -240,7 +244,7 @@ class DirectCollocation {
 
     // if (iter++ % 100 == 0)
     //   console.log(`Iteration ${iter}; max constraint ${max}`)
-    eig.GC.flush()
+    // eig.GC.flush()
     // console.log('elapsed', new Date() - d, 'ms')
   }
 
@@ -282,25 +286,32 @@ class DirectCollocation {
     const nx = this.shape[0]
     const nu = this.shape[1]
     const nConst = (this.n - 1) * nx
-    const tolVec = nlopt.Vector.fromArray([...Array(nConst)].map(() => 1e-6))
+    const tolVec = nlopt.Vector.fromArray([...Array(nConst)].map(() => 1e-4))
     let iter = 0;
     this.opt.add_equality_mconstraint(nlopt.VectorFunction.fromLambda((x, grad, res) => {
-      this.constraint(x, grad, res)
+      this.constraint(x, grad, res);
     }), tolVec)
+    // const tolVec2 = nlopt.Vector.fromArray([...Array(nConst)].map(() => 1e-4))
+    // this.opt.add_inequality_mconstraint(nlopt.VectorFunction.fromLambda((x, grad, res) => {
+    //   this.constraint(x, grad, res, -1);
+    // }), tolVec2)
   }
 
   optimize() {
     this.opt.set_maxtime(this.params.maxTime)
     this.opt.set_maxeval(this.params.maxEval)
     const res = this.opt.optimize(this.x0)
+    console.log('Optimization returned ', res, res.x)
     if (!res.success) {
+      console.log('Optimization failed')
       return null
     }
-    const [xList, uList, tEnd] = this.unpack(res.x)
-    // console.log('xList', xList, 'uList', uList)
+    let [xList, uList, tEnd] = this.unpack(res.x)
+    console.log('tEnd', tEnd);
     let arr = xList.map((x, idx) => {
       return eig.Matrix.fromArray(x).vcat(eig.Matrix.fromArray(uList[idx]))
     })
+    tEnd = Math.max(tEnd, 0.1); // Safeguard for hold loop
     const dt = tEnd / xList.length
     // Array hold
     for (let k = 0; k < this.params.holdTime / dt; k++) {
@@ -311,7 +322,7 @@ class DirectCollocation {
     if (this.params.reverse) {
       arr = this.system.reverse(arr)
     }
-    return [arr, dt]
+    return { x: arr, dt }
   }
 
   unpack(vector) {
