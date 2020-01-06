@@ -19,25 +19,37 @@
     //* Matrix input
     div(v-if='matrix'
         style='display: flex; flex-direction: column')
-      div(v-for='row in rows'
-          :key='`row_${row}`'
-          style='display: flex;')
-        v-text-field.ml-1.mt-1(v-for='col in cols'
-                    :key='`col_${col}`'
-                    :value='getVal(row - 1, col - 1)'
-                    @input='val => setVal(row - 1, col - 1, val)'
-                    outlined
-                    dense
-                    small
-                    hide-details)
+      ArrayInput.mt-1(style='display: flex;'
+                 v-if='diagonal'
+                 :array.sync='diagArray')
+      ArrayInput.mt-1(v-else
+                  v-for='row in rows'
+                  :key='`row_${row}`'
+                  style='display: flex;'
+                  :array.sync='matrix[row - 1]')
+
+        //- v-text-field.ml-1.mt-1(v-for='col in cols'
+        //-             :key='`col_${col}`'
+        //-             :value='getVal(row - 1, col - 1)'
+        //-             @input='val => setVal(row - 1, col - 1, val)'
+        //-             outlined
+        //-             dense
+        //-             small
+        //-             hide-details)
 </template>
 
 <script>
 import eig from "@eigen";
+import ArrayInput from "./ArrayInput.vue";
 
 export default {
+  components: {
+    ArrayInput
+  },
+
   data: () => ({
-    diagonal: true
+    diagonal: true,
+    diagArray: []
   }),
 
   props: {
@@ -45,39 +57,50 @@ export default {
     label: String
   },
 
+  created() {
+    this.diagArray = [...Array(this.matrix.length)].map(
+      (v, idx) => this.matrix[idx][idx]
+    );
+  },
+
   watch: {
+    diagArray() {
+      this.diagArray.forEach((v, idx) => (this.matrix[idx][idx] = v));
+    },
+
     diagonal() {
       if (!this.diagonal) return;
       // Clear off diagonal terms
-      for (let i = 0; i < this.matrix.length; i++)
+      for (let i = 0; i < this.matrix.length; i++) {
         for (let j = i + 1; j < this.matrix[0].length; j++) {
           this.matrix[i][j] = 0;
           this.matrix[j][i] = 0;
         }
+        this.diagArray[i] = this.matrix[i][i];
+      }
     }
   },
 
   computed: {
     rows() {
       return this.diagonal ? 1 : this.matrix.length;
-    },
-
-    cols() {
-      return this.matrix[0].length;
     }
+
+    // cols() {
+    //   return this.matrix[0].length;
+    // }
   },
 
   methods: {
-    getVal(i, j) {
-      if (this.diagonal) i = j;
-      return this.matrix[i][j];
-    },
-
-    setVal(i, j, value) {
-      if (this.diagonal) i = j;
-      const val = parseFloat(value) || 0;
-      this.matrix[i][j] = val;
-    }
+    // getVal(i, j) {
+    //   if (this.diagonal) i = j;
+    //   return this.matrix[i][j];
+    // },
+    // setVal(i, j, value) {
+    //   if (this.diagonal) i = j;
+    //   const val = parseFloat(value) || 0;
+    //   this.matrix[i][j] = val;
+    // }
   }
 };
 </script>

@@ -8,7 +8,9 @@ ModelLayout
     PluginGroup(ref='pluginGroup'
                 LQRPlugin
                 DirectCollocationPlugin
-                :system='system')
+                FlatnessPlugin
+                :system='system'
+                :interactivePath='interactivePath')
   template(v-slot:sheet)
     PlotSheet(ref='plotSheet'
               :pluginGroup='pluginGroup')
@@ -25,6 +27,7 @@ import ModelLayout from "@/components/models/ModelLayout.vue";
 import Quadrotor2D, { traj } from "./quadrotor2D.js";
 import worldMixin from "@/components/worldMixin.js";
 import systemMixin from "@/components/systemMixin.js";
+import InteractivePath from "@/components/planners/interactivePath.js";
 import PluginGroup from "@/components/plugins/PluginGroup.vue";
 import PlotSheet from "@/components/models/PlotSheet.vue";
 import ControlBar from "@/components/models/ControlBar.vue";
@@ -41,7 +44,9 @@ export default {
 
   mixins: [worldMixin, systemMixin],
 
-  data: () => ({}),
+  data: () => ({
+    interactivePath: null
+  }),
 
   computed: {
     canvas() {
@@ -54,6 +59,10 @@ export default {
 
     dt() {
       return 1 / 60;
+    },
+
+    mouseTargetEnabled() {
+      return _.get(this.pluginGroup, "active.name") !== "FlatnessPlugin";
     }
   },
 
@@ -63,6 +72,14 @@ export default {
 
   mounted() {
     this.pluginGroup = this.$refs.pluginGroup;
+    // Create interactive path
+    this.interactivePath = new InteractivePath(
+      this.two,
+      this.worldToCanvas,
+      this.canvasToWorld
+    );
+    // Create graphics
+    this.createGraphics();
   },
 
   methods: {

@@ -31,7 +31,7 @@ import ValueInput from "./utils/ValueInput.vue";
 import eig from "@eigen";
 import _ from "lodash";
 
-const DT = 0.01;
+const DT = 1 / 60;
 
 export default {
   name: "LQRPlugin",

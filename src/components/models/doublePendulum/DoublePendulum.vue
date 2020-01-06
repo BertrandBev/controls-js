@@ -63,6 +63,7 @@ export default {
 
   mounted() {
     this.pluginGroup = this.$refs.pluginGroup;
+    this.createGraphics();
   },
 
   methods: {

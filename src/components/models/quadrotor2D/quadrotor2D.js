@@ -279,7 +279,7 @@ class Quadrotor2D extends Model {
    * Differential flatness solution for an x, y trajectory
    * @returns [x; u]
    */
-  fitTrajectory(xy, dt) {
+  differentialFlatness(xy, dt) {
     const p = this.params
     // Differenciate trajectory
     xy = this.smooth(xy, dt, 1)

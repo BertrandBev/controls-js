@@ -1,6 +1,6 @@
 <template lang="pug">
   div(style='width: 100%; height: 100%')
-    TrajPlot(v-if='pluginName === "LQRPlugin" || pluginName === "DirectCollocationPlugin"'
+    TrajPlot(v-if='showTraj'
              :trajectories='trajectories')
     ValueIterationPlot(v-if='pluginName == "ValueIterationPlugin"'
                        :valueIterationPlanner='viPlanner')
@@ -40,10 +40,15 @@ export default {
       switch (this.pluginName) {
         case "LQRPlugin":
         case "DirectCollocationPlugin":
+        case "FlatnessPlugin":
           return this.active.trajectories;
         default:
           return [];
       }
+    },
+
+    showTraj() {
+      return this.trajectories.length > 0;
     },
 
     viPlanner() {

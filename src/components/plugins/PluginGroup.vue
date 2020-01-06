@@ -12,32 +12,42 @@
                             ref='DirectCollocationPlugin'
                             :system='system'
                             @activate='activate')
+    FlatnessPlugin(v-if='FlatnessPlugin'
+                   ref='FlatnessPlugin'
+                   :system='system'
+                   :interactivePath='interactivePath'
+                   @activate='activate')
 </template>
 
 <script>
 import LQRPlugin from "@/components/plugins/LQRPlugin.vue";
 import ValueIterationPlugin from "@/components/plugins/ValueIterationPlugin.vue";
 import DirectCollocationPlugin from "@/components/plugins/DirectCollocationPlugin.vue";
+import FlatnessPlugin from "@/components/plugins/FlatnessPlugin.vue";
 import _ from "lodash";
 const ALL_PLUGINS = [
   "LQRPlugin",
   "ValueIterationPlugin",
-  "DirectCollocationPlugin"
+  "DirectCollocationPlugin",
+  "FlatnessPlugin"
 ];
 
 export default {
   components: {
     LQRPlugin,
     ValueIterationPlugin,
-    DirectCollocationPlugin
+    DirectCollocationPlugin,
+    FlatnessPlugin
   },
 
   props: {
     LQRPlugin: Boolean,
     ValueIterationPlugin: Boolean,
     DirectCollocationPlugin: Boolean,
+    FlatnessPlugin: Boolean,
     //
-    system: Object
+    system: Object,
+    interactivePath: Object
   },
 
   data: () => ({

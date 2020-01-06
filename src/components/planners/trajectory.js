@@ -39,6 +39,13 @@ class Trajectory {
   }
 
   /**
+   * Clear traj
+   */
+  clear() {
+    this.array = []
+  }
+
+  /**
    * Add update callback
    */
   addWatcher(fun) {

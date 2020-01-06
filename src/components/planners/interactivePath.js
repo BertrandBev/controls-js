@@ -1,15 +1,19 @@
 import Two from "two.js";
 import _ from 'lodash'
 import Vue from 'vue'
+import colors from 'vuetify/lib/util/colors'
+import eig from "@eigen"
 
 // TODO: allow for open path (and non differentiable ?)
 class InteractivePath {
-  constructor(two) {
+  constructor(two, worldToCanvas, canvasToWorld) {
+    this.worldToCanvas = worldToCanvas
+    this.canvasToWorld = canvasToWorld
     this.updateListeners = []
 
-    const length = 200
-    const vHandle = 60
-    const dHandle = 100
+    const length = 300
+    const vHandle = 100
+    const dHandle = 140
 
     this.path = new Two.Path([
       // new Two.Anchor(0, 0),
@@ -21,7 +25,7 @@ class InteractivePath {
     ], false)
     this.path.automatic = false;
     this.path.noFill()
-    this.path.stroke = '#9C27B0'
+    this.path.stroke = colors.purple.base;
     this.path.linewidth = 3
     this.group = two.makeGroup(this.path)
 
@@ -30,7 +34,7 @@ class InteractivePath {
       const anchor = vertices[k]
 
       const radius = 20;
-      const editColor = '#00897B'
+      const editColor = colors.red.base;
 
 
       const handle = two.makeCircle(0, 0, radius / 4);
@@ -88,7 +92,11 @@ class InteractivePath {
       this.addInteractivity(l);
       // addInteractivity(r);
     }
-    two.update();
+
+    // Center path
+    const [cx, cy] = worldToCanvas([0, 0])
+    this.group.translation.set(cx, cy);
+    this.setVisibility(false);
   }
 
   addInteractivity(shape) {
@@ -124,6 +132,10 @@ class InteractivePath {
     })
   }
 
+  setVisibility(visible) {
+    this.group.visible = visible
+  }
+
   addUpdateListener(listener) {
     this.updateListeners.push(listener)
   }
@@ -132,14 +144,21 @@ class InteractivePath {
     this.updateListeners.forEach(l => l())
   }
 
-  discretize(nPoints) {
+  discretize(nPts) {
     const traj = []
-    for (let k = 0; k < nPoints; k++) {
-      const t = k / nPoints;
+    for (let k = 0; k < nPts; k++) {
+      const t = k / nPts;
       traj.push(this.path.getPointAt(t))
     }
     return traj
   }
+
+  getTraj(nPts) {
+    const [cx, cy] = this.worldToCanvas([0, 0])
+    return this.discretize(nPts).map(val => {
+      return eig.Matrix.fromArray(this.canvasToWorld([val.x + cx, val.y + cy]));
+    });
+  }
 }
 
-export { InteractivePath }
+export default InteractivePath

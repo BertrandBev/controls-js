@@ -11,13 +11,17 @@ export default {
     activePlugin() {
       return _.get(this.pluginGroup, "active");
     },
-  },
 
-  mounted() {
-    this.system.createGraphics(this.two, this.scale);
+    mouseTargetEnabled() {
+      return true; // Override if needed
+    }
   },
 
   methods: {
+    createGraphics() {
+      this.system.createGraphics(this.two, this.scale);
+    },
+
     reset() {
       this.pluginGroup.reset();
     },
@@ -26,7 +30,7 @@ export default {
       // TODO: add FPS meter
       let params = this.system.trim();
       // Update system
-      if (this.mouseTarget) {
+      if (this.mouseTargetEnabled && this.mouseTarget) {
         this.system.trackMouse(this.mouseTarget, this.dt);
       } else if (this.pluginGroup && this.pluginGroup.ready()) {
         params = this.pluginGroup.update(this.t, this.dt);
