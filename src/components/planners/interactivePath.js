@@ -3,6 +3,7 @@ import _ from 'lodash'
 import Vue from 'vue'
 import colors from 'vuetify/lib/util/colors'
 import eig from "@eigen"
+import { setDraggable } from '@/components/twoUtils.js'
 
 // TODO: allow for open path (and non differentiable ?)
 class InteractivePath {
@@ -88,9 +89,11 @@ class InteractivePath {
       // });
 
       // Add Interactivity
-      this.addInteractivity(handle);
-      this.addInteractivity(l);
-      // addInteractivity(r);
+      Vue.$nextTick(() => {
+        setDraggable(handle);
+        setDraggable(l);
+      })
+      // setDraggable(r);
     }
 
     // Center path
@@ -99,38 +102,7 @@ class InteractivePath {
     this.setVisibility(false);
   }
 
-  addInteractivity(shape) {
-    Vue.nextTick(() => {
-      const el = shape._renderer.elem
-      // el.style.cursor = 'move'
-      el.addEventListener('mousemove', e => {
-        shape.scale = 2
-      })
-      el.addEventListener('mouseleave', e => {
-        shape.scale = 1
-      })
-      el.addEventListener('mousedown', e => {
-        e.preventDefault();
-        let anchor = [e.clientX, e.clientY];
-        // Create funcitons
-        function drag(e) {
-          e.preventDefault();
-          shape.translation.x += e.clientX - anchor[0]
-          shape.translation.y += e.clientY - anchor[1]
-          anchor = [e.clientX, e.clientY];
-          shape.scale = 2
-        }
-        function dragEnd(e) {
-          e.preventDefault();
-          window.removeEventListener('mousemove', drag)
-          window.removeEventListener('mouseup', dragEnd);
-          shape.scale = 1
-        }
-        window.addEventListener('mousemove', drag);
-        window.addEventListener('mouseup', dragEnd);
-      })
-    })
-  }
+
 
   setVisibility(visible) {
     this.group.visible = visible

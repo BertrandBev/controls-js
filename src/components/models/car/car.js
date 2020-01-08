@@ -1,0 +1,193 @@
+import eig from '@eigen'
+import _ from 'lodash'
+import colors from 'vuetify/lib/util/colors'
+import Model from '@/components/models/model.js'
+import { ValueIterationParams } from '@/components/planners/valueIterationPlanner.js'
+import { matFromDiag } from '@/components/math.js'
+import Two from "two.js";
+import { wrapAngle } from '@/components/math.js'
+
+class Car extends Model {
+  static STATES = Object.freeze([
+    { name: 'x', show: true },
+    { name: 'y', show: true },
+    { name: 'theta', show: true },
+    { name: 'v', show: false }
+  ])
+
+  static COMMANDS = Object.freeze([
+    { name: 'accel' },
+    { name: 'delta' }
+  ])
+
+  constructor(params = {}) {
+    super(Car.STATES, Car.COMMANDS, {
+      ...params,
+      l: 1,
+      mu: 0.5, // s^-1.kg^-1
+      maxAccel: 20,
+      maxDelta: Math.PI / 4
+    })
+  }
+
+  trim() {
+    return {
+      x: eig.Matrix.fromArray([0, 0, Math.PI / 2, 0]),
+      u: eig.Matrix.fromArray([0, 0]),
+    }
+  }
+
+  /**
+   * Bound state x to appropriate domain
+   * @param {Matrix} x 
+   */
+  bound(x) {
+    super.bound(x)
+    x.vSet(2, wrapAngle(x.vGet(2)))
+  }
+
+  /**
+   * Returns dx/dt
+   * @param {Matrix} x
+   * @param {Matrix} u
+   * @returns {Matrix} dx
+   */
+  dynamics(x, u) {
+    const p = this.params
+    const theta = x.vGet(2);
+    const v = x.vGet(3);
+    const delta = u.vGet(1);
+    return eig.Matrix.fromArray([
+      Math.cos(theta) * v * Math.cos(delta),
+      Math.sin(theta) * v * Math.cos(delta),
+      p.l * v * Math.sin(delta),
+      u.vGet(0) - v * p.mu
+    ])
+  }
+
+  /**
+   * Mouse step
+   * @param {Number} dt 
+   * @param {Array} mouseTarget 
+   */
+  trackMouse(mouseTarget, dt) {
+    const p = this.params
+    const [x, y] = [this.x.vGet(0), this.x.vGet(1)];
+    const [theta, v] = [this.x.vGet(2), this.x.vGet(3)]
+    const [mx, my] = [mouseTarget[0], mouseTarget[1]];
+    const d = Math.sqrt(Math.pow(mx - x, 2) + Math.pow(my - y, 2));
+    const [dx, dy] = [Math.cos(theta), Math.sin(theta)];
+    const cross = (dx * (my - y) - dy * (mx - x)) / Math.max(d, 1e-3);
+    const dtheta = Math.asin(cross);
+    const rMin = p.l / Math.cos(p.maxDelta); // Check feasability
+    // Controller
+    const ac = _.clamp(10 * (d - v * 0.5), -p.maxAccel, p.maxAccel);
+    const dc = _.clamp(dtheta, -p.maxDelta, p.maxDelta);
+    const u = eig.Matrix.fromArray([ac, dc]);
+    this.step(u, dt);
+    return { u };
+  }
+
+  /**
+   * Draw model
+   */
+  createGraphics(two, scale) {
+    const GEOM = {
+      l: scale,
+      w: 3 * scale / 5,
+      a1: 0.6, // back wheel lateral clearance
+      a2: 0.4, // front wheel lateral clearance
+      b: 0.6,  // wheel horizontal clearance
+      c: 0.3,  // wheel casing start
+      // wheels
+      lw: scale / 2,
+      ww: scale / 6,
+      // marker
+      mr: scale / 6
+    };
+    // Create car
+    let anchors = [
+      [-GEOM.l, GEOM.w * GEOM.a1],
+      [-GEOM.l * GEOM.b, GEOM.w * GEOM.a1],
+      [-GEOM.l * GEOM.c, GEOM.w],
+      [GEOM.l * GEOM.c, GEOM.w],
+      [GEOM.l * GEOM.b, GEOM.w * GEOM.a2],
+      [GEOM.l, GEOM.w * GEOM.a2]
+    ];
+    anchors = anchors.concat(anchors.map(([i, j]) => [i, -j]).reverse());
+    const path = two.makePath(..._.flatten(anchors), false)
+    path.automatic = false;
+    path.fill = colors.blue.base;
+    path.stroke = colors.blue.darken4;
+    path.linewidth = 3
+    this.graphics.car = two.makeGroup(path);
+
+    // Create marker
+    for (let k = 0; k < 4; k++) {
+      const [sa, ea] = [k * Math.PI / 2, (k + 1) * Math.PI / 2];
+      const segment = two.makeArcSegment(0, 0, 0, GEOM.mr, sa, ea);
+      segment.fill = k % 2 === 0 ? '#ffffff' : colors.blue.darken4;
+      segment.noStroke();
+      // segment.linewidth = 3;
+      // segment.stroke = colors.blue.darken4;
+      this.graphics.car.add(segment);
+    }
+
+    // Create wheels
+    this.graphics.wheels = []
+    const CORNERS = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
+    CORNERS.forEach(([i, j], idx) => {
+      const wheel = two.makeRectangle(0, 0, GEOM.lw, GEOM.ww);
+      wheel.translation.set(
+        i * (GEOM.l - GEOM.lw / 6),
+        j * (GEOM.w - GEOM.ww / 2)
+      );
+      wheel.noStroke();
+      wheel.fill = '#000000';
+      this.graphics.wheels[idx] = wheel
+      this.graphics.car.add(wheel);
+    })
+
+    this.graphics.showControl = true
+    this.graphics.setControl = u => {
+      const delta = u.vGet(1);
+      this.graphics.wheels[2].rotation = -delta;
+      this.graphics.wheels[3].rotation = -delta;
+    };
+  }
+
+  /**
+   * Update model
+   */
+  updateGraphics(worldToCanvas, params) {
+    const { u } = params
+    const x = this.x;
+    this.graphics.car.translation.set(...worldToCanvas([x.vGet(0), x.vGet(1)]));
+    this.graphics.car.rotation = -x.vGet(2)
+    this.graphics.setControl(u);
+  }
+
+  /**
+   * Kalman filter plugin parameters
+   */
+  kalmanFilterParams() {
+    function measurement(params, x) {
+      const pos = eig.Matrix.fromArray(params.pos)
+      const dist = pos.matSub(x.block(0, 0, 2, 1)).norm();
+      return eig.Matrix.fromArray([dist]);
+    }
+    return {
+      covariance: [[5, 0, 0, 0], [0, 5, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+      processNoise: [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+      inputNoise: [[0, 0], [0, 0]],
+      sensors: [
+        { type: 'radar', dt: 1, pos: [-2, 2], measurement, noise: [[5]] }
+      ]
+    }
+  }
+}
+
+const traj = []
+
+export { traj }
+export default Car

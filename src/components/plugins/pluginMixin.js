@@ -6,10 +6,22 @@ export default {
   computed: {
     name() {
       return this.$options.name
+    },
+
+    mouseTargetEnabled() {
+      return true; // Override if needed
     }
   },
 
   methods: {
+    createGraphics(two) {
+      // Override if needed
+    },
+
+    update(t, dt) {
+      // Override if needed
+    },
+
     reset() {
       throw new Error('must be overridden')
     },
@@ -18,8 +30,8 @@ export default {
       throw new Error('must be overridden')
     },
 
-    update(t, dt) {
+    updateSystem(t, dt) {
       throw new Error('must be overridden')
-    },
+    }
   }
 }

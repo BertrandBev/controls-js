@@ -37,8 +37,35 @@ class LinearSystem extends Model {
    * @param {Matrix} u0 
    */
   static fromModel(system, x0, u0) {
-    const [Jx, Ju] = LinearSystem.linearize(system, x0, u0)
+    const [Jx, Ju] = LinearSystem.linearizeSystem(system, x0, u0)
     return new LinearSystem(x0, u0, Jx, Ju, system.states, system.commands)
+  }
+
+  /**
+   * Linearize function about x0
+   * @param {Function} fun function of interest
+   * @param {Matrix} x0 equilibrium state
+   * @returns {Matrix} A (df/dx at x0)
+   */
+  static linearize(fun, x0) {
+    const eps = 10e-8
+    const dx0 = fun(x0);
+    const [m, n] = [dx0.rows(), x0.rows()]
+    // TODO: extract in C lib ?
+    function setCol(mat, row, vec) {
+      for (let k = 0; k < vec.rows(); k++) {
+        mat.set(k, row, vec.vGet(k))
+      }
+    }
+    // Populate A matrix
+    let A = new eig.Matrix(m, n);
+    for (let k = 0; k < n; k += 1) {
+      const x = new eig.Matrix(x0);
+      x.vSet(k, x.vGet(k) + eps);
+      const dx = fun(x).matSub(dx0).div(eps);
+      setCol(A, k, dx);
+    }
+    return A;
   }
 
   /**
@@ -48,33 +75,9 @@ class LinearSystem extends Model {
    * @param {Matrix} u0 equilibrium command
    * @returns {Matrix} [Jx, Ju]
    */
-  static linearize(system, x0, u0) {
-    const eps = 10e-8
-    const [xn, un] = system.shape
-    // Get nominal value
-    const dx0 = system.dynamics(x0, u0)
-    // TODO: extract in C lib ?
-    function setCol(mat, row, vec) {
-      for (let k = 0; k < vec.rows(); k++) {
-        mat.set(k, row, vec.vGet(k))
-      }
-    }
-    // Populate Jx matrix
-    let Jx = new eig.Matrix(xn, xn);
-    for (let k = 0; k < xn; k += 1) {
-      const x = new eig.Matrix(x0);
-      x.vSet(k, x.vGet(k) + eps);
-      const dx = system.dynamics(x, u0).matSub(dx0).div(eps);
-      setCol(Jx, k, dx)
-    }
-    // Populate Ju matrix
-    let Ju = new eig.Matrix(xn, un);
-    for (let k = 0; k < un; k += 1) {
-      const u = new eig.Matrix(u0);
-      u.vSet(k, u.vGet(k) + eps)
-      const du = system.dynamics(x0, u).matSub(dx0).div(eps)
-      setCol(Ju, k, du)
-    }
+  static linearizeSystem(system, x0, u0) {
+    const Jx = LinearSystem.linearize(x => system.dynamics(x, u0), x0);
+    const Ju = LinearSystem.linearize(u => system.dynamics(x0, u), u0);
     return [Jx, Ju]
   }
 
@@ -91,7 +94,7 @@ class LinearSystem extends Model {
     for (let i = 0; i < un; i++) {
       u0.vSet(i, i * 2.8 + 13.7);
     }
-    const [Jxn, Jun] = LinearSystem.linearize(system, x0, u0)
+    const [Jxn, Jun] = LinearSystem.linearizeSystem(system, x0, u0)
     const Jx = system.xJacobian(x0, u0)
     const Ju = system.uJacobian(x0, u0)
     Jx.matSub(Jxn).print('Jx diff')

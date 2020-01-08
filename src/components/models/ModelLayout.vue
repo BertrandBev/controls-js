@@ -83,6 +83,7 @@ export default {
     canvasStyle() {
       const translateY = -this.sheetHeight / 2; // this.sheet ? -this.sheetHeight / 2 : 0;
       return {
+        position: 'relative',
         width: `${this.$store.windowSize.x}px`,
         height: `${this.$store.windowSize.y}px`,
         transform: `translateY(${translateY}px)`,

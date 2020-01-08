@@ -60,6 +60,10 @@ export default {
   computed: {
     trajectories() {
       return [this.linearTraj, this.simTraj];
+    },
+
+    controllerEnabled() {
+      return !this.params.disengage || this.enabled;
     }
   },
 
@@ -81,13 +85,13 @@ export default {
     },
 
     ready() {
-      return this.enabled && this.controller.ready();
+      return this.controllerEnabled && this.controller.ready();
     },
 
     update(t, dt) {
-      if (this.ready() && this.enabled) {
+      if (this.ready()) {
         const u = this.controller.getCommand(this.system.x, t);
-        if (u.norm() > this.params.divergenceThres) {
+        if (this.params.disengage && u.norm() > this.params.divergenceThres) {
           this.enabled = false;
         }
         this.system.step(u, dt);

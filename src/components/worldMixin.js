@@ -47,6 +47,12 @@ export default {
     const params = { width: this.width, height: this.height };
     this.two = new Two(params).appendTo(canvas);
 
+    // Add helper functions
+    this.two.scale = this.scale;
+    this.two.canvas = canvas;
+    this.two.worldToCanvas = this.worldToCanvas;
+    this.two.canvasToWorld = this.canvasToWorld;
+
     // Add mouse events
     document.addEventListener("mouseup", ev => {
       this.dragging = false;

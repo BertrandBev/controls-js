@@ -219,10 +219,10 @@ class Quadrotor2D extends Model {
     return {
       Q: matFromDiag([10, 10, 10, 1, 1, 1]),
       R: matFromDiag([1, 1]),
-      simEps: 1,
-      simDuration: 4,
-      disengage: true,
-      divergenceThres: 200,
+      simEps: 0.1,
+      simDuration: 5,
+      disengage: false,
+      divergenceThres: 100,
     }
   }
 

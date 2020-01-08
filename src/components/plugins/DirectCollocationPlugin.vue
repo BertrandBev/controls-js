@@ -131,7 +131,6 @@ export default {
         .filter(input => input.validate)
         .map(input => input.validate());
       if (_.every(validation)) {
-        const [nx, nu] = this.system.shape;
         this.collocation.setParams(this.params);
         const rtn = this.collocation.optimize();
         if (rtn) {

@@ -4,11 +4,14 @@
              :trajectories='trajectories')
     ValueIterationPlot(v-if='pluginName == "ValueIterationPlugin"'
                        :valueIterationPlanner='viPlanner')
+    KalmanPlot(v-if='pluginName == "KalmanFilterPlugin"'
+               :kalmanFilter='kalmanFilter')
 </template>
 
 <script>
-import TrajPlot from "@/components/planners/TrajPlot.vue";
-import ValueIterationPlot from "@/components/planners/ValueIterationPlot.vue";
+import TrajPlot from "@/components/plots/TrajPlot.vue";
+import ValueIterationPlot from "@/components/plots/ValueIterationPlot.vue";
+import KalmanPlot from "@/components/plots/KalmanPlot.vue";
 import _ from "lodash";
 
 export default {
@@ -16,7 +19,8 @@ export default {
 
   components: {
     TrajPlot,
-    ValueIterationPlot
+    ValueIterationPlot,
+    KalmanPlot
   },
 
   props: {
@@ -54,6 +58,12 @@ export default {
     viPlanner() {
       return this.pluginName === "ValueIterationPlugin"
         ? this.active.viPlanner
+        : null;
+    },
+
+    kalmanFilter() {
+      return this.pluginName === "KalmanFilterPlugin"
+        ? this.active.kalmanFilter
         : null;
     }
   },

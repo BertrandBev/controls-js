@@ -3,8 +3,7 @@ import VueRouter from 'vue-router'
 import SecondOrder from "@/components/models/secondOrder/SecondOrder.vue";
 import DoublePendulum from "@/components/models/doublePendulum/DoublePendulum.vue";
 import Quadrotor2D from "@/components/models/quadrotor2D/Quadrotor2D.vue";
-// import SimplePendulum from "@/components/SimplePendulum.vue";
-// import CartPole from "@/components/CartPole.vue";
+import Car from "@/components/models/car/Car.vue";
 
 Vue.use(VueRouter)
 
@@ -39,6 +38,15 @@ const routes = [
     component: Quadrotor2D,
     rightDrawer: true,
     icon: 'mdi-gamma'
+  },
+  {
+    path: '/car',
+    name: 'car',
+    title: 'Car',
+    group: 'Pages',
+    component: Car,
+    rightDrawer: true,
+    icon: 'mdi-epsilon'
   }
 ]
 

@@ -17,6 +17,11 @@
                    :system='system'
                    :interactivePath='interactivePath'
                    @activate='activate')
+    KalmanFilterPlugin(v-if='KalmanFilterPlugin'
+                       ref='KalmanFilterPlugin'
+                       :system='system'
+                       :interactivePath='interactivePath'
+                       @activate='activate')
 </template>
 
 <script>
@@ -24,27 +29,26 @@ import LQRPlugin from "@/components/plugins/LQRPlugin.vue";
 import ValueIterationPlugin from "@/components/plugins/ValueIterationPlugin.vue";
 import DirectCollocationPlugin from "@/components/plugins/DirectCollocationPlugin.vue";
 import FlatnessPlugin from "@/components/plugins/FlatnessPlugin.vue";
+import KalmanFilterPlugin from "@/components/plugins/KalmanFilterPlugin.vue";
+
 import _ from "lodash";
-const ALL_PLUGINS = [
-  "LQRPlugin",
-  "ValueIterationPlugin",
-  "DirectCollocationPlugin",
-  "FlatnessPlugin"
-];
+const components = {
+  LQRPlugin,
+  ValueIterationPlugin,
+  DirectCollocationPlugin,
+  FlatnessPlugin,
+  KalmanFilterPlugin
+};
 
 export default {
-  components: {
-    LQRPlugin,
-    ValueIterationPlugin,
-    DirectCollocationPlugin,
-    FlatnessPlugin
-  },
+  components,
 
   props: {
     LQRPlugin: Boolean,
     ValueIterationPlugin: Boolean,
     DirectCollocationPlugin: Boolean,
     FlatnessPlugin: Boolean,
+    KalmanFilterPlugin: Boolean,
     //
     system: Object,
     interactivePath: Object
@@ -57,17 +61,27 @@ export default {
   computed: {
     active() {
       return _.first(this.plugins.filter(plugin => plugin.active));
+    },
+
+    mouseTargetEnabled() {
+      return this.active && this.active.mouseTargetEnabled;
     }
   },
 
   mounted() {
-    this.plugins = ALL_PLUGINS.map(name => this.$refs[name]).filter(
-      plugin => !!plugin
-    );
+    this.plugins = _.keys(components)
+      .map(name => this.$refs[name])
+      .filter(plugin => !!plugin);
     if (this.plugins.length > 0) this.activate(this.plugins[0]);
   },
 
   methods: {
+    createGraphics(two) {
+      this.$nextTick(() => {
+        this.plugins.forEach(plugin => plugin.createGraphics(two));
+      });
+    },
+
     reset() {
       return this.active && this.active.reset();
     },
@@ -76,8 +90,12 @@ export default {
       return this.active && this.active.ready();
     },
 
-    update(t, dt) {
-      return this.ready() ? this.active.update(t, dt) : {};
+    update(params) {
+      if (this.active) this.active.update(params);
+    },
+
+    updateSystem(t, dt) {
+      return this.ready() ? this.active.updateSystem(t, dt) : {};
     },
 
     get(name) {
