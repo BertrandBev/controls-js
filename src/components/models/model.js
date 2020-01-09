@@ -17,6 +17,10 @@ class Model {
     this.graphics = {}
   }
 
+  delete() {
+    eig.GC.popException(this.x);
+  }
+
   trim() {
     return { x: new eig.Matrix(this.shape[0], 1), u: new eig.Matrix(this.shape[1], 1) }
   }

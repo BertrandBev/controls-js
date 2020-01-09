@@ -16,7 +16,7 @@ export default {
   },
 
   data: () => ({
-    series: []
+    series: [],
   }),
 
   computed: {},

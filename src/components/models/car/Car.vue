@@ -8,7 +8,8 @@ ModelLayout
   template(v-slot:drawer)
     PluginGroup(ref='pluginGroup'
                 :system='system'
-                KalmanFilterPlugin)
+                ParticleFilterPlugin)
+    //- ParticleFilterPlugin KalmanFilterPlugin
   template(v-slot:sheet)
     PlotSheet(ref='plotSheet'
               :pluginGroup='pluginGroup')

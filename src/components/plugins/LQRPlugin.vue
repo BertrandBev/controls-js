@@ -88,7 +88,7 @@ export default {
       return this.controllerEnabled && this.controller.ready();
     },
 
-    update(t, dt) {
+    updateSystem(t, dt) {
       if (this.ready()) {
         const u = this.controller.getCommand(this.system.x, t);
         if (this.params.disengage && u.norm() > this.params.divergenceThres) {

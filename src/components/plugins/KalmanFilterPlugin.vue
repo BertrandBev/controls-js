@@ -6,31 +6,16 @@ Block(title='Kalman Filter')
                    :matrix.sync='params.processNoise')
   MatrixInput.mt-2(label='Input noise'
                    :matrix.sync='params.inputNoise')
-  span.font-weight-light.mt-2 Sensors
-  div.mb-3.mt-2(v-for='sensor, idx in params.sensors'
-           :key='`sensor_${sensor.key || idx}`'
-           style='display: flex; align-items: center')
-    span.font-weight-light {{ idx }} -
-    ValueInput.ml-2(:ref='`time_${idx}`'
-                    :value.sync='sensor.dt'
-                    label='dt')
-    //- style='flex: 0 0 auto; width: 48px'
-    v-btn(icon
-          color='red'
-          :disabled='params.sensors.length < 2'
-          @click='deleteSensor(idx)')
-      v-icon mdi-delete
-  v-btn(@click='addSensor'
-        outlined
-         :disabled='params.sensors.length === 0'
-        color='green') + add
+  Sensors(ref='sensors'
+          :system='system'
+          @update='sensorUpdate')
   v-btn.mt-2(@click='reset'
              outlined
              color='primary') reset filter
 </template>
 
 <script>
-import Trajectory from "@/components/planners/trajectory.js";
+import Sensors from "./utils/Sensors.vue";
 import Block from "./utils/Block.vue";
 import pluginMixin from "./pluginMixin.js";
 import ValueInput from "./utils/ValueInput.vue";
@@ -39,9 +24,7 @@ import ArrayInput from "./utils/ArrayInput.vue";
 import KalmanFilter from "@/components/estimators/kalmanFilter.js";
 import eig from "@eigen";
 import _ from "lodash";
-import { setDraggable } from "@/components/twoUtils.js";
 import colors from "vuetify/lib/util/colors";
-import anime from "animejs";
 
 const DT = 1 / 60;
 
@@ -54,7 +37,8 @@ export default {
     Block,
     ValueInput,
     MatrixInput,
-    ArrayInput
+    ArrayInput,
+    Sensors
   },
 
   props: {
@@ -63,15 +47,19 @@ export default {
   },
 
   data: () => ({
-    two: Object,
-    sigma: Object,
+    two: null,
+    sigma: null,
     // Parameters
     params: {}
   }),
 
   computed: {
+    sensors() {
+      return this.$refs.sensors;
+    },
+
     mouseTargetEnabled() {
-      return !_.some(this.params.sensors.map(s => s.dragged));
+      return !this.sensors.sensorDragged;
     }
   },
 
@@ -86,87 +74,10 @@ export default {
   watch: {},
 
   methods: {
-    addSensor() {
-      const len = this.params.sensors.length;
-      if (len === 0) return;
-      const sensor = _.cloneDeep(this.params.sensors[len - 1]);
-      sensor.pos = [0, 0];
-      this.createSensor(sensor);
-      this.params.sensors.push(sensor);
-      this.labelSensors();
-    },
-
-    deleteSensor(idx) {
-      if (this.params.sensors.length < 2) return;
-      this.two.remove(this.params.sensors[idx].graphics);
-      this.params.sensors.splice(idx, 1);
-      this.labelSensors();
-    },
-
-    createRadarSensor(sensor) {
-      const radius = 18;
-      const radar = this.two.makeCircle(0, 0, radius);
-      const text = this.two.makeText("", 0, 0);
-      text.size = 18;
-      text.weight = "bolder";
-      text.fill = "#ffffff";
-      radar.linewidth = 3;
-      radar.stroke = colors.green.darken4;
-      radar.fill = colors.green.base;
-      const group = this.two.makeGroup(radar, text);
-      const pos = this.two.worldToCanvas(sensor.pos);
-      group.translation.set(...pos);
-      sensor.graphics = group;
-      sensor.text = text;
-      sensor.anim = () => {
-        anime({
-          targets: group,
-          scale: 1.2,
-          round: 1000,
-          direction: "alternate",
-          easing: "easeInOutSine",
-          duration: 200,
-          update: () => this.two.update()
-        });
-      };
-      this.two.update();
-      const params = {
-        scale: 1.1,
-        mousedown: () => {
-          this.$set(sensor, 'dragged', true);
-          console.log('mouse down')
-        },
-        mouseup: () => {
-          this.$set(sensor, 'dragged', false);
-          console.log('mouse up')
-        },
-        mousemove: pos => {
-          sensor.pos = this.two.canvasToWorld(pos);
-        }
-      };
-      this.$nextTick(() => {
-        setDraggable(group, params);
-      });
-    },
-
-    createSensor(sensor) {
-      switch (sensor.type) {
-        case "radar":
-          this.createRadarSensor(sensor);
-      }
-    },
-
-    labelSensors() {
-      this.params.sensors.forEach((sensor, idx) => {
-        sensor.text.value = `${idx}`;
-      });
-    },
-
     createGraphics(two) {
       this.two = two;
-      // Create handles
-      this.params.sensors.forEach(sensor => this.createSensor(sensor));
-      this.labelSensors();
+      // Create sensors
+      this.sensors.createGraphics(two);
       // Create sigma on screen
       const container = two.canvas.parentNode;
       this.sigma = document.createElement("div");
@@ -179,7 +90,7 @@ export default {
     },
 
     updateSigma() {
-      if (!this.sigma.style) return;
+      if (!this.sigma) return;
       const scale = 2;
       // const P = eig.Matrix.fromArray([[10, 2], [3, 4]]);
       const P = this.kalmanFilter.P.block(0, 0, 2, 2);
@@ -222,18 +133,12 @@ export default {
       this.kalmanFilter.predict(u, params.dt);
 
       // Run update step
-      this.params.sensors
-        .filter(sensor => {
-          const tPrev = _.get(sensor, "tPrev", 0);
-          return params.t - tPrev > sensor.dt;
-        })
-        .forEach(sensor => {
-          this.kalmanFilter.update(sensor);
-          sensor.anim();
-          sensor.tPrev = params.t;
-          console.log("update");
-        });
+      this.sensors.update(params.t);
       this.updateSigma();
+    },
+
+    sensorUpdate(sensor) {
+      this.kalmanFilter.update(sensor);
     },
 
     ready() {

@@ -65,7 +65,7 @@ export default {
 
     reset() {},
 
-    update() {},
+    updateSystem() {},
 
     runValueIteration() {
       // Get from system

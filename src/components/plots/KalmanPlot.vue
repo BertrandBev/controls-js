@@ -16,25 +16,12 @@ export default {
   },
 
   data: () => ({
-    series: []
+    tPrev: 0
   }),
 
   computed: {},
 
-  watch: {
-    // trajectories: {
-    //   handler(newValue, oldValue) {
-    //     if (oldValue) {
-    //       oldValue.forEach(traj => traj.removeWatcher(this.update));
-    //     }
-    //     if (newValue) {
-    //       newValue.forEach(traj => traj.addWatcher(this.update));
-    //     }
-    //     this.update();
-    //   },
-    //   immediate: true
-    // }
-  },
+  watch: {},
 
   mounted() {
     const config = {
@@ -45,7 +32,9 @@ export default {
       responsive: true
     };
     Plotly.newPlot(this.$refs.div, [], [], config);
-    this.update();
+    this.kalmanFilter.addWatcher(() => {
+      this.update();
+    });
   },
 
   beforeDestroy() {
@@ -53,27 +42,48 @@ export default {
   },
 
   methods: {
+    getGaussian(mu, sigma, nPts) {
+      const s = 1 / (sigma * Math.sqrt(2 * Math.PI));
+      const [x, y] = [[], []];
+      const step = (6 * sigma) / nPts;
+      for (let k = mu - 3 * sigma; k < mu + 3 * sigma; k += step) {
+        const val = s * Math.exp(-0.5 * Math.pow((k - mu) / sigma, 2));
+        x.push(k);
+        y.push(val);
+      }
+      return { x, y };
+    },
+
     update() {
-      if (!this.$refs.div) return;
-      const trace1 = {
-        x: [1, 2, 3],
-        y: [4, 5, 6],
-        type: "scatter"
-      };
-      const trace2 = {
-        x: [20, 30, 40],
-        y: [50, 60, 70],
-        xaxis: "x2",
-        yaxis: "y2",
-        type: "scatter"
-      };
-      const data = [trace1, trace2];
+      if (!this.$refs.div || !this.kalmanFilter.ready()) return;
+      if (Date.now() - this.tPrev < 200) return;
+      this.tPrev = Date.now();
+      const sys = this.kalmanFilter.system;
+      const mean = this.kalmanFilter.x;
+      const cov = this.kalmanFilter.P;
+      const data = sys.states.map((state, idx) => {
+        const { x, y } = this.getGaussian(
+          mean.vGet(idx),
+          cov.get(idx, idx),
+          40
+        );
+        return {
+          x,
+          y,
+          name: state.name,
+          type: "scatter",
+          // xaxis: `x${idx}`,
+          // yaxis: `y${idx}`
+        };
+      });
       const layout = {
-        grid: { rows: 2, columns: 2, pattern: "independent" },
+        // grid: { rows: 2, columns: 2, pattern: "independent" },
         xaxis: {
-          title: "time (t)"
-          //   zeroline: false
+          zeroline: false
         },
+        // yaxis: {
+        //   zeroline: false
+        // },
         margin: {
           l: 40,
           r: 100,

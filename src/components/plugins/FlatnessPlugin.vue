@@ -96,7 +96,7 @@ export default {
       return this.simTraj.ready();
     },
 
-    update(t, dt) {
+    updateSystem(t, dt) {
       if (this.ready()) {
         const u = this.simTraj.getCommand(t);
         const x = this.simTraj.getState(t);

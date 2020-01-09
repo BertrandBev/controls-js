@@ -20,8 +20,11 @@
     KalmanFilterPlugin(v-if='KalmanFilterPlugin'
                        ref='KalmanFilterPlugin'
                        :system='system'
-                       :interactivePath='interactivePath'
                        @activate='activate')
+    ParticleFilterPlugin(v-if='ParticleFilterPlugin'
+                         ref='ParticleFilterPlugin'
+                         :system='system'
+                         @activate='activate')
 </template>
 
 <script>
@@ -30,6 +33,7 @@ import ValueIterationPlugin from "@/components/plugins/ValueIterationPlugin.vue"
 import DirectCollocationPlugin from "@/components/plugins/DirectCollocationPlugin.vue";
 import FlatnessPlugin from "@/components/plugins/FlatnessPlugin.vue";
 import KalmanFilterPlugin from "@/components/plugins/KalmanFilterPlugin.vue";
+import ParticleFilterPlugin from "@/components/plugins/ParticleFilterPlugin.vue";
 
 import _ from "lodash";
 const components = {
@@ -37,7 +41,8 @@ const components = {
   ValueIterationPlugin,
   DirectCollocationPlugin,
   FlatnessPlugin,
-  KalmanFilterPlugin
+  KalmanFilterPlugin,
+  ParticleFilterPlugin
 };
 
 export default {
@@ -49,6 +54,7 @@ export default {
     DirectCollocationPlugin: Boolean,
     FlatnessPlugin: Boolean,
     KalmanFilterPlugin: Boolean,
+    ParticleFilterPlugin: Boolean,
     //
     system: Object,
     interactivePath: Object

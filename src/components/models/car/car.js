@@ -58,9 +58,9 @@ class Car extends Model {
     const v = x.vGet(3);
     const delta = u.vGet(1);
     return eig.Matrix.fromArray([
-      Math.cos(theta) * v * Math.cos(delta),
-      Math.sin(theta) * v * Math.cos(delta),
-      p.l * v * Math.sin(delta),
+      Math.cos(theta) * v,
+      Math.sin(theta) * v,
+      v * Math.tan(delta) / p.l,
       u.vGet(0) - v * p.mu
     ])
   }
@@ -180,6 +180,30 @@ class Car extends Model {
       covariance: [[5, 0, 0, 0], [0, 5, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
       processNoise: [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
       inputNoise: [[0, 0], [0, 0]],
+      sensors: [
+        { type: 'radar', dt: 1, pos: [-2, 2], measurement, noise: [[5]] }
+      ]
+    }
+  }
+
+  /**
+   * Particle filter plugin parameters
+   */
+  particleFilterParams() {
+    function measurement(params, x) {
+      const pos = eig.Matrix.fromArray(params.pos)
+      const dist = pos.matSub(x.block(0, 0, 2, 1)).norm();
+      return eig.Matrix.fromArray([dist]);
+    }
+    return {
+      nPts: 20,
+      distribution: 'exact',
+      processNoise: [[0.02, 0, 0, 0], [0, 0.02, 0, 0], [0, 0, 0.1, 0], [0, 0, 0, 0.1]],
+      range: { // For uniform distribution generation
+        min: [-3, -3, -Math.PI, 0],
+        max: [3, 3, Math.PI, 10]
+      },
+      type: '2d',
       sensors: [
         { type: 'radar', dt: 1, pos: [-2, 2], measurement, noise: [[5]] }
       ]
