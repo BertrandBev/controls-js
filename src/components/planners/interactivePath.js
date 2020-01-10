@@ -89,7 +89,7 @@ class InteractivePath {
       // });
 
       // Add Interactivity
-      Vue.$nextTick(() => {
+      Vue.nextTick(() => {
         setDraggable(handle);
         setDraggable(l);
       })

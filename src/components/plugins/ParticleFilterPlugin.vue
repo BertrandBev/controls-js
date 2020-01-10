@@ -6,9 +6,16 @@ Block(title='Particle Filter')
   //-                  :matrix.sync='params.processNoise')
   //- MatrixInput.mt-2(label='Input noise'
   //-                  :matrix.sync='params.inputNoise')
-  Sensors(ref='sensors'
-          :system='system'
-          @update='sensorUpdate')
+  ValueInput(:value.sync='params.nPts'
+             label='Point number')
+  ValueInput.mt-2(:value.sync='params.dt'
+                  label='Resampling period')
+  MatrixInput.mt-2(:matrix.sync='params.processNoise'
+                   label='Process noise')
+  Sensors.mt-2(ref='sensors'
+              :system='system'
+              :params='params'
+              @update='sensorUpdate')
   v-btn.mt-2(@click='resample'
              outlined
              color='purple') resample
@@ -55,7 +62,9 @@ export default {
     two: null,
     // Parameters
     particleGraphics: [],
-    params: {}
+    params: {},
+    // Update
+    tResample: 0
   }),
 
   computed: {
@@ -71,10 +80,11 @@ export default {
   created() {
     this.particleFilter = new ParticleFilter(this.system);
     this.params = this.system.particleFilterParams();
-    this.reset();
   },
 
-  mounted() {},
+  mounted() {
+    this.reset();
+  },
 
   watch: {},
 
@@ -131,8 +141,12 @@ export default {
       for (let k = this.particleGraphics.length; k < nPts; k++) {
         this.createParticleGraphic();
       }
-      for (let k = this.particleGraphics.length; k >= particles.length; k--) {
-        this.two.remove(this.particleGraphics[k]);
+      for (
+        let k = this.particleGraphics.length - 1;
+        k >= particles.length;
+        k--
+      ) {
+        this.two.remove(this.particleGraphics[k].group);
         this.particleGraphics.splice(k, 1);
       }
       // Update particle state
@@ -147,10 +161,7 @@ export default {
       // const P = eig.Matrix.fromArray(this.params.covariance);
       // const Q = eig.Matrix.fromArray(this.params.processNoise);
       this.particleFilter.reset(this.params);
-      // Reset sensors
-      this.params.sensors.forEach(sensor => {
-        sensor.tPrev = 0;
-      });
+      this.sensors.reset();
     },
 
     resample() {
@@ -162,6 +173,12 @@ export default {
       this.updateGraphics();
       // Run update sensors
       this.sensors.update(params.t);
+      // Resample if needed
+      const now = Date.now() / 1000;
+      if (now - this.tResample > this.params.dt) {
+        this.resample();
+        this.tResample = now;
+      }
     },
 
     sensorUpdate(sensor) {

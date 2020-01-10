@@ -35,11 +35,11 @@ export default {
 
   data: () => ({
     two: null,
-    params: null,
     sensors: []
   }),
 
   props: {
+    params: Object,
     system: Object
   },
 
@@ -50,16 +50,24 @@ export default {
   },
 
   created() {
-    this.params = this.system.kalmanFilterParams();
-    this.sensors = _.cloneDeep(this.params.sensors);
+    this.reset();
   },
 
   methods: {
+    reset() {
+      // [...Array(this.sensors.length)].forEach(() => this.deleteSensor(0));
+      this.sensors.forEach(s => {
+        s.tPrev = 0;
+      });
+    },
+
     createGraphics(two) {
       this.two = two;
       // Create handles
+      this.sensors = _.cloneDeep(this.params.sensors);
       this.sensors.forEach(sensor => this.createSensor(sensor));
       this.labelSensors();
+      this.reset();
     },
 
     addSensor() {
@@ -72,7 +80,6 @@ export default {
     },
 
     deleteSensor(idx) {
-      if (this.sensors.length < 2) return;
       this.two.remove(this.sensors[idx].graphics);
       this.sensors.splice(idx, 1);
       this.labelSensors();

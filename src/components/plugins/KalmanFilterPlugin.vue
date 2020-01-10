@@ -116,10 +116,7 @@ export default {
       const P = eig.Matrix.fromArray(this.params.covariance);
       const Q = eig.Matrix.fromArray(this.params.processNoise);
       this.kalmanFilter.reset(P, Q);
-      this.params.sensors.forEach(sensor => {
-        sensor.tPrev = 0;
-      });
-      console.log("reset");
+      this.sensors.reset();
     },
 
     update(params) {

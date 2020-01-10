@@ -152,6 +152,7 @@ class DoublePendulum extends Model {
     const newX = this.x.matAdd(dx.mul(dt))
     this.bound(newX)
     this.setState(newX)
+    return { u }
   }
 
 

@@ -196,7 +196,8 @@ class Car extends Model {
       return eig.Matrix.fromArray([dist]);
     }
     return {
-      nPts: 20,
+      nPts: 30,
+      dt: 1,
       distribution: 'exact',
       processNoise: [[0.02, 0, 0, 0], [0, 0.02, 0, 0], [0, 0, 0.1, 0], [0, 0, 0, 0.1]],
       range: { // For uniform distribution generation
@@ -205,7 +206,10 @@ class Car extends Model {
       },
       type: '2d',
       sensors: [
-        { type: 'radar', dt: 1, pos: [-2, 2], measurement, noise: [[5]] }
+        { type: 'radar', dt: 1, pos: [-4, 4], measurement, noise: [[2]] },
+        { type: 'radar', dt: 1, pos: [-4, -4], measurement, noise: [[2]] },
+        { type: 'radar', dt: 1, pos: [4, -4], measurement, noise: [[2]] },
+        { type: 'radar', dt: 1, pos: [4, 4], measurement, noise: [[2]] }
       ]
     }
   }

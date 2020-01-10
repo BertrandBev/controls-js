@@ -109,7 +109,8 @@ class Quadrotor2D extends Model {
    * @param {Array} mouseTarget 
    */
   trackMouse(mouseTarget, dt) {
-    // const { u } = this.trim()
+    const { u } = this.trim();
+    u.mulSelf(0);
     const dxo = eig.Matrix.fromArray([
       mouseTarget[0] - this.x.vGet(0),
       mouseTarget[1] - this.x.vGet(1),
@@ -121,6 +122,7 @@ class Quadrotor2D extends Model {
     const newX = this.x.matAdd(dx.mul(dt))
     this.bound(newX)
     this.setState(newX)
+    return { u }
   }
 
   /**
