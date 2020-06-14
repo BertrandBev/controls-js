@@ -39,7 +39,7 @@ class DirectCollocation {
     this.opt = new nlopt.Optimize(algorithm, this.dim)
 
     // Set objective
-    this.opt.set_min_objective(nlopt.ScalarFunction.fromLambda((x, grad) => {
+    this.opt.setMinObjective(nlopt.ScalarFunction.fromLambda((x, grad) => {
       const tEnd = x[this.dim - 1]
       if (grad) {
         for (let k = 0; k < this.dim - 1; k++) {
@@ -99,8 +99,8 @@ class DirectCollocation {
       }
     })
     // TODO: add initial guess
-    this.opt.set_lower_bounds(lower)
-    this.opt.set_upper_bounds(upper)
+    this.opt.setLowerBounds(lower)
+    this.opt.setUpperBounds(upper)
     this.x0 = x0
   }
 
@@ -288,18 +288,18 @@ class DirectCollocation {
     const nConst = (this.n - 1) * nx
     const tolVec = nlopt.Vector.fromArray([...Array(nConst)].map(() => 1e-4))
     let iter = 0;
-    this.opt.add_equality_mconstraint(nlopt.VectorFunction.fromLambda((x, grad, res) => {
+    this.opt.addEqualityMConstraint(nlopt.VectorFunction.fromLambda((x, grad, res) => {
       this.constraint(x, grad, res);
     }), tolVec)
     // const tolVec2 = nlopt.Vector.fromArray([...Array(nConst)].map(() => 1e-4))
-    // this.opt.add_inequality_mconstraint(nlopt.VectorFunction.fromLambda((x, grad, res) => {
+    // this.opt.addInequalityMConstraint(nlopt.VectorFunction.fromLambda((x, grad, res) => {
     //   this.constraint(x, grad, res, -1);
     // }), tolVec2)
   }
 
   optimize() {
-    this.opt.set_maxtime(this.params.maxTime)
-    this.opt.set_maxeval(this.params.maxEval)
+    this.opt.setMaxtime(this.params.maxTime)
+    this.opt.setMaxeval(this.params.maxEval)
     const res = this.opt.optimize(this.x0)
     console.log('Optimization returned ', res, res.x)
     if (!res.success) {
