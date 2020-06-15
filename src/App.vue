@@ -12,7 +12,8 @@ v-app(v-resize="onResize")
                           color='blue'
                           indeterminate)
     //* Content
-    router-view(v-else)
+    router-view(:key='$route.path'
+                v-else)
   //* Notifications
   notifications(group='alert'
                 position='bottom center'

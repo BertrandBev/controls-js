@@ -6,11 +6,12 @@ import { ValueIterationParams } from '@/components/planners/valueIterationPlanne
 import { matFromDiag } from '@/components/math.js'
 
 class SecondOrder extends Model {
+  static NAME = 'second order';
+  static TAG = 'secondOrder';
   static STATES = Object.freeze([
     { name: 'x', show: true },
     { name: 'xDot', show: true, derivative: true },
   ])
-
   static COMMANDS = Object.freeze([
     { name: 'force' }
   ])
@@ -90,7 +91,8 @@ class SecondOrder extends Model {
   createGraphics(two, scale) {
     const GEOM = {
       cartWidth: scale,
-      cartHeight: scale / 2
+      cartHeight: scale / 2,
+      mr: scale / 12 // Marker radius
     }
     // Cart
     const cart = two.makeRectangle(0, 0, GEOM.cartWidth, GEOM.cartHeight);
@@ -112,7 +114,9 @@ class SecondOrder extends Model {
     this.graphics.setControl = u => {
       sides.forEach((side, idx) => {
         const uh = _.clamp(u.vGet(0) * 5, -100, 100);
-        side.group.visible = this.graphics.showControl && (idx - 0.5) * uh > 0;
+        side.group.visible = this.graphics.showControl &&
+          (idx - 0.5) * uh > 0 &&
+          Math.abs(uh) > 0.1;
         side.fHead.translation.x = (Math.sign(uh) * GEOM.cartWidth) / 2 + uh;
         side.fLine.vertices[1].x = side.fHead.translation.x;
       });
@@ -122,6 +126,17 @@ class SecondOrder extends Model {
       sides[0].group,
       sides[1].group
     );
+
+    // Create marker
+    for (let k = 0; k < 4; k++) {
+      const [sa, ea] = [k * Math.PI / 2, (k + 1) * Math.PI / 2];
+      const segment = two.makeArcSegment(0, 0, 0, GEOM.mr, sa, ea);
+      segment.fill = k % 2 === 0 ? '#ffffff' : colors.green.darken4;
+      segment.noStroke();
+      // segment.linewidth = 3;
+      // segment.stroke = colors.blue.darken4;
+      this.graphics.cart.add(segment);
+    }
 
     // Reference
     const ref = two.makeCircle(0, 0, 8)

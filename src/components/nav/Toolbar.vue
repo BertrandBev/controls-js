@@ -28,7 +28,8 @@ v-app-bar(app clipped-left clipped-right
 
 <script>
 import _ from "lodash";
-import { routes } from "@/router/index.js";
+import { routes } from "@/router/router.js";
+import Systems from "@/components/models/systems.js";
 
 export default {
   props: {},
@@ -39,7 +40,15 @@ export default {
     },
 
     title() {
-      return _.get(this.route, "title");
+      const routeName = this.$route.name;
+      const routeTitle = this.$route.title;
+      const params = this.$route.params;
+      if (params.systemName) {
+        // System route
+        const systemClass = Systems[params.systemName];
+        return `${routeTitle || routeName} - ${systemClass.NAME}`;
+      }
+      return routeTitle || routeName;
     },
 
     showBack() {

@@ -1,5 +1,5 @@
 import _ from 'lodash'
-import nlopt from '@lib/nlopt-js/index.js'
+import nlopt from '@nlopt'
 import eig from '@eigen'
 
 /**

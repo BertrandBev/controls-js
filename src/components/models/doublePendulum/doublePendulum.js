@@ -7,13 +7,14 @@ import chroma from 'chroma-js'
 import { ValueIterationParams } from '@/components/planners/valueIterationPlanner.js'
 
 class DoublePendulum extends Model {
+  static NAME = 'double pendulum';
+  static TAG = 'doublePendulum';
   static STATES = Object.freeze([
     { name: 'theta1', show: true },
     { name: 'theta2', show: true },
     { name: 'theta1Dot', derivative: true },
     { name: 'theta2Dot', derivative: true },
   ])
-
   static COMMANDS = Object.freeze([
     { name: 't1' },
     { name: 't2' }
@@ -33,7 +34,10 @@ class DoublePendulum extends Model {
   }
 
   trim() {
-    return { x: eig.Matrix.fromArray([Math.PI, Math.PI, 0, 0]), u: eig.Matrix.fromArray([0, 0]) }
+    return {
+      x: eig.Matrix.fromArray([Math.PI, Math.PI, 0, 0]),
+      u: eig.Matrix.fromArray([0, 0])
+    }
   }
 
   /**
@@ -138,8 +142,8 @@ class DoublePendulum extends Model {
 
   /**
    * Mouse step
-   * @param {Number} dt 
    * @param {Array} mouseTarget 
+   * @param {Number} dt 
    */
   trackMouse(mouseTarget, dt) {
     const { u } = this.trim()

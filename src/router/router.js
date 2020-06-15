@@ -4,8 +4,10 @@ import SecondOrder from "@/components/models/secondOrder/SecondOrder.vue";
 import DoublePendulum from "@/components/models/doublePendulum/DoublePendulum.vue";
 import Quadrotor2D from "@/components/models/quadrotor2D/Quadrotor2D.vue";
 import Car from "@/components/models/car/Car.vue";
+import LQR from "@/components/environments/LQR/LQR.vue";
 
 Vue.use(VueRouter)
+
 
 const routes = [
   {
@@ -15,7 +17,6 @@ const routes = [
   {
     path: '/secondOrder',
     name: 'secondOrder',
-    title: 'Second Order System',
     group: 'Pages',
     component: SecondOrder,
     rightDrawer: true,
@@ -24,7 +25,6 @@ const routes = [
   {
     path: '/doublePendulum',
     name: 'doublePendulum',
-    title: 'Double pendulum',
     group: 'Pages',
     component: DoublePendulum,
     rightDrawer: true,
@@ -33,7 +33,6 @@ const routes = [
   {
     path: '/quadrotor2D',
     name: 'quadrotor2D',
-    title: 'Quadrotor 2D',
     group: 'Pages',
     component: Quadrotor2D,
     rightDrawer: true,
@@ -42,11 +41,20 @@ const routes = [
   {
     path: '/car',
     name: 'car',
-    title: 'Car',
     group: 'Pages',
     component: Car,
     rightDrawer: true,
     icon: 'mdi-epsilon'
+  },
+  {
+    path: '/lqr/:systemName',
+    name: 'lqr',
+    component: LQR,
+    props: true,
+    // Custom properties
+    title: 'LQR',
+    icon: 'mdi-epsilon',
+    rightDrawer: true
   }
 ]
 
