@@ -122,10 +122,11 @@ class ValueIterationPlanner {
       if (converged) {
         console.log(`Converged in ${k + 1} iterations`, this.watchers)
         this.watchers.forEach(fun => fun())
-        return
+        return true;
       }
     }
     console.log(`Not converged after ${maxIter} iterations`)
+    return false;
   }
 
   getControl(x) {
@@ -138,22 +139,32 @@ class ValueIterationPlanner {
    * Simulate
    * @param {Number} duration
    */
-  simulate(duration) {
+  simulate(maxDuration) {
     const sequence = []
     let x = new eig.Matrix(this.system.x)
-    sequence.push(x)
-    for (let t = 0; t <= duration; t += this.dt) {
-      const u = this.getControl(x)
-      x = this.system.xNext(x, u, this.dt)
-      sequence.push(x)
+    for (let t = 0; t <= maxDuration; t += this.dt) {
+      // Kinematic simulation
+      x = this.V.clamp(x);
+      const kx = this.V.pack(x);
+      const ku = this.policy[kx];
+      const kxn = this.table[kx][ku];
+      x = this.V.unpack(kxn);
+      const u = this.U.unpack(ku);
+      sequence.push(x.vcat(u));
+      
+      // this.U.unpack(this.policy[kx])
+
+
+      // Actual simulation
+      // const u = this.getControl(x)
+      // sequence.push(x.vcat(u));
+      // x = this.system.xNext(x, u, this.dt)
       if (this.isTarget(x)) {
         // Fixed point found, return
         break;
       }
     }
-    const traj = new Trajectory(true)
-    traj.set(sequence, Date.now() / 1000, this.dt)
-    return traj
+    return sequence;
   }
 }
 

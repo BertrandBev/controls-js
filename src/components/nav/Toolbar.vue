@@ -28,27 +28,21 @@ v-app-bar(app clipped-left clipped-right
 
 <script>
 import _ from "lodash";
-import { routes } from "@/router/router.js";
 import Systems from "@/components/models/systems.js";
 
 export default {
   props: {},
 
   computed: {
-    route() {
-      return _.find(routes, r => r.name === this.routeName);
-    },
-
     title() {
-      const routeName = this.$route.name;
-      const routeTitle = this.$route.title;
+      const routeTitle = this.$route.meta.title;
       const params = this.$route.params;
       if (params.systemName) {
         // System route
         const systemClass = Systems[params.systemName];
-        return `${routeTitle || routeName} - ${systemClass.NAME}`;
+        return `${routeTitle} - ${systemClass.NAME}`;
       }
-      return routeTitle || routeName;
+      return this.$route.name;
     },
 
     showBack() {
@@ -78,7 +72,7 @@ export default {
     },
 
     showRightDrawer() {
-      return _.get(this.route, "rightDrawer", false);
+      return _.get(this.$route, "meta.rightDrawer", false);
     }
   },
 

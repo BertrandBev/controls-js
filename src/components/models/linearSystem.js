@@ -48,7 +48,7 @@ class LinearSystem extends Model {
    * @returns {Matrix} A (df/dx at x0)
    */
   static linearize(fun, x0) {
-    const eps = 10e-8
+    const eps = 1e-8
     const dx0 = fun(x0);
     const [m, n] = [dx0.rows(), x0.rows()]
     // TODO: extract in C lib ?

@@ -3,6 +3,7 @@ import _ from 'lodash'
 import { wrapAngle, sqr, matFromDiag } from '@/components/math.js'
 import colors from 'vuetify/lib/util/colors'
 import Model from '@/components/models/model.js'
+import { ValueIterationParams } from '@/components/planners/valueIterationPlanner.js'
 
 class SimplePendulum extends Model {
   static NAME = 'simple pendulum';
@@ -161,6 +162,22 @@ class SimplePendulum extends Model {
       disengage: false,
       divergenceThres: 500,
     }
+  }
+
+  /**
+   * Plugin params
+   */
+  valueIterationParams() {
+    const maxThetaDot = 2 * Math.sqrt(this.params.g / this.params.l);
+    return new ValueIterationParams(
+      [
+        { min: -Math.PI, max: Math.PI, nPts: 50 },
+        { min: -maxThetaDot, max: maxThetaDot, nPts: 50 }
+      ],
+      [{ min: -5, max: 5, nPts: 2 }],
+      [[Math.PI, 0], [-Math.PI, 0]],
+      0.11
+    )
   }
 }
 

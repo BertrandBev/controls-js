@@ -34,8 +34,8 @@ class Trajectory {
   /**
    * Reset starting time
    */
-  reset() {
-    this.tStart = 0 // Date.now() / 1000
+  reset(t) {
+    this.tStart = t; // Date.now() / 1000
   }
 
   /**
@@ -68,6 +68,12 @@ class Trajectory {
     eig.GC.popException(this.array)
     console.assert(dt > 0, 'The time must be positive')
     console.assert(array.length > 0, 'The array must have at least one element')
+    // Control array content
+    const rows = this.system.shape[0] + this.system.shape[1];
+    array.forEach(val => {
+      console.assert(val.rows() === rows && val.cols() === 1,
+        `The values must be of shape [x; u]; expected ${[rows, 1]}, got ${[val.rows(), val.cols()]}`);
+    })
     eig.GC.set(this, 'array', array)
     this.dt = dt
     this.tStart = 0 //Date.now() / 1000

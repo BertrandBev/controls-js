@@ -1,6 +1,5 @@
 import Two from "two.js";
 
-const HEIGHT = 512;
 const FPS_ALPHA = 0.95;
 const FRAME_COLOR = "#455A64";
 

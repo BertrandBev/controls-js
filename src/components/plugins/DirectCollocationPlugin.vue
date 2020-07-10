@@ -43,12 +43,12 @@ Block(title='Direct Collocation')
 <script>
 import DirectCollocation from "@/components/planners/directCollocation.js";
 import Trajectory from "@/components/planners/trajectory.js";
-import Block from "./utils/Block.vue";
-import ArrayInput from "./utils/ArrayInput.vue";
-import ValueInput from "./utils/ValueInput.vue";
+import Block from "@/components/environments/utils/Block.vue";
+import ArrayInput from "@/components/environments/utils/ArrayInput.vue";
+import ValueInput from "@/components/environments/utils/ValueInput.vue";
 import eig from "@eigen";
 import _ from "lodash";
-import pluginMixin from "./pluginMixin.js";
+import pluginMixin from "@/components/environments/pluginMixin.js";
 
 export default {
   name: "DirectCollocationPlugin",

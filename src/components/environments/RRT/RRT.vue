@@ -5,12 +5,12 @@ ModelLayout
   template(v-slot:overlay)
     span.ma-2 fps: {{ fps.toFixed(0) }}
   template(v-slot:drawer)
-    LQRPlugin(ref='plugin'
+    RRTPlugin(ref='plugin'
               :system='system'
               @activate='() => {}')
-  template(v-if='mounted'
-           v-slot:sheet)
-    TrajPlot(:trajectories='$refs.plugin.trajectories')
+  //- template(v-if='mounted'
+  //-          v-slot:sheet)
+  //-   TrajPlot(:trajectories='$refs.plugin.trajectories')
   template(v-slot:bar)
     v-btn(text dark
           @click='reset') reset
@@ -21,26 +21,22 @@ import ModelLayout from "@/components/models/ModelLayout.vue";
 import worldMixin from "@/components/worldMixin.js";
 import systemMixin from "@/components/systemMixin.js";
 import TrajPlot from "@/components/plots/TrajPlot.vue";
-import LQRPlugin from "@/components/environments/LQR/LQRPlugin.vue";
+import RRTPlugin from "@/components/environments/RRT/RRTPlugin.vue";
 import Systems from "@/components/models/systems.js";
 
 export default {
-  name: "lqr",
+  name: "rrt",
 
   meta: {
-    title: "LQR",
-    icon: "mdi-matrix",
-    systems: [
-      Systems.secondOrder,
-      Systems.simplePendulum,
-      Systems.doublePendulum
-    ]
+    title: "RRT",
+    icon: "mdi-robot-industrial",
+    systems: [Systems.arm]
   },
 
   components: {
     ModelLayout,
     TrajPlot,
-    LQRPlugin
+    RRTPlugin
   },
 
   mixins: [worldMixin, systemMixin],

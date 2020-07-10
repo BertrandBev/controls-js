@@ -2,7 +2,6 @@ import eig from '@eigen'
 import _ from 'lodash'
 import colors from 'vuetify/lib/util/colors'
 import Model from '@/components/models/model.js'
-import { ValueIterationParams } from '@/components/planners/valueIterationPlanner.js'
 import { matFromDiag } from '@/components/math.js'
 import Two from "two.js";
 import { wrapAngle } from '@/components/math.js'

@@ -4,7 +4,6 @@ import colors from 'vuetify/lib/util/colors'
 import Model from '@/components/models/model.js'
 import { wrapAngle, sqr, matFromDiag } from '@/components/math.js'
 import chroma from 'chroma-js'
-import { ValueIterationParams } from '@/components/planners/valueIterationPlanner.js'
 
 class DoublePendulum extends Model {
   static NAME = 'double pendulum';

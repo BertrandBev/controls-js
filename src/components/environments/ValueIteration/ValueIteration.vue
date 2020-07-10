@@ -5,12 +5,11 @@ ModelLayout
   template(v-slot:overlay)
     span.ma-2 fps: {{ fps.toFixed(0) }}
   template(v-slot:drawer)
-    LQRPlugin(ref='plugin'
-              :system='system'
-              @activate='() => {}')
+    ValueIterationPlugin(ref='plugin'
+                         :system='system')
   template(v-if='mounted'
            v-slot:sheet)
-    TrajPlot(:trajectories='$refs.plugin.trajectories')
+    ValueIterationPlot(:valueIterationPlanner='$refs.plugin.viPlanner')
   template(v-slot:bar)
     v-btn(text dark
           @click='reset') reset
@@ -20,27 +19,23 @@ ModelLayout
 import ModelLayout from "@/components/models/ModelLayout.vue";
 import worldMixin from "@/components/worldMixin.js";
 import systemMixin from "@/components/systemMixin.js";
-import TrajPlot from "@/components/plots/TrajPlot.vue";
-import LQRPlugin from "@/components/environments/LQR/LQRPlugin.vue";
+import ValueIterationPlot from "@/components/plots/ValueIterationPlot.vue";
+import ValueIterationPlugin from "@/components/environments/ValueIteration/ValueIterationPlugin.vue";
 import Systems from "@/components/models/systems.js";
 
 export default {
-  name: "lqr",
+  name: "valueIteration",
 
   meta: {
-    title: "LQR",
-    icon: "mdi-matrix",
-    systems: [
-      Systems.secondOrder,
-      Systems.simplePendulum,
-      Systems.doublePendulum
-    ]
+    title: "Value iteration",
+    icon: "mdi-restore",
+    systems: [Systems.secondOrder, Systems.simplePendulum]
   },
 
   components: {
     ModelLayout,
-    TrajPlot,
-    LQRPlugin
+    ValueIterationPlot,
+    ValueIterationPlugin
   },
 
   mixins: [worldMixin, systemMixin],
@@ -82,6 +77,12 @@ export default {
     reset() {
       worldMixin.methods.reset.call(this);
       systemMixin.methods.reset.call(this);
+    },
+
+    update() {
+      systemMixin.methods.update.call(this);
+      // systemMixin.update();
+      // console.log('update called')
     }
   }
 };

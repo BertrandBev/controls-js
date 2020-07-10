@@ -24,10 +24,10 @@ Block(title='LQR')
 <script>
 import LQR from "@/components/controllers/LQR.js";
 import Trajectory from "@/components/planners/trajectory.js";
-import Block from "./utils/Block.vue";
-import pluginMixin from "./pluginMixin.js";
-import MatrixInput from "./utils/MatrixInput.vue";
-import ValueInput from "./utils/ValueInput.vue";
+import Block from "@/components/environments/utils/Block.vue";
+import pluginMixin from "@/components/environments/pluginMixin.js";
+import MatrixInput from "@/components/environments/utils/MatrixInput.vue";
+import ValueInput from "@/components/environments/utils/ValueInput.vue";
 import eig from "@eigen";
 import _ from "lodash";
 

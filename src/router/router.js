@@ -1,61 +1,29 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
-import SecondOrder from "@/components/models/secondOrder/SecondOrder.vue";
-import DoublePendulum from "@/components/models/doublePendulum/DoublePendulum.vue";
-import Quadrotor2D from "@/components/models/quadrotor2D/Quadrotor2D.vue";
-import Car from "@/components/models/car/Car.vue";
+// Environments
 import LQR from "@/components/environments/LQR/LQR.vue";
+import ValueIteration from "@/components/environments/ValueIteration/ValueIteration.vue";
+import RRT from "@/components/environments/RRT/RRT.vue";
 
 Vue.use(VueRouter)
 
+const env = [LQR, ValueIteration, RRT];
+const envRoutes = env.map(env => ({
+  component: env,
+  name: env.name,
+  path: `/${env.name}/:systemName`,
+  props: true,
+  meta: {
+    ...env.meta,
+    rightDrawer: true,
+  }
+}));
 
 const routes = [
   {
     path: '/',
-    redirect: 'secondOrder'
   },
-  {
-    path: '/secondOrder',
-    name: 'secondOrder',
-    group: 'Pages',
-    component: SecondOrder,
-    rightDrawer: true,
-    icon: 'mdi-alpha'
-  },
-  {
-    path: '/doublePendulum',
-    name: 'doublePendulum',
-    group: 'Pages',
-    component: DoublePendulum,
-    rightDrawer: true,
-    icon: 'mdi-beta'
-  },
-  {
-    path: '/quadrotor2D',
-    name: 'quadrotor2D',
-    group: 'Pages',
-    component: Quadrotor2D,
-    rightDrawer: true,
-    icon: 'mdi-gamma'
-  },
-  {
-    path: '/car',
-    name: 'car',
-    group: 'Pages',
-    component: Car,
-    rightDrawer: true,
-    icon: 'mdi-epsilon'
-  },
-  {
-    path: '/lqr/:systemName',
-    name: 'lqr',
-    component: LQR,
-    props: true,
-    // Custom properties
-    title: 'LQR',
-    icon: 'mdi-epsilon',
-    rightDrawer: true
-  }
+  ...envRoutes
 ]
 
 const router = new VueRouter({
@@ -64,5 +32,5 @@ const router = new VueRouter({
   routes
 })
 
-export { routes }
+export { envRoutes }
 export default router

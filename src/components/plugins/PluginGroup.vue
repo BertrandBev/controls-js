@@ -28,8 +28,8 @@
 </template>
 
 <script>
-import LQRPlugin from "@/components/plugins/LQRPlugin.vue";
-import ValueIterationPlugin from "@/components/plugins/ValueIterationPlugin.vue";
+import LQRPlugin from "@/components/environments/LQR/LQRPlugin.vue";
+import ValueIterationPlugin from "@/components/environments/ValueIteration/ValueIterationPlugin.vue";
 import DirectCollocationPlugin from "@/components/plugins/DirectCollocationPlugin.vue";
 import FlatnessPlugin from "@/components/plugins/FlatnessPlugin.vue";
 import KalmanFilterPlugin from "@/components/plugins/KalmanFilterPlugin.vue";

@@ -15,12 +15,12 @@ Block(title='Kalman Filter')
 </template>
 
 <script>
-import Sensors from "./utils/Sensors.vue";
-import Block from "./utils/Block.vue";
-import pluginMixin from "./pluginMixin.js";
-import ValueInput from "./utils/ValueInput.vue";
-import MatrixInput from "./utils/MatrixInput.vue";
-import ArrayInput from "./utils/ArrayInput.vue";
+import Sensors from "@/components/environments/utils/Sensors.vue";
+import Block from "@/components/environments/utils/Block.vue";
+import pluginMixin from "@/components/environments/pluginMixin.js";
+import ValueInput from "@/components/environments/utils/ValueInput.vue";
+import MatrixInput from "@/components/environments/utils/MatrixInput.vue";
+import ArrayInput from "@/components/environments/utils/ArrayInput.vue";
 import KalmanFilter from "@/components/estimators/kalmanFilter.js";
 import eig from "@eigen";
 import _ from "lodash";
