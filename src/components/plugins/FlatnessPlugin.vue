@@ -9,7 +9,7 @@ Block(title='Diff. Flatness')
 
 <script>
 import Trajectory from "@/components/planners/trajectory.js";
-import Block from "@/components/environments/utils/Block.vue";
+import Section from "@/components/environments/utils/Section.vue";
 import pluginMixin from "@/components/environments/pluginMixin.js";
 import MatrixInput from "@/components/environments/utils/MatrixInput.vue";
 import ValueInput from "@/components/environments/utils/ValueInput.vue";
@@ -24,7 +24,7 @@ export default {
   mixins: [pluginMixin],
 
   components: {
-    Block,
+    Section,
     MatrixInput,
     ValueInput
   },

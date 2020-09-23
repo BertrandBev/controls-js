@@ -43,7 +43,7 @@ Block(title='Direct Collocation')
 <script>
 import DirectCollocation from "@/components/planners/directCollocation.js";
 import Trajectory from "@/components/planners/trajectory.js";
-import Block from "@/components/environments/utils/Block.vue";
+import Section from "@/components/environments/utils/Section.vue";
 import ArrayInput from "@/components/environments/utils/ArrayInput.vue";
 import ValueInput from "@/components/environments/utils/ValueInput.vue";
 import eig from "@eigen";
@@ -56,7 +56,7 @@ export default {
   mixins: [pluginMixin],
 
   components: {
-    Block,
+    Section,
     ArrayInput,
     ValueInput
   },

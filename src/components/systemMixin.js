@@ -3,7 +3,8 @@ import eig from "@eigen";
 
 export default {
   data: () => ({
-    system: null
+    system: null,
+    isMounted: false
   }),
 
   computed: {
@@ -12,9 +13,16 @@ export default {
     }
   },
 
+  mounted() {
+    this.isMounted = true;
+    this.createGraphics();
+  },
+
   methods: {
     createGraphics() {
       this.system.createGraphics(this.two, this.scale);
+      const plugin = this.$refs.plugin;
+      plugin.createGraphics(this.two);
     },
 
     reset() {

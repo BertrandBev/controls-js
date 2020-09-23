@@ -11,7 +11,7 @@ class Arm extends Model {
 
   constructor(params = {}) {
     // n is the number of links
-    const n = params['n'] || 3;
+    const n = params['n'] || 2;
     const states = [...Array(2 * n).keys()].map(k => ({
       name: k < n ? `theta${k}` : `theta${k - n}Dot`,
       show: k < n,
@@ -25,7 +25,7 @@ class Arm extends Model {
       l: 1,
       g: 9.8,
       n: n,
-      mu: 0.2,
+      mu: 0.4,
       ...params
     })
   }
@@ -238,6 +238,21 @@ class Arm extends Model {
     this.graphics[0].translation.set(...worldToCanvas([0, 0]))
     for (let k = 0; k < this.graphics.length; k++) {
       this.graphics[k].rotation = -this.x.vGet(k);
+    }
+  }
+
+  /**
+   * Get RRT params
+   */
+  rrtParams() {
+    const n = this.params.n;
+    const xMin = [...Array(n).keys()].map(k => -Math.PI);
+    const xMax = [...Array(n).keys()].map(k => Math.PI);
+    const deltas = [...Array(n).keys()].map(k => Math.PI / 100);
+    return {
+      xMin,
+      xMax,
+      deltas,
     }
   }
 }

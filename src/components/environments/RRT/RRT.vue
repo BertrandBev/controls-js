@@ -46,7 +46,6 @@ export default {
   },
 
   data: () => ({
-    mounted: false // TODO: built-in way?
   }),
 
   computed: {
@@ -67,11 +66,6 @@ export default {
     const SysClass = Systems[this.systemName];
     if (!SysClass) console.error("Unsupported system", this.systemName);
     else this.system = new SysClass();
-  },
-
-  mounted() {
-    this.createGraphics();
-    this.mounted = true;
   },
 
   methods: {

@@ -16,7 +16,7 @@ Block(title='Kalman Filter')
 
 <script>
 import Sensors from "@/components/environments/utils/Sensors.vue";
-import Block from "@/components/environments/utils/Block.vue";
+import Section from "@/components/environments/utils/Section.vue";
 import pluginMixin from "@/components/environments/pluginMixin.js";
 import ValueInput from "@/components/environments/utils/ValueInput.vue";
 import MatrixInput from "@/components/environments/utils/MatrixInput.vue";
@@ -34,7 +34,7 @@ export default {
   mixins: [pluginMixin],
 
   components: {
-    Block,
+    Section,
     ValueInput,
     MatrixInput,
     ArrayInput,

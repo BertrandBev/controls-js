@@ -1,5 +1,5 @@
 <template lang="pug">
-div
+div(style='display: flex; flex-direction: column')
   span.font-weight-light.mt-2 Sensors
   div.mb-3.mt-2(v-for='sensor, idx in sensors'
            :key='`sensor_${sensor.key || idx}`'
@@ -88,8 +88,8 @@ export default {
     createRadarSensor(sensor) {
       const radius = 18;
       const radar = this.two.makeCircle(0, 0, radius);
-      const text = this.two.makeText("", 0, 0);
-      text.size = 18;
+      const text = this.two.makeText("", 0, 1.5);
+      text.size = 14;
       text.weight = "bolder";
       text.fill = "#ffffff";
       radar.linewidth = 3;

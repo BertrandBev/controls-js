@@ -20,7 +20,7 @@ Block(title='Value Iteration')
 <script>
 import ValueIterationPlanner from "@/components/planners/valueIterationPlanner.js";
 import Trajectory from "@/components/planners/trajectory.js";
-import Block from "@/components/environments/utils/Block.vue";
+import Section from "@/components/environments/utils/Section.vue";
 import eig from "@eigen";
 import _ from "lodash";
 import pluginMixin from "@/components/environments/pluginMixin.js";
@@ -31,7 +31,7 @@ export default {
   mixins: [pluginMixin],
 
   components: {
-    Block
+    Section
   },
 
   props: {

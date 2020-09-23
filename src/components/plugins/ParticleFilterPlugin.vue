@@ -27,7 +27,7 @@ Block(title='Particle Filter')
 <script>
 import eig from "@eigen";
 import _ from "lodash";
-import Block from "@/components/environments/utils/Block.vue";
+import Section from "@/components/environments/utils/Section.vue";
 import pluginMixin from "@/components/environments/pluginMixin.js";
 import ValueInput from "@/components/environments/utils/ValueInput.vue";
 import MatrixInput from "@/components/environments/utils/MatrixInput.vue";
@@ -46,7 +46,7 @@ export default {
   mixins: [pluginMixin],
 
   components: {
-    Block,
+    Section,
     ValueInput,
     MatrixInput,
     ArrayInput,
