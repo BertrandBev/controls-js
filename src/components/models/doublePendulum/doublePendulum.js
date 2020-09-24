@@ -234,8 +234,8 @@ class DoublePendulum extends Model {
    */
   directCollocationParams() {
     return {
-      nPts: 20,
-      uBounds: { min: [-20, -20], max: [20, 20] },
+      nPts: 30,
+      uBounds: { min: [-20, -0], max: [20, 0] },
       anchors: [{ t: 0, x: [0, 0, 0, 0] }, { t: 1, x: [3.14, 3.14, 0, 0] }],
       holdTime: 1,
       reverse: true
