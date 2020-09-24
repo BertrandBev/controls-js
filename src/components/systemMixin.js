@@ -34,11 +34,12 @@ export default {
       // TODO: add FPS meter
       let params = {};
       // Update system
-      if (this.mouseTargetEnabled && this.mouseTarget) {
+      const stepSystem = !plugin || plugin.stepSystem();
+      if (this.mouseTargetEnabled && this.mouseTarget && stepSystem) {
         params = this.system.trackMouse(this.mouseTarget, this.dt);
       } else if (plugin && plugin.ready()) {
         params = plugin.updateSystem(this.t, this.dt);
-      } else {
+      } else if (stepSystem) {
         params = this.system.trim();
         this.system.step(params.u, this.dt);
       }

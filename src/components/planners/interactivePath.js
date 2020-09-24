@@ -99,13 +99,6 @@ class InteractivePath {
     // Center path
     const [cx, cy] = worldToCanvas([0, 0])
     this.group.translation.set(cx, cy);
-    this.setVisibility(false);
-  }
-
-
-
-  setVisibility(visible) {
-    this.group.visible = visible
   }
 
   addUpdateListener(listener) {

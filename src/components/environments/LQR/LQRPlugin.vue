@@ -1,5 +1,5 @@
 <template lang="pug">
-Block(title='LQR')
+Section(title='LQR')
   MatrixInput(:matrix='params.Q'
               label='Q')
   MatrixInput.mt-2(:matrix='params.R'

@@ -22,6 +22,11 @@ export default {
       // Override if needed
     },
 
+    stepSystem() {
+      // Override if needed
+      return true;
+    },
+
     reset() {
       throw new Error('must be overridden')
     },

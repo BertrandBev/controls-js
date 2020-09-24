@@ -1,5 +1,5 @@
 <template lang="pug">
-Block(title='Direct Collocation')
+Section(title='Direct Collocation')
   ValueInput(ref='nPts'
               :value.sync='params.nPts'
               label='Point count')

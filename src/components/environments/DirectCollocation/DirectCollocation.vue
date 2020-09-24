@@ -3,11 +3,16 @@ ModelLayout
   template(v-slot:canvas)
     div.canvas(ref='canvas')
   template(v-slot:overlay)
-    span.ma-2 fps: {{ fps.toFixed(0) }}
+    div(style='display: flex;')
+      v-chip.ma-2(label
+            color='blue'
+            text-color='white') Kinematic
+      v-spacer
+      span.ma-2 fps: {{ fps.toFixed(0) }}
   template(v-slot:drawer)
-    LQRPlugin(ref='plugin'
-              :system='system'
-              @activate='() => {}')
+    DirectCollocationPlugin(ref='plugin'
+                            :system='system'
+                            @activate='() => {}')
   template(v-if='mounted'
            v-slot:sheet)
     TrajPlot(:trajectories='$refs.plugin.trajectories')
@@ -21,28 +26,27 @@ import ModelLayout from "@/components/models/ModelLayout.vue";
 import worldMixin from "@/components/worldMixin.js";
 import systemMixin from "@/components/systemMixin.js";
 import TrajPlot from "@/components/plots/TrajPlot.vue";
-import LQRPlugin from "@/components/environments/LQR/LQRPlugin.vue";
+import DirectCollocationPlugin from "@/components/environments/DirectCollocation/DirectCollocationPlugin.vue";
 import Systems from "@/components/models/systems.js";
 
 export default {
-  name: "lqr",
+  name: "directCollocation",
 
   meta: {
-    title: "LQR",
-    icon: "mdi-matrix",
+    title: "Direct Collocation",
+    icon: "mdi-vector-curve",
     systems: [
       Systems.secondOrder,
       Systems.simplePendulum,
       Systems.doublePendulum,
-      Systems.cartPole,
-      Systems.quadrotor2D,
+      Systems.cartPole
     ]
   },
 
   components: {
     ModelLayout,
     TrajPlot,
-    LQRPlugin
+    DirectCollocationPlugin
   },
 
   mixins: [worldMixin, systemMixin],
@@ -52,7 +56,8 @@ export default {
   },
 
   data: () => ({
-    mounted: false // TODO: built-in way?
+    mounted: false, // TODO: built-in way?
+    interactivePath: null
   }),
 
   computed: {

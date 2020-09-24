@@ -1,10 +1,10 @@
 
-function setDraggable(shape, params) {
+function setDraggable(shape, params = {}) {
   const el = shape._renderer.elem
 
   // el.style.cursor = 'move'
   el.addEventListener('mousemove', e => {
-    shape.scale = params.scale || 2
+    shape.scale = params.scale || 1.5
     el.style.cursor = 'pointer'
   })
   el.addEventListener('mouseleave', e => {
@@ -19,7 +19,7 @@ function setDraggable(shape, params) {
       shape.translation.x += e.clientX - anchor[0]
       shape.translation.y += e.clientY - anchor[1]
       anchor = [e.clientX, e.clientY];
-      shape.scale = params.scale || 2
+      shape.scale = params.scale || 1.5
       const pos = [shape.translation.x, shape.translation.y]
       if (params.mousemove) params.mousemove(pos);
     }

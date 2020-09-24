@@ -3,11 +3,17 @@ ModelLayout
   template(v-slot:canvas)
     div.canvas(ref='canvas')
   template(v-slot:overlay)
-    span.ma-2 fps: {{ fps.toFixed(0) }}
+    div(style='display: flex;')
+      v-chip.ma-2(label
+            color='blue'
+            text-color='white') Kinematic
+      v-spacer
+      span.ma-2 fps: {{ fps.toFixed(0) }}
   template(v-slot:drawer)
-    LQRPlugin(ref='plugin'
-              :system='system'
-              @activate='() => {}')
+    FlatnessPlugin(ref='plugin'
+                   :system='system'
+                   :interactivePath='interactivePath' 
+                   @activate='() => {}')
   template(v-if='mounted'
            v-slot:sheet)
     TrajPlot(:trajectories='$refs.plugin.trajectories')
@@ -21,20 +27,17 @@ import ModelLayout from "@/components/models/ModelLayout.vue";
 import worldMixin from "@/components/worldMixin.js";
 import systemMixin from "@/components/systemMixin.js";
 import TrajPlot from "@/components/plots/TrajPlot.vue";
-import LQRPlugin from "@/components/environments/LQR/LQRPlugin.vue";
+import FlatnessPlugin from "@/components/environments/Flatness/FlatnessPlugin.vue";
 import Systems from "@/components/models/systems.js";
+import InteractivePath from "@/components/planners/interactivePath.js";
 
 export default {
-  name: "lqr",
+  name: "flatness",
 
   meta: {
-    title: "LQR",
-    icon: "mdi-matrix",
+    title: "Flatness",
+    icon: "mdi-infinity",
     systems: [
-      Systems.secondOrder,
-      Systems.simplePendulum,
-      Systems.doublePendulum,
-      Systems.cartPole,
       Systems.quadrotor2D,
     ]
   },
@@ -42,7 +45,7 @@ export default {
   components: {
     ModelLayout,
     TrajPlot,
-    LQRPlugin
+    FlatnessPlugin
   },
 
   mixins: [worldMixin, systemMixin],
@@ -52,7 +55,8 @@ export default {
   },
 
   data: () => ({
-    mounted: false // TODO: built-in way?
+    mounted: false, // TODO: built-in way?
+    interactivePath: null
   }),
 
   computed: {
@@ -77,6 +81,12 @@ export default {
 
   mounted() {
     this.createGraphics();
+    // Create interactive path
+    this.interactivePath = new InteractivePath(
+      this.two,
+      this.worldToCanvas,
+      this.canvasToWorld
+    );
     this.mounted = true;
   },
 

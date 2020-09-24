@@ -179,6 +179,19 @@ class SimplePendulum extends Model {
       0.11
     )
   }
+
+  /**
+   * Direct collocation params
+   */
+  directCollocationParams() {
+    return {
+      nPts: 20,
+      uBounds: { min: [-5], max: [5] },
+      anchors: [{ t: 0, x: [0, 0] }, { t: 1, x: [3.14, 0] }],
+      holdTime: 1,
+      reverse: true
+    }
+  }
 }
 
 export default SimplePendulum

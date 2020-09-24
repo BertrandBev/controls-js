@@ -6,6 +6,8 @@ import Model from '@/components/models/model.js'
 import { wrapAngle, sqr, matFromDiag } from '@/components/math.js'
 
 class Quadrotor2D extends Model {
+  static NAME = 'quadrotor';
+  static TAG = 'quadrotor2D';
   static STATES = Object.freeze([
     { name: 'x', show: true },
     { name: 'y', show: true },
@@ -14,7 +16,6 @@ class Quadrotor2D extends Model {
     { name: 'xDot', derivative: true },
     { name: 'thetaDot', derivative: true },
   ])
-
   static COMMANDS = Object.freeze([
     { name: 't1' },
     { name: 't2' }
@@ -171,6 +172,7 @@ class Quadrotor2D extends Model {
     });
     this.graphics.showControl = true
     this.graphics.setControl = u => {
+      if (!u) u = this.trim().u;
       sides.forEach((side, idx) => {
         const uh = _.clamp(u.vGet(idx) * 5, -100, 100);
         side.fHead.translation.y = propHeight - uh;

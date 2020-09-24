@@ -1,5 +1,5 @@
 <template lang="pug">
-Block(title='Diff. Flatness')
+Section(title='Diff. Flatness')
   ValueInput.mt-3(:value.sync='params.duration'
              label='Travel duration')
   v-btn.mt-2(@click='buildTraj'
@@ -51,19 +51,15 @@ export default {
   created() {
     const { x, u } = this.system.trim();
     // Populate matrices
-    // this.params = _.cloneDeep(this.system.lqrParams());
     this.simTraj = new Trajectory(this.system, false);
   },
 
   mounted() {
-    this.setVisibility();
+    this.$nextTick(() => this.buildTraj());
   },
 
-  watch: {
-    active() {
-      this.setVisibility();
-    },
 
+  watch: {
     interactivePath() {
       if (this.interactivePath) {
         this.interactivePath.addUpdateListener(this.pathUpdated);
@@ -74,26 +70,18 @@ export default {
   methods: {
     pathUpdated() {
       this.simTraj.clear();
-      this.reset();
     },
 
-    setVisibility() {
-      if (this.interactivePath) this.interactivePath.setVisibility(this.active);
-    },
-
-    // Could be shared w/ dircol
     reset() {
-      if (this.simTraj.ready()) {
-        const x0 = this.simTraj.getState(0);
-        this.system.setState(x0);
-      } else {
-        const x0 = this.system.trim().x;
-        this.system.setState(x0);
-      }
+      this.buildTraj();
     },
 
     ready() {
       return this.simTraj.ready();
+    },
+
+    stepSystem() {
+      return false;
     },
 
     updateSystem(t, dt) {
@@ -106,10 +94,10 @@ export default {
     },
 
     buildTraj() {
+      this.simTraj.clear();
       const xy = this.interactivePath.getTraj(this.params.duration / DT);
       const arr = this.system.differentialFlatness(xy, DT);
       this.simTraj.set(arr, DT);
-      this.$emit("activate", this);
     }
   }
 };

@@ -14,7 +14,7 @@ v-navigation-drawer(v-model='drawer'
                  :value='isEnv(route.name)')
       template(v-slot:activator)
         v-list-item-title {{ route.meta.title }}
-      v-list-item(v-for='system, sidx, in route.meta.systems'
+      v-list-item.ml-3(v-for='system, sidx, in route.meta.systems'
                   :key='`env_${idx}_system_${sidx}`'
                   :class='{ active: isActive(route, system) }'
                   @click='() => navSystem(route, system)')

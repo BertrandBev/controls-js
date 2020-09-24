@@ -2,7 +2,7 @@
 v-app(v-resize="onResize")
   Drawer(ref='drawer')
   Toolbar(@toggleDrawer='toggleDrawer')
-  v-content
+  v-main
     //* Loading row
     v-row(v-if='loading'
           align='center'

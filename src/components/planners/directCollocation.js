@@ -39,7 +39,7 @@ class DirectCollocation {
     this.opt = new nlopt.Optimize(algorithm, this.dim)
 
     // Set objective
-    this.opt.setMinObjective(nlopt.ScalarFunction.fromLambda((x, grad) => {
+    this.opt.setMinObjective((x, grad) => {
       const tEnd = x[this.dim - 1]
       if (grad) {
         for (let k = 0; k < this.dim - 1; k++) {
@@ -48,7 +48,7 @@ class DirectCollocation {
         grad[this.dim - 1] = 1
       }
       return tEnd
-    }), 1e-5)
+    }, 1e-5);
 
     // Add dynamic constraint
     this.addDynamicContraints()
@@ -62,16 +62,16 @@ class DirectCollocation {
   }
 
   setBounds(uBounds, anchors) {
-    const lower = new nlopt.Vector()
-    const upper = new nlopt.Vector()
-    const x0 = new nlopt.Vector()
+    const lower = []
+    const upper = []
+    const x0 = []
     const uIdx = this.n * this.shape[0]
     const tIdx = this.dim - 1
     const INF = 1e500;
     function setPoint(low, hight, x) {
-      lower.push_back(low)
-      upper.push_back(hight)
-      x0.push_back(x)
+      lower.push(low)
+      upper.push(hight)
+      x0.push(x)
     }
     for (let k = 0; k < this.dim; k++) {
       if (k < uIdx) {
@@ -92,9 +92,9 @@ class DirectCollocation {
       const idx = _.clamp(Math.floor(a.t * this.n), 0, this.n - 1) * this.shape[0]
       for (let k = 0; k < this.shape[0]; k++) {
         if (a.x[k] !== DirectCollocation.FREE) {
-          upper.set(idx + k, a.x[k])
-          lower.set(idx + k, a.x[k])
-          x0.set(idx + k, a.x[k])
+          upper[idx + k] = a.x[k];
+          lower[idx + k] = a.x[k];
+          x0[idx + k] = a.x[k];
         }
       }
     })
@@ -286,11 +286,10 @@ class DirectCollocation {
     const nx = this.shape[0]
     const nu = this.shape[1]
     const nConst = (this.n - 1) * nx
-    const tolVec = nlopt.Vector.fromArray([...Array(nConst)].map(() => 1e-4))
-    let iter = 0;
-    this.opt.addEqualityMConstraint(nlopt.VectorFunction.fromLambda((x, grad, res) => {
+    const tolVec = [...Array(nConst)].map(() => 1e-4);
+    this.opt.addEqualityMConstraint((x, grad, res) => {
       this.constraint(x, grad, res);
-    }), tolVec)
+    }, tolVec);
     // const tolVec2 = nlopt.Vector.fromArray([...Array(nConst)].map(() => 1e-4))
     // this.opt.addInequalityMConstraint(nlopt.VectorFunction.fromLambda((x, grad, res) => {
     //   this.constraint(x, grad, res, -1);
@@ -328,11 +327,11 @@ class DirectCollocation {
   unpack(vector) {
     const xList = []
     const uList = []
-    let tEnd = vector.get(this.dim - 1)
+    let tEnd = vector[this.dim - 1]
     const uIdx = this.n * this.shape[0]
     const tIdx = this.dim - 1
     function slice(idx, len) {
-      return [...Array(len)].map((_, k) => vector.get(idx + k))
+      return [...Array(len)].map((_, k) => vector[idx + k])
     }
     for (let k = 0; k < uIdx; k += this.shape[0]) {
       xList.push(slice(k, this.shape[0]))

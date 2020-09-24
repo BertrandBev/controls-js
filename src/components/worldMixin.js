@@ -1,12 +1,12 @@
 import Two from "two.js";
 
-const FPS_ALPHA = 0.95;
+const FPS_ALPHA = 0.98;
 const FRAME_COLOR = "#455A64";
 
 export default {
   data: () => ({
     // FPS computation
-    fps: 0,
+    fps: 60,
     lastUpdate: Date.now(),
     // Private variables
     t: 0, // Simulated time
