@@ -104,10 +104,9 @@ class MPC extends Controller {
     return xTraj
   }
 
-  getCommand(x, t) {
+  getCommand(t) {
     const [xn, un] = this.system.shape
-    const xTraj = this.optimise(t)
-    return xTraj[0].block(xn, 0, un, 1);
+    return this.optimise(t)
   }
 }
 

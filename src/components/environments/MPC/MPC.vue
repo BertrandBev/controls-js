@@ -10,9 +10,10 @@ ModelLayout
       v-spacer
       span.ma-2 fps: {{ fps.toFixed(0) }}
   template(v-slot:drawer)
-    DirectCollocationPlugin(ref='plugin'
-                            :system='system'
-                            @activate='() => {}')
+    MPCPlugin(ref='plugin'
+              :system='system'
+              :systemRef='systemRef'
+              @activate='() => {}')
   template(v-if='isMounted'
            v-slot:sheet)
     TrajPlot(:trajectories='$refs.plugin.trajectories')
@@ -26,20 +27,17 @@ import ModelLayout from "@/components/models/ModelLayout.vue";
 import worldMixin from "@/components/worldMixin.js";
 import systemMixin from "@/components/systemMixin.js";
 import TrajPlot from "@/components/plots/TrajPlot.vue";
-import DirectCollocationPlugin from "@/components/environments/DirectCollocation/DirectCollocationPlugin.vue";
+import MPCPlugin from "@/components/environments/MPC/MPCPlugin.vue";
 import Systems from "@/components/models/systems.js";
 
 export default {
-  name: "directCollocation",
+  name: "mpc",
 
   meta: {
-    title: "Direct Collocation",
-    icon: "mdi-vector-curve",
+    title: "MPC",
+    icon: "mdi-camera-timer",
     systems: [
       Systems.secondOrder,
-      Systems.simplePendulum,
-      Systems.doublePendulum,
-      Systems.cartPole,
       Systems.quadrotor2D
     ]
   },
@@ -47,7 +45,7 @@ export default {
   components: {
     ModelLayout,
     TrajPlot,
-    DirectCollocationPlugin
+    MPCPlugin
   },
 
   mixins: [worldMixin, systemMixin],
@@ -57,6 +55,7 @@ export default {
   },
 
   data: () => ({
+    systemRef: null
   }),
 
   computed: {
@@ -75,17 +74,29 @@ export default {
 
   created() {
     const SysClass = Systems[this.systemName];
-    if (!SysClass) console.error("Unsupported system", this.systemName);
-    else this.system = new SysClass();
+    if (!SysClass)
+      throw new Error("Unsupported system", this.systemName);
+    this.system = new SysClass();
+    this.systemRef = new SysClass();
   },
 
   mounted() {
+    this.systemRef.createGraphics(this.two, this.scale);
   },
 
   methods: {
     reset() {
       worldMixin.methods.reset.call(this);
       systemMixin.methods.reset.call(this);
+    },
+
+    update() {
+      systemMixin.methods.update.call(this);
+      // Update ref system
+      this.systemRef.updateGraphics(this.worldToCanvas, {
+        // Set transparency & no controls
+        ghost: true
+      });
     }
   }
 };

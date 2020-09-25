@@ -8,7 +8,7 @@ ModelLayout
     LQRPlugin(ref='plugin'
               :system='system'
               @activate='() => {}')
-  template(v-if='mounted'
+  template(v-if='isMounted'
            v-slot:sheet)
     TrajPlot(:trajectories='$refs.plugin.trajectories')
   template(v-slot:bar)
@@ -52,7 +52,6 @@ export default {
   },
 
   data: () => ({
-    mounted: false // TODO: built-in way?
   }),
 
   computed: {
@@ -76,8 +75,6 @@ export default {
   },
 
   mounted() {
-    this.createGraphics();
-    this.mounted = true;
   },
 
   methods: {

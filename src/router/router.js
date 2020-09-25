@@ -6,10 +6,18 @@ import ValueIteration from "@/components/environments/ValueIteration/ValueIterat
 import RRT from "@/components/environments/RRT/RRT.vue";
 import Flatness from "@/components/environments/Flatness/Flatness.vue";
 import DirectCollocation from "@/components/environments/DirectCollocation/DirectCollocation.vue";
+import MPC from "@/components/environments/MPC/MPC.vue";
 
 Vue.use(VueRouter)
 
-const env = [LQR, ValueIteration, RRT, Flatness, DirectCollocation];
+const env = [
+  LQR,
+  ValueIteration,
+  RRT,
+  Flatness,
+  DirectCollocation,
+  MPC,
+];
 const envRoutes = env.map(env => ({
   component: env,
   name: env.name,

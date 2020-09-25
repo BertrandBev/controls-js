@@ -60,7 +60,7 @@ class Trajectory {
   }
 
   /**
-   * Create trajectory based on an array of matrices
+   * Create a trajectory based on an array of matrices
    * @param {Array} array of matrices
    * @param {Number} dt 
    */
@@ -142,7 +142,7 @@ class Trajectory {
       }
       rows += ']' + (idx === this.array.length - 1 ? ']' : ',\n')
     })
-    console.log(rows)
+    return rows;
   }
 }
 

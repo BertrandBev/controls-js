@@ -4,6 +4,7 @@ import colors from 'vuetify/lib/util/colors'
 import Model from '@/components/models/model.js'
 import { ValueIterationParams } from '@/components/planners/valueIterationPlanner.js'
 import { matFromDiag } from '@/components/math.js'
+import { bounceTraj } from './trajectories.js'
 
 class SecondOrder extends Model {
   static NAME = 'second order';
@@ -160,7 +161,8 @@ class SecondOrder extends Model {
     const { u, trajX } = params
     const x = this.x;
     this.graphics.cart.translation.set(...worldToCanvas([x.vGet(0), 0]));
-    this.graphics.setControl(u);
+    if (u)
+      this.graphics.setControl(u);
     this.graphics.showRef = !!trajX;
     if (trajX) this.graphics.setRef(...worldToCanvas([trajX.vGet(0), 0]))
   }
@@ -200,6 +202,18 @@ class SecondOrder extends Model {
       uBounds: { min: [-5], max: [5] },
       anchors: [{ t: 0, x: [-2, 0] }, { t: 1, x: [2, 0] }],
       reverse: true
+    }
+  }
+
+  /**
+   * MPC Params
+   */
+  mpcParams() {
+    return {
+      nPts: 20,
+      uBounds: { min: [-1], max: [5] },
+      dt: 1 / 60,
+      traj: bounceTraj
     }
   }
 }

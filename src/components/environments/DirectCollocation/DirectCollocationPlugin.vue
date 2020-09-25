@@ -142,7 +142,13 @@ export default {
     },
 
     download() {
-      this.simTraj.dump();
+      const dump = this.simTraj.dump();
+      console.log(dump);
+      navigator.clipboard.writeText(dump).then(function() {
+        console.log('Async: Copying to clipboard was successful!');
+      }, function(err) {
+        console.error('Async: Could not copy text: ', err);
+      });
     }
   }
 };

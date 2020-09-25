@@ -4,6 +4,7 @@ import chroma from 'chroma-js'
 import colors from 'vuetify/lib/util/colors'
 import Model from '@/components/models/model.js'
 import { wrapAngle, sqr, matFromDiag } from '@/components/math.js'
+import { flipTraj } from './trajectories.js'
 
 class Quadrotor2D extends Model {
   static NAME = 'quadrotor';
@@ -181,23 +182,11 @@ class Quadrotor2D extends Model {
         side.fHead.visible = side.fLine.visible = this.graphics.showControl
       });
     };
-    // const trajLines = [...Array(20)].map(() => {
-    //   const line = two.makeLine(0, 0, 0, 0);
-    //   return line;
-    // });
-    // this.graphics.showTraj = traj => {
-    //   traj.forEach((x, idx) => {
-    //     const xy = this.worldToCanvas([x.vGet(0), x.vGet(1)]);
-    //     trajLines[idx].vertices[0].x = xy[0];
-    //     trajLines[idx].vertices[0].y = xy[1];
-    //     trajLines[idx].vertices[1].x = xy[0];
-    //     trajLines[idx].vertices[1].y = xy[1];
-    //     if (idx > 0) {
-    //       trajLines[idx - 1].vertices[1].x = xy[0];
-    //       trajLines[idx - 1].vertices[1].y = xy[1];
-    //     }
-    //   });
-    // };
+    this.graphics.traj = null;
+    this.graphics.trajLines = [...Array(20)].map(() => {
+      const line = two.makeLine(0, 0, 0, 0);
+      return line;
+    });
     this.graphics.system = two.makeGroup(
       body,
       sides[0].prop,
@@ -214,32 +203,22 @@ class Quadrotor2D extends Model {
     this.graphics.system.translation.set(...worldToCanvas([x.vGet(0), x.vGet(1)]))
     this.graphics.system.rotation = -x.vGet(2)
     this.graphics.setControl(u)
-  }
+    this.graphics.system.opacity = params.ghost ? 0.3 : 1;
 
-  /**
-   * LQR Params
-   */
-  lqrParams() {
-    return {
-      Q: matFromDiag([10, 10, 10, 1, 1, 1]),
-      R: matFromDiag([1, 1]),
-      simEps: 0.1,
-      simDuration: 5,
-      disengage: false,
-      divergenceThres: 100,
-    }
-  }
 
-  /**
-   * Direct collocation params
-   */
-  directCollocationParams() {
-    return {
-      nPts: 20,
-      uBounds: { min: [0, 0], max: [20, 20] },
-      anchors: [{ t: 0, x: [0, 0, 0, 0, 0, 0] }, { t: 1, x: [0, 1, 0, 0, 0, 0] }],
-      holdTime: 1,
-      reverse: true
+    // TODO: move to MPCPlugin
+    if (this.graphics.traj) {
+      this.graphics.traj.forEach((x, idx) => {
+        const xy = worldToCanvas([x.vGet(0), x.vGet(1)]);
+        this.graphics.trajLines[idx].vertices[0].x = xy[0];
+        this.graphics.trajLines[idx].vertices[0].y = xy[1];
+        this.graphics.trajLines[idx].vertices[1].x = xy[0];
+        this.graphics.trajLines[idx].vertices[1].y = xy[1];
+        if (idx > 0) {
+          this.graphics.trajLines[idx - 1].vertices[1].x = xy[0];
+          this.graphics.trajLines[idx - 1].vertices[1].y = xy[1];
+        }
+      });
     }
   }
 
@@ -303,9 +282,53 @@ class Quadrotor2D extends Model {
       return val.vcat(theta[idx]).vcat(dxy[idx]).vcat(dtheta[idx]).vcat(u)
     })
   }
+
+
+  /**
+   * LQR Params
+   */
+  lqrParams() {
+    return {
+      Q: matFromDiag([10, 10, 10, 1, 1, 1]),
+      R: matFromDiag([1, 1]),
+      simEps: 0.1,
+      simDuration: 5,
+      disengage: false,
+      divergenceThres: 100,
+    }
+  }
+
+  /**
+   * Direct collocation params
+   */
+  directCollocationParams() {
+    // return {
+    //   nPts: 20,
+    //   uBounds: { min: [0, 0], max: [20, 20] },
+    //   anchors: [{ t: 0, x: [0, 0, 0, 0, 0, 0] }, { t: 1, x: [0, 1, 0, 0, 0, 0] }],
+    //   holdTime: 0,
+    //   reverse: true
+    // }
+    return {
+      nPts: 40,
+      uBounds: { min: [0, 0], max: [20, 20] },
+      anchors: [{ t: 0, x: [-2, 0, 0, 0, 0, 0] }, { t: 1, x: [2, 0, -6.28, 0, 0, 0] }],
+      holdTime: 0,
+      reverse: true
+    }
+  }
+
+  /**
+   * MPC Params
+   */
+  mpcParams() {
+    return {
+      nPts: 20,
+      uBounds: { min: [-10, -10], max: [25, 25] },
+      dt: 1 / 60,
+      traj: flipTraj
+    }
+  }
 }
 
-const traj = []
-
-export { traj }
 export default Quadrotor2D

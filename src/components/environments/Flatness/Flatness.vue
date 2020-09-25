@@ -14,7 +14,7 @@ ModelLayout
                    :system='system'
                    :interactivePath='interactivePath' 
                    @activate='() => {}')
-  template(v-if='mounted'
+  template(v-if='isMounted'
            v-slot:sheet)
     TrajPlot(:trajectories='$refs.plugin.trajectories')
   template(v-slot:bar)
@@ -55,7 +55,6 @@ export default {
   },
 
   data: () => ({
-    mounted: false, // TODO: built-in way?
     interactivePath: null
   }),
 
@@ -80,14 +79,12 @@ export default {
   },
 
   mounted() {
-    this.createGraphics();
     // Create interactive path
     this.interactivePath = new InteractivePath(
       this.two,
       this.worldToCanvas,
       this.canvasToWorld
     );
-    this.mounted = true;
   },
 
   methods: {
