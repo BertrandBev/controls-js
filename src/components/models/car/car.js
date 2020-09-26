@@ -7,13 +7,14 @@ import Two from "two.js";
 import { wrapAngle } from '@/components/math.js'
 
 class Car extends Model {
+  static TAG = 'car';
+  static NAME = 'car';
   static STATES = Object.freeze([
     { name: 'x', show: true },
     { name: 'y', show: true },
     { name: 'theta', show: true },
     { name: 'v', show: false }
   ])
-
   static COMMANDS = Object.freeze([
     { name: 'accel' },
     { name: 'delta' }

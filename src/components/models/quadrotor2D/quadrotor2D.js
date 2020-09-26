@@ -5,6 +5,7 @@ import colors from 'vuetify/lib/util/colors'
 import Model from '@/components/models/model.js'
 import { wrapAngle, sqr, matFromDiag } from '@/components/math.js'
 import { flipTraj } from './trajectories.js'
+import { createMarker } from '../utils.js'
 
 class Quadrotor2D extends Model {
   static NAME = 'quadrotor';
@@ -133,7 +134,8 @@ class Quadrotor2D extends Model {
   createGraphics(two, scale) {
     const GEOM = {
       thickness: 8,
-      length: scale
+      length: scale,
+      mr: scale / 10
     };
 
     const body = two.makeRectangle(0, 0, GEOM.length, GEOM.thickness);
@@ -192,6 +194,10 @@ class Quadrotor2D extends Model {
       sides[0].prop,
       sides[1].prop
     );
+
+    // Create marker
+    const marker = createMarker(two, GEOM.mr, colors.blue.darken4, 4);
+    this.graphics.system.add(marker);
   }
 
   /**

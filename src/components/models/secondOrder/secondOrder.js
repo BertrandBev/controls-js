@@ -5,6 +5,7 @@ import Model from '@/components/models/model.js'
 import { ValueIterationParams } from '@/components/planners/valueIterationPlanner.js'
 import { matFromDiag } from '@/components/math.js'
 import { bounceTraj } from './trajectories.js'
+import { createMarker } from '../utils.js'
 
 class SecondOrder extends Model {
   static NAME = 'second order';
@@ -129,15 +130,8 @@ class SecondOrder extends Model {
     );
 
     // Create marker
-    for (let k = 0; k < 4; k++) {
-      const [sa, ea] = [k * Math.PI / 2, (k + 1) * Math.PI / 2];
-      const segment = two.makeArcSegment(0, 0, 0, GEOM.mr, sa, ea);
-      segment.fill = k % 2 === 0 ? '#ffffff' : colors.green.darken4;
-      segment.noStroke();
-      // segment.linewidth = 3;
-      // segment.stroke = colors.blue.darken4;
-      this.graphics.cart.add(segment);
-    }
+    const marker = createMarker(two, GEOM.mr, colors.green.darken4);
+    this.graphics.cart.add(marker);
 
     // Reference
     const ref = two.makeCircle(0, 0, 8)

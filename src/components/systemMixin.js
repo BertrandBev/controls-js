@@ -8,9 +8,6 @@ export default {
   }),
 
   computed: {
-    mouseTargetEnabled() {
-      return true; // Override if needed
-    }
   },
 
   mounted() {
@@ -35,7 +32,8 @@ export default {
       let params = {};
       // Update system
       const stepSystem = !plugin || plugin.stepSystem();
-      if (this.mouseTargetEnabled && this.mouseTarget && stepSystem) {
+      const mouseTargetEnabled = !plugin || plugin.mouseTargetEnabled;
+      if (mouseTargetEnabled && this.mouseTarget && stepSystem) {
         params = this.system.trackMouse(this.mouseTarget, this.dt);
       } else if (plugin && plugin.ready()) {
         params = plugin.updateSystem(this.t, this.dt);
