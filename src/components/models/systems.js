@@ -1,5 +1,5 @@
 import SecondOrder from "@/components/models/secondOrder/secondOrder.js";
-import SimplePendulum from "@/components/models/simplePendulum.js";
+import SimplePendulum from "@/components/models/simplePendulum/simplePendulum.js";
 import DoublePendulum from "@/components/models/doublePendulum/doublePendulum.js";
 import Quadrotor2D from "@/components/models/quadrotor2D/quadrotor2D.js";
 import CartPole from "@/components/models/cartPole/cartPole.js";

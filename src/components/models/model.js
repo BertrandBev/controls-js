@@ -56,11 +56,13 @@ class Model {
    * @param {Matrix} x - State
    * @param {Matrix} u - Command
    * @param {Number} dt - Timestep
+   * @param {Boolean} bound - Bound state to system domain
    */
-  xNext(x, u, dt) {
+  xNext(x, u, dt, bound = true) {
     const dx = this.dynamics(x, u)
     const xNext = x.matAdd(dx.mul(dt))
-    this.bound(xNext)
+    if (bound)
+      this.bound(xNext)
     return xNext
   }
 
@@ -89,7 +91,7 @@ class Model {
         backward[k - 1].setBlock(xn, 0, block);
       }
       this.statesCommands.forEach((val, idx) => {
-        if (val.derivative) backward[k].vSet(idx, -backward[k].vGet(idx))
+        if (val.derivative) backward[k].set(idx, -backward[k].get(idx))
       })
     }
     const forward = [...array]

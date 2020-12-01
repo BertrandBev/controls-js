@@ -59,10 +59,10 @@ export default {
   },
 
   created() {
-    const xTop = eig.Matrix.fromArray([0, Math.PI, 0, 0]);
+    const xTop = new eig.Matrix([0, Math.PI, 0, 0]);
     const params = {
-      x0: eig.Matrix.fromArray([0, 0, 0, 0]), // xTop,
-      u0: eig.Matrix.fromArray([0])
+      x0: new eig.Matrix([0, 0, 0, 0]), // xTop,
+      u0: new eig.Matrix([0])
     };
     this.system = new CartPole(params);
     this.controller = new LQR(this.system, params.x0, params.u0);
@@ -101,7 +101,7 @@ export default {
     });
     this.graphics.setControl = u => {
       sides.forEach((side, idx) => {
-        const uh = _.clamp(u.vGet(0) * 5, -100, 100);
+        const uh = _.clamp(u.get(0) * 5, -100, 100);
         side.group.visible = (idx - 0.5) * uh > 0;
         side.fHead.translation.x = (Math.sign(uh) * GEOM.cartWidth) / 2 + uh;
         side.fLine.vertices[1].x = side.fHead.translation.x;
@@ -122,8 +122,8 @@ export default {
 
   methods: {
     optimize() {
-      const xStart = eig.Matrix.fromArray([0, 0, 0, 0]);
-      const xEnd = eig.Matrix.fromArray([0, Math.PI, 0, 0]);
+      const xStart = new eig.Matrix([0, 0, 0, 0]);
+      const xEnd = new eig.Matrix([0, Math.PI, 0, 0]);
       const uMax = 10;
       const nPoints = 30;
       const anchors = [
@@ -136,8 +136,8 @@ export default {
         this.system,
         nPoints,
         {
-          min: eig.Matrix.fromArray([-uMax]),
-          max: eig.Matrix.fromArray([uMax])
+          min: new eig.Matrix([-uMax]),
+          max: new eig.Matrix([uMax])
         },
         anchors
       );
@@ -158,14 +158,14 @@ export default {
       } else if (this.trajectory.ready()) {
         const x = this.trajectory.get(Date.now() / 1000);
         for (let k = 0; k < this.system.shape[0]; k++) {
-          this.system.x.vSet(k, x.vGet(k));
+          this.system.x.set(k, x.get(k));
         }
         u = x.block(4, 0, 1, 1);
       }
       // Graphic update
       const x = this.system.x;
-      this.graphics.pole.rotation = -x.vGet(1);
-      this.graphics.cart.translation.set(...this.worldToCanvas([x.vGet(0), 0]));
+      this.graphics.pole.rotation = -x.get(1);
+      this.graphics.cart.translation.set(...this.worldToCanvas([x.get(0), 0]));
       this.graphics.setControl(u);
       this.updateTime = Date.now();
       // Run GC

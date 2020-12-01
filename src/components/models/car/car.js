@@ -32,8 +32,8 @@ class Car extends Model {
 
   trim() {
     return {
-      x: eig.Matrix.fromArray([0, 0, Math.PI / 2, 0]),
-      u: eig.Matrix.fromArray([0, 0]),
+      x: new eig.Matrix([0, 0, Math.PI / 2, 0]),
+      u: new eig.Matrix([0, 0]),
     }
   }
 
@@ -43,7 +43,7 @@ class Car extends Model {
    */
   bound(x) {
     super.bound(x)
-    x.vSet(2, wrapAngle(x.vGet(2)))
+    x.set(2, wrapAngle(x.get(2)))
   }
 
   /**
@@ -54,14 +54,14 @@ class Car extends Model {
    */
   dynamics(x, u) {
     const p = this.params
-    const theta = x.vGet(2);
-    const v = x.vGet(3);
-    const delta = u.vGet(1);
-    return eig.Matrix.fromArray([
+    const theta = x.get(2);
+    const v = x.get(3);
+    const delta = u.get(1);
+    return new eig.Matrix([
       Math.cos(theta) * v,
       Math.sin(theta) * v,
       v * Math.tan(delta) / p.l,
-      u.vGet(0) - v * p.mu
+      u.get(0) - v * p.mu
     ])
   }
 
@@ -72,8 +72,8 @@ class Car extends Model {
    */
   trackMouse(mouseTarget, dt) {
     const p = this.params
-    const [x, y] = [this.x.vGet(0), this.x.vGet(1)];
-    const [theta, v] = [this.x.vGet(2), this.x.vGet(3)]
+    const [x, y] = [this.x.get(0), this.x.get(1)];
+    const [theta, v] = [this.x.get(2), this.x.get(3)]
     const [mx, my] = [mouseTarget[0], mouseTarget[1]];
     const d = Math.sqrt(Math.pow(mx - x, 2) + Math.pow(my - y, 2));
     const [dx, dy] = [Math.cos(theta), Math.sin(theta)];
@@ -83,7 +83,7 @@ class Car extends Model {
     // Controller
     const ac = _.clamp(10 * (d - v * 0.5), -p.maxAccel, p.maxAccel);
     const dc = _.clamp(dtheta, -p.maxDelta, p.maxDelta);
-    const u = eig.Matrix.fromArray([ac, dc]);
+    const u = new eig.Matrix([ac, dc]);
     this.step(u, dt);
     return { u };
   }
@@ -93,17 +93,17 @@ class Car extends Model {
    */
   createGraphics(two, scale) {
     const GEOM = {
-      l: scale,
-      w: 3 * scale / 5,
+      l: scale / 2,
+      w: 3 * scale / 10,
       a1: 0.6, // back wheel lateral clearance
       a2: 0.4, // front wheel lateral clearance
       b: 0.6,  // wheel horizontal clearance
       c: 0.3,  // wheel casing start
       // wheels
-      lw: scale / 2,
-      ww: scale / 6,
+      lw: scale / 4,
+      ww: scale / 12,
       // marker
-      mr: scale / 6
+      mr: scale / 12
     };
     // Create car
     let anchors = [
@@ -150,7 +150,7 @@ class Car extends Model {
 
     this.graphics.showControl = true
     this.graphics.setControl = u => {
-      const delta = u.vGet(1);
+      const delta = u.get(1);
       this.graphics.wheels[2].rotation = -delta;
       this.graphics.wheels[3].rotation = -delta;
     };
@@ -162,8 +162,8 @@ class Car extends Model {
   updateGraphics(worldToCanvas, params) {
     const { u } = params
     const x = this.x;
-    this.graphics.car.translation.set(...worldToCanvas([x.vGet(0), x.vGet(1)]));
-    this.graphics.car.rotation = -x.vGet(2)
+    this.graphics.car.translation.set(...worldToCanvas([x.get(0), x.get(1)]));
+    this.graphics.car.rotation = -x.get(2)
     this.graphics.setControl(u);
   }
 
@@ -172,9 +172,9 @@ class Car extends Model {
    */
   kalmanFilterParams() {
     function measurement(params, x) {
-      const pos = eig.Matrix.fromArray(params.pos)
+      const pos = new eig.Matrix(params.pos)
       const dist = pos.matSub(x.block(0, 0, 2, 1)).norm();
-      return eig.Matrix.fromArray([dist]);
+      return new eig.Matrix([dist]);
     }
     return {
       covariance: [[5, 0, 0, 0], [0, 5, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
@@ -191,9 +191,9 @@ class Car extends Model {
    */
   particleFilterParams() {
     function measurement(params, x) {
-      const pos = eig.Matrix.fromArray(params.pos)
+      const pos = new eig.Matrix(params.pos)
       const dist = pos.matSub(x.block(0, 0, 2, 1)).norm();
-      return eig.Matrix.fromArray([dist]);
+      return new eig.Matrix([dist]);
     }
     return {
       nPts: 30,

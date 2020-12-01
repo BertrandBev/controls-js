@@ -2,6 +2,9 @@
 Section(title='RRT')
   Blocks.mt-2(ref='blocks'
               :initBlocks='initBlocks')
+  ValueInput.mt-2(ref='nPts'
+              :value.sync='params.nPts'
+              label='Point count')
   v-btn.mt-2(@click='runRRT'
       outlined
       color='primary') run RRT
@@ -39,27 +42,28 @@ export default {
   }),
 
   computed: {
-    blocks() {
-      return this.$refs.blocks;
-    },
-
     initBlocks() {
       return [{ pos: [1, 1], size: 32 }];
+    },
+
+    mouseTargetEnabled() {
+      return !this.$refs.blocks.blockDragged;
     }
   },
 
   created() {
     this.rrt = new RRT(this.system);
+    this.params = this.system.rrtParams();
   },
 
   methods: {
     runRRT() {
-      this.rrt.run(() => true, 1000);
+      this.rrt.run(() => true, this.params.nPts);
     },
 
     createGraphics(two) {
       // Create blocks
-      this.blocks.createGraphics(two);
+      this.$refs.blocks.createGraphics(two);
     },
 
     reset() {

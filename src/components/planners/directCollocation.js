@@ -107,7 +107,7 @@ class DirectCollocation {
   getVector(arr, idx, len) {
     const vec = new eig.Matrix(len, 1)
     for (let k = 0; k < len; k++) {
-      vec.vSet(k, arr[idx + k])
+      vec.set(k, arr[idx + k])
     }
     return vec
   }
@@ -163,11 +163,11 @@ class DirectCollocation {
       for (let i = 0; i < nx; i++) {
         const cIdx = k * nx + i;
         if (iTol !== 0) {
-          res[cIdx] = - Math.sign(iTol) * c.vGet(i);
+          res[cIdx] = - Math.sign(iTol) * c.get(i);
         } else {
-          res[cIdx] = c.vGet(i);
+          res[cIdx] = c.get(i);
         }
-        max = Math.max(max, Math.pow(c.vGet(i), 2))
+        max = Math.max(max, Math.pow(c.get(i), 2))
       }
 
       // Compute jacobians
@@ -308,7 +308,7 @@ class DirectCollocation {
     let [xList, uList, tEnd] = this.unpack(res.x)
     console.log('tEnd', tEnd);
     let arr = xList.map((x, idx) => {
-      return eig.Matrix.fromArray(x).vcat(eig.Matrix.fromArray(uList[idx]))
+      return new eig.Matrix(x).vcat(new eig.Matrix(uList[idx]))
     })
     tEnd = Math.max(tEnd, 0.1); // Safeguard for hold loop
     const dt = tEnd / xList.length

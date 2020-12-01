@@ -58,7 +58,7 @@ export default {
       const tList = [];
       traj.array.forEach((val, k) => {
         tList.push(k * traj.dt);
-        xList.push(val.vGet(idx));
+        xList.push(val.get(idx));
       });
       return [tList, xList];
     },
@@ -87,8 +87,12 @@ export default {
       });
       const layout = {
         xaxis: {
-          title: "time (t)"
+          title: "time (t)",
+          fixedrange: true
           //   zeroline: false
+        },
+        yaxis: {
+          fixedrange: true
         },
         margin: {
           l: 40,

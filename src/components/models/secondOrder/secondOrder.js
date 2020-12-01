@@ -2,7 +2,6 @@ import eig from '@eigen'
 import _ from 'lodash'
 import colors from 'vuetify/lib/util/colors'
 import Model from '@/components/models/model.js'
-import { ValueIterationParams } from '@/components/planners/valueIterationPlanner.js'
 import { matFromDiag } from '@/components/math.js'
 import { bounceTraj } from './trajectories.js'
 import { createMarker } from '../utils.js'
@@ -39,9 +38,9 @@ class SecondOrder extends Model {
    * @returns {Matrix} dx
    */
   dynamics(x, u) {
-    return eig.Matrix.fromArray([
-      x.vGet(1),
-      u.vGet(0) / this.params.m
+    return new eig.Matrix([
+      x.get(1),
+      u.get(0) / this.params.m
     ])
   }
 
@@ -52,7 +51,7 @@ class SecondOrder extends Model {
    * @returns {Matrix} df/dx
    */
   xJacobian(x, u) {
-    return eig.Matrix.fromArray([
+    return new eig.Matrix([
       [0, 1], [0, 0]
     ])
   }
@@ -64,7 +63,7 @@ class SecondOrder extends Model {
    * @returns {Matrix} df/du
    */
   uJacobian(x, u) {
-    return eig.Matrix.fromArray([
+    return new eig.Matrix([
       [0], [1 / this.params.m]
     ])
   }
@@ -77,9 +76,9 @@ class SecondOrder extends Model {
   trackMouse(mouseTarget, dt) {
     const { u } = this.trim()
     const dx = this.dynamics(this.x, u)
-    const xVel = 10 * (mouseTarget[0] - this.x.vGet(0));
-    this.x.vSet(1, _.clamp(xVel, -15, 15))
-    dx.vSet(0, this.x.vGet(1))
+    const xVel = 10 * (mouseTarget[0] - this.x.get(0));
+    this.x.set(1, _.clamp(xVel, -15, 15))
+    dx.set(0, this.x.get(1))
     // TODO: extract in schema
     const newX = this.x.matAdd(dx.mul(dt))
     this.bound(newX)
@@ -115,7 +114,7 @@ class SecondOrder extends Model {
     this.graphics.showControl = true
     this.graphics.setControl = u => {
       sides.forEach((side, idx) => {
-        const uh = _.clamp(u.vGet(0) * 5, -100, 100);
+        const uh = _.clamp(u.get(0) * 5, -100, 100);
         side.group.visible = this.graphics.showControl &&
           (idx - 0.5) * uh > 0 &&
           Math.abs(uh) > 0.1;
@@ -132,33 +131,18 @@ class SecondOrder extends Model {
     // Create marker
     const marker = createMarker(two, GEOM.mr, colors.green.darken4);
     this.graphics.cart.add(marker);
-
-    // Reference
-    const ref = two.makeCircle(0, 0, 8)
-    ref.fill = colors.purple.base;
-    ref.stroke = colors.purple.darken3;
-    ref.linewidth = 2
-    this.graphics.ref = ref
-
-    this.graphics.showRef = true
-    this.graphics.setRef = (x, y) => {
-      this.graphics.ref.visible = this.graphics.showRef
-      this.graphics.ref.translation.x = x
-      this.graphics.ref.translation.y = y
-    }
   }
 
   /**
    * Update model
    */
   updateGraphics(worldToCanvas, params) {
-    const { u, trajX } = params
+    const { u } = params
     const x = this.x;
-    this.graphics.cart.translation.set(...worldToCanvas([x.vGet(0), 0]));
+    this.graphics.cart.translation.set(...worldToCanvas([x.get(0), 0]));
     if (u)
       this.graphics.setControl(u);
-    this.graphics.showRef = !!trajX;
-    if (trajX) this.graphics.setRef(...worldToCanvas([trajX.vGet(0), 0]))
+    this.graphics.cart.opacity = params.ghost ? 0.3 : 1;
   }
 
   /**
@@ -179,12 +163,11 @@ class SecondOrder extends Model {
    * Plugin params
    */
   valueIterationParams() {
-    return new ValueIterationParams(
-      [{ min: -4, max: 4, nPts: 50 }, { min: -5, max: 5, nPts: 50 }],
-      [{ min: -2, max: 2, nPts: 2 }],
-      [[0, 0]],
-      0.11
-    )
+    return {
+      x: { min: [-4, -5], max: [4, 5], nPts: [100, 100], targets: [[0, 0]]},
+      u: { min: [-5], max: [5], nPts: [2] },
+      dt: 0.05
+    }
   }
 
   /**
@@ -208,6 +191,26 @@ class SecondOrder extends Model {
       uBounds: { min: [-1], max: [5] },
       dt: 1 / 60,
       traj: bounceTraj
+    }
+  }
+
+  /**
+   * Kalman filter plugin parameters
+   */
+  kalmanFilterParams() {
+    function measurement(params, x) {
+      const pos = new eig.Matrix(params.pos)
+      const x0 = new eig.Matrix([x.get(0), 0])
+      const dist = pos.matSub(x0).norm();
+      return new eig.Matrix([dist]);
+    }
+    return {
+      covariance: [[5, 0], [0, 5]],
+      processNoise: [[0, 0], [0, 0]],
+      inputNoise: [[0, 0], [0, 0]],
+      sensors: [
+        { type: 'radar', dt: 1, pos: [-2, 2], measurement, noise: [[5]] }
+      ]
     }
   }
 }

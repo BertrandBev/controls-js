@@ -54,14 +54,14 @@ class LinearSystem extends Model {
     // TODO: extract in C lib ?
     function setCol(mat, row, vec) {
       for (let k = 0; k < vec.rows(); k++) {
-        mat.set(k, row, vec.vGet(k))
+        mat.set(k, row, vec.get(k))
       }
     }
     // Populate A matrix
     let A = new eig.Matrix(m, n);
     for (let k = 0; k < n; k += 1) {
       const x = new eig.Matrix(x0);
-      x.vSet(k, x.vGet(k) + eps);
+      x.set(k, x.get(k) + eps);
       const dx = fun(x).matSub(dx0).div(eps);
       setCol(A, k, dx);
     }
@@ -88,11 +88,11 @@ class LinearSystem extends Model {
     const [xn, un] = system.shape
     const x0 = new eig.Matrix(xn, 1);
     for (let i = 0; i < xn; i++) {
-      x0.vSet(i, i * 2.8 + 13.7);
+      x0.set(i, i * 2.8 + 13.7);
     }
     const u0 = new eig.Matrix(un, 1);
     for (let i = 0; i < un; i++) {
-      u0.vSet(i, i * 2.8 + 13.7);
+      u0.set(i, i * 2.8 + 13.7);
     }
     const [Jxn, Jun] = LinearSystem.linearizeSystem(system, x0, u0)
     const Jx = system.xJacobian(x0, u0)

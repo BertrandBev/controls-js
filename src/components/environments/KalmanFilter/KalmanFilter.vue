@@ -31,8 +31,9 @@ export default {
 
   meta: {
     title: "Kalman Filter",
-    icon: "mdi-eye",
+    icon: "mdi-chart-bell-curve",
     systems: [
+      Systems.secondOrder,
       Systems.car,
     ]
   },
@@ -59,7 +60,7 @@ export default {
     },
 
     scale() {
-      return 48;
+      return 96;
     },
 
     dt() {

@@ -121,7 +121,7 @@ class InteractivePath {
   getTraj(nPts) {
     const [cx, cy] = this.worldToCanvas([0, 0])
     return this.discretize(nPts).map(val => {
-      return eig.Matrix.fromArray(this.canvasToWorld([val.x + cx, val.y + cy]));
+      return new eig.Matrix(this.canvasToWorld([val.x + cx, val.y + cy]));
     });
   }
 }

@@ -5,8 +5,8 @@ ModelLayout
   template(v-slot:overlay)
     div(style='display: flex;')
       v-chip.ma-2(label
-            color='blue'
-            text-color='white') Kinematic
+            color='red'
+            text-color='white') Dynamic
       v-spacer
       span.ma-2 fps: {{ fps.toFixed(0) }}
   template(v-slot:drawer)

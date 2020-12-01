@@ -5,12 +5,13 @@ ModelLayout
   template(v-slot:overlay)
     span.ma-2 fps: {{ fps.toFixed(0) }}
   template(v-slot:drawer)
-    LQRPlugin(ref='plugin'
+    ParticleFilterPlugin(ref='plugin'
               :system='system'
               @activate='() => {}')
   template(v-if='isMounted'
            v-slot:sheet)
-    TrajPlot(:trajectories='$refs.plugin.trajectories')
+    //- KalmanPlot(:kalmanFilter='$refs.plugin.kalmanFilter')
+    //- TrajPlot(:trajectories='$refs.plugin.trajectories')
   template(v-slot:bar)
     v-btn(text dark
           @click='reset') reset
@@ -21,29 +22,26 @@ import ModelLayout from "@/components/models/ModelLayout.vue";
 import worldMixin from "@/components/worldMixin.js";
 import systemMixin from "@/components/systemMixin.js";
 import TrajPlot from "@/components/plots/TrajPlot.vue";
-import LQRPlugin from "@/components/environments/LQR/LQRPlugin.vue";
+import KalmanPlot from "@/components/plots/KalmanPlot.vue";
+import ParticleFilterPlugin from "@/components/environments/ParticleFilter/ParticleFilterPlugin.vue";
 import Systems from "@/components/models/systems.js";
 
 export default {
-  name: "lqr",
+  name: "particleFilter",
 
   meta: {
-    title: "LQR",
-    icon: "mdi-matrix",
+    title: "Particle Filter",
+    icon: "mdi-dots-hexagon",
     systems: [
-      Systems.secondOrder,
-      // Systems.simplePendulum,
-      // Systems.doublePendulum,
-      Systems.arm,
-      Systems.cartPole,
-      Systems.quadrotor2D,
+      Systems.car,
     ]
   },
 
   components: {
     ModelLayout,
     TrajPlot,
-    LQRPlugin
+    KalmanPlot,
+    ParticleFilterPlugin
   },
 
   mixins: [worldMixin, systemMixin],
@@ -61,7 +59,7 @@ export default {
     },
 
     scale() {
-      return 96;
+      return 48;
     },
 
     dt() {

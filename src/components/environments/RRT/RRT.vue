@@ -8,9 +8,9 @@ ModelLayout
     RRTPlugin(ref='plugin'
               :system='system'
               @activate='() => {}')
-  //- template(v-if='mounted'
-  //-          v-slot:sheet)
-  //-   TrajPlot(:trajectories='$refs.plugin.trajectories')
+  template(v-if='isMounted'
+           v-slot:sheet)
+    RRTPlot(:rrt='$refs.plugin.rrt')
   template(v-slot:bar)
     v-btn(text dark
           @click='reset') reset
@@ -20,7 +20,7 @@ ModelLayout
 import ModelLayout from "@/components/models/ModelLayout.vue";
 import worldMixin from "@/components/worldMixin.js";
 import systemMixin from "@/components/systemMixin.js";
-import TrajPlot from "@/components/plots/TrajPlot.vue";
+import RRTPlot from "@/components/plots/RRTPlot.vue";
 import RRTPlugin from "@/components/environments/RRT/RRTPlugin.vue";
 import Systems from "@/components/models/systems.js";
 
@@ -35,7 +35,7 @@ export default {
 
   components: {
     ModelLayout,
-    TrajPlot,
+    RRTPlot,
     RRTPlugin
   },
 

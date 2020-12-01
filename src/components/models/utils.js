@@ -21,4 +21,27 @@ function createMarker(two, radius, color, stroke = 0) {
   return marker;
 }
 
-export { createMarker, COLORS }
+function createCircularForce(two, radius, color) {
+  const theta = -5 * Math.PI / 4;
+  const [sa, ea] = [Math.PI / 4, theta];
+  const r = radius;
+  const fArc = two.makeArcSegment(0, 0, r, r, sa, ea);
+  fArc.stroke = color;
+  fArc.linewidth = 2;
+  fArc.noFill();
+  const fHead = two.makePolygon(0, 0, 6, 3);
+  fHead.fill = color;
+  const force = two.makeGroup(fArc, fHead);
+  const setControl = u => {
+    force.opacity = Math.abs(u) < 1e-3 ? 0 : 1;
+    fHead.rotation = theta * Math.sign(u);
+    fHead.translation.set(
+      r * Math.cos(theta * Math.sign(u)),
+      r * Math.sin(theta * Math.sign(u))
+    );
+  }
+  setControl(0);
+  return [force, setControl];
+}
+
+export { createMarker, createCircularForce, COLORS }

@@ -57,6 +57,15 @@ class Tensor {
   }
 
   /**
+   * Initialize with value
+   * @param {Number} val
+   */
+  clear(val) {
+    for (let k = 0; k < this.data.length; k++)
+      this.data[k] = val;
+  }
+
+  /**
    * Iterator
    */
   forEach(fun) {
@@ -79,8 +88,8 @@ class Tensor {
    */
   getMatrix() {
     console.assert(this.dims.length === 2, `The tensor dimension (${this.dims}) must be 2`)
-    return [...Array(this.dims[0])].map((val, i) => {
-      return [...Array(this.dims[1])].map((val, j) => this.get([i, j]))
+    return [...Array(this.dims[1])].map((val, j) => {
+      return [...Array(this.dims[0])].map((val, i) => this.get([i, j]))
     })
   }
 }
@@ -112,8 +121,10 @@ class Grid {
    * @param {Array} grid [{min, max, nPts}, ...] spec for each dimension
    */
   constructor(grid) {
-    this.grid = grid
-    this.tensor = new Tensor(grid.map(val => val.nPts))
+    this.grid = []
+    for (let k = 0; k < grid.min.length; k++)
+      this.grid.push({ min: grid.min[k], max: grid.max[k], nPts: grid.nPts[k] });
+    this.tensor = new Tensor(this.grid.map(val => val.nPts))
   }
 
   /**
@@ -123,8 +134,8 @@ class Grid {
   clamp(vec) {
     const clamped = new eig.Matrix(vec)
     this.grid.forEach((val, idx) => {
-      const v = Math.max(val.min, Math.min(val.max, clamped.vGet(idx)))
-      clamped.vSet(idx, v)
+      const v = Math.max(val.min, Math.min(val.max, clamped.get(idx)))
+      clamped.set(idx, v)
     })
     return clamped
   }
@@ -154,8 +165,8 @@ class Grid {
   toGrid(vec) {
     let oob = false
     const ind = this.grid.map((val, idx) => {
-      const scalar = (vec.vGet(idx) - val.min) / (val.max - val.min)
-      const k = Math.floor(scalar * val.nPts)
+      const scalar = (vec.get(idx) - val.min) / (val.max - val.min)
+      const k = Math.floor(scalar * (val.nPts - 1))
       oob |= k < 0 || k >= val.nPts
       return Math.max(0, Math.min(val.nPts - 1, k))
     })
@@ -168,11 +179,11 @@ class Grid {
    */
   fromGrid(indices) {
     const vec = this.grid.map((val, idx) => {
-      const interval = (val.max - val.min) / val.nPts
-      const factor = Math.max(0, Math.min(val.nPts, indices[idx]))
-      return val.min + interval * (factor + .5)
+      const interval = (val.max - val.min) / (val.nPts - 1)
+      const factor = Math.max(0, Math.min(val.nPts - 1, indices[idx]))
+      return val.min + interval * factor
     })
-    return eig.Matrix.fromArray(vec)
+    return new eig.Matrix(vec)
   }
 
   /**

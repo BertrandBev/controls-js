@@ -29,8 +29,8 @@ class CartPole extends Model {
 
   trim() {
     return {
-      x: eig.Matrix.fromArray([0, Math.PI, 0, 0]),
-      u: new eig.Matrix.fromArray([0])
+      x: new eig.Matrix([0, Math.PI, 0, 0]),
+      u: new new eig.Matrix([0])
     }
   }
 
@@ -40,7 +40,7 @@ class CartPole extends Model {
    */
   bound(x) {
     super.bound(x)
-    x.vSet(1, wrapAngle(x.vGet(1)))
+    x.set(1, wrapAngle(x.get(1)))
   }
 
   /**
@@ -52,12 +52,12 @@ class CartPole extends Model {
   dynamics(x, u) {
     // x = [x, theta, dx, dtheta]
     const p = this.params
-    const [c, s] = [Math.cos(x.vGet(1)), Math.sin(x.vGet(1))]
+    const [c, s] = [Math.cos(x.get(1)), Math.sin(x.get(1))]
     const dx = x.block(2, 0, 2, 1)
     const den = p.mc + p.mp * sqr(s)
-    const ddx = eig.Matrix.fromArray([
-      (u.vGet(0) + p.mp * s * (p.l * sqr(x.vGet(3)) + p.g * c)) / den, //- p.mu * x.vGet(2),
-      -(u.vGet(0) * c + p.mp * p.l * sqr(x.vGet(3)) * c * s + (p.mp + p.mc) * p.g * s) / p.l / den //- p.mu * x.vGet(3)
+    const ddx = new eig.Matrix([
+      (u.get(0) + p.mp * s * (p.l * sqr(x.get(3)) + p.g * c)) / den, //- p.mu * x.get(2),
+      -(u.get(0) * c + p.mp * p.l * sqr(x.get(3)) * c * s + (p.mp + p.mc) * p.g * s) / p.l / den //- p.mu * x.get(3)
     ])
     return dx.vcat(ddx)
   }
@@ -70,16 +70,16 @@ class CartPole extends Model {
    */
   xJacobian(x, u) {
     const p = this.params
-    const td = x.vGet(3)
-    const f = u.vGet(0)
-    const [c, s] = [Math.cos(x.vGet(1)), Math.sin(x.vGet(1))]
+    const td = x.get(3)
+    const f = u.get(0)
+    const [c, s] = [Math.cos(x.get(1)), Math.sin(x.get(1))]
     const [c2, s2, td2] = [sqr(c), sqr(s), sqr(td)]
     const den = p.mp * s2 + p.mc
     const dx2dt = (p.mp * c * (p.l * td2 + p.g * c) - p.g * p.mp * s2) / den - (2 * p.mp * c * s * (f + p.mp * s * (p.l * td2 + p.g * c))) / sqr(den)
     const dx2dt1 = (2 * p.l * p.mp * td * s) / den
     const dt2dt = (f * s - p.g * c * (p.mc + p.mp) - p.l * p.mp * td2 * c2 + p.l * p.mp * td2 * s2) / (p.l * den) + (2 * p.mp * c * s * (p.l * p.mp * c * s * td2 + f * c + p.g * s * (p.mc + p.mp))) / (p.l * sqr(den))
     const dt2dt1 = -(2 * p.mp * td * c * s) / den
-    return eig.Matrix.fromArray([
+    return new eig.Matrix([
       [0, 0, 1, 0],
       [0, 0, 0, 1],
       [0, dx2dt, 0, dx2dt1],
@@ -95,11 +95,11 @@ class CartPole extends Model {
    */
   uJacobian(x, u) {
     const p = this.params
-    const [c, s] = [Math.cos(x.vGet(1)), Math.sin(x.vGet(1))]
+    const [c, s] = [Math.cos(x.get(1)), Math.sin(x.get(1))]
     const s2 = sqr(s)
     const dx2du = 1 / (p.mp * s2 + p.mc)
     const dt2du = -c / (p.l * (p.mp * s2 + p.mc))
-    return eig.Matrix.fromArray([
+    return new eig.Matrix([
       [0], [0], [dx2du], [dt2du]
     ])
   }
@@ -113,14 +113,14 @@ class CartPole extends Model {
     const { u } = this.trim()
     const dx = this.dynamics(this.x, u)
     // Control cart
-    const xVel = 10 * (mouseTarget[0] - this.x.vGet(0));
-    const thetaVel = 10 * wrapAngle(Math.PI - this.x.vGet(1));
-    this.x.vSet(2, _.clamp(xVel, -15, 15))
-    this.x.vSet(3, thetaVel);
-    dx.vSet(0, this.x.vGet(2));
-    dx.vSet(1, this.x.vGet(3));
-    dx.vSet(2, 0);
-    dx.vSet(3, 0);
+    const xVel = 10 * (mouseTarget[0] - this.x.get(0));
+    const thetaVel = 10 * wrapAngle(Math.PI - this.x.get(1));
+    this.x.set(2, _.clamp(xVel, -15, 15))
+    this.x.set(3, thetaVel);
+    dx.set(0, this.x.get(2));
+    dx.set(1, this.x.get(3));
+    dx.set(2, 0);
+    dx.set(3, 0);
     const newX = this.x.matAdd(dx.mul(dt));
     this.bound(newX);
     this.setState(newX);
@@ -174,7 +174,7 @@ class CartPole extends Model {
     });
     const setControl = u => {
       sides.forEach((side, idx) => {
-        const uh = _.clamp(u.vGet(0) * 5, -100, 100);
+        const uh = _.clamp(u.get(0) * 5, -100, 100);
         side.group.visible = (idx - 0.5) * uh > 0;
         side.fHead.translation.x = (Math.sign(uh) * GEOM.cartWidth) / 2 + uh;
         side.fLine.vertices[1].x = side.fHead.translation.x;
@@ -194,8 +194,8 @@ class CartPole extends Model {
     // TODO: draw torque
     const { u } = params;
     const x = this.x;
-    this.graphics.pole.rotation = -x.vGet(1);
-    this.graphics.cart.translation.set(...worldToCanvas([x.vGet(0), 0]));
+    this.graphics.pole.rotation = -x.get(1);
+    this.graphics.cart.translation.set(...worldToCanvas([x.get(0), 0]));
     this.graphics.setControl(u);
   }
 

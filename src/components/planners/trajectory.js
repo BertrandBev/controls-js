@@ -87,9 +87,9 @@ class Trajectory {
    */
   get(t) {
     t -= this.tStart;
-    t -= Math.floor(t / this.duration) * this.duration
+    // t -= Math.floor(t / this.duration) * this.duration
     let idx = Math.max(0, Math.floor(t / this.dt))
-    idx = this.loop ? idx % this.array.length : Math.min(this.array.length - 1, idx)
+    idx = this.loop ? idx % this.array.length : Math.min(this.array.length - 2, idx)
     const nextIdx = (idx + 1) % this.array.length;
     let ratio = (t - idx * this.dt) / this.dt;
     ratio = Math.max(0, Math.min(1, ratio));
@@ -127,7 +127,7 @@ class Trajectory {
    * @param {Object} dump 
    */
   load(dump) {
-    this.set(dump.x.map(eig.Matrix.fromArray), dump.dt);
+    this.set(dump.x.map(new eig.Matrix), dump.dt);
   }
 
   /**
@@ -138,7 +138,7 @@ class Trajectory {
     this.array.forEach((vec, idx) => {
       rows += '['
       for (let k = 0; k < vec.length(); k += 1) {
-        rows += `${vec.vGet(k).toFixed(4)}` + (k < vec.length() - 1 ? ',' : '')
+        rows += `${vec.get(k).toFixed(4)}` + (k < vec.length() - 1 ? ',' : '')
       }
       rows += ']' + (idx === this.array.length - 1 ? ']' : ',\n')
     })

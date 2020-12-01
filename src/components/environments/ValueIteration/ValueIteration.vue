@@ -3,19 +3,28 @@ ModelLayout
   template(v-slot:canvas)
     div.canvas(ref='canvas')
   template(v-slot:overlay)
-    span.ma-2 fps: {{ fps.toFixed(0) }}
+    div(style='display: flex;')
+      v-chip.ma-2(label
+            color='blue'
+            text-color='white') Kinematic
+      v-spacer
+      span.ma-2 fps: {{ fps.toFixed(0) }}
   template(v-slot:drawer)
     ValueIterationPlugin(ref='plugin'
                          :system='system')
   template(v-if='mounted'
            v-slot:sheet)
-    ValueIterationPlot(:valueIterationPlanner='$refs.plugin.viPlanner')
+    ValueIterationPlot(
+      :valueIterationPlanner='$refs.plugin.viPlanner'
+      :trajectory='$refs.plugin.trajectory'
+      @onclick='onclick')
   template(v-slot:bar)
     v-btn(text dark
           @click='reset') reset
 </template>
 
 <script>
+import eig from "@eigen";
 import ModelLayout from "@/components/models/ModelLayout.vue";
 import worldMixin from "@/components/worldMixin.js";
 import systemMixin from "@/components/systemMixin.js";
@@ -83,6 +92,13 @@ export default {
       systemMixin.methods.update.call(this);
       // systemMixin.update();
       // console.log('update called')
+    },
+
+    onclick(pt) {
+      console.log('onclick', pt)
+      this.$refs.plugin.simulate(
+        new eig.Matrix(pt)
+      );
     }
   }
 };

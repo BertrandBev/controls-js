@@ -92,11 +92,10 @@ export default {
     updateSigma() {
       if (!this.sigma) return;
       const scale = 2;
-      // const P = eig.Matrix.fromArray([[10, 2], [3, 4]]);
+      // const P = new eig.Matrix([[10, 2], [3, 4]]);
       const P = this.kalmanFilter.P.block(0, 0, 2, 2);
       const x = this.kalmanFilter.x.block(0, 0, 2, 1);
-      console.log('world2canvas', this.two)
-      const pos = this.two.worldToCanvas([x.vGet(0), x.vGet(1)]);
+      const pos = this.two.worldToCanvas([x.get(0), x.get(1)]);
       const center = this.two.worldToCanvas([0, 0])
       pos[0] -= center[0]; pos[1] -= center[1];
       // P.print("P");
@@ -104,8 +103,8 @@ export default {
       const sign = Math.sign(svd.U.det());
       const theta = Math.atan2(svd.U.get(0, 1), svd.U.get(0, 0)) * sign;
       const size = [
-        svd.sv.vGet(0) * this.two.scale * scale,
-        svd.sv.vGet(1) * this.two.scale * scale
+        svd.sv.get(0) * this.two.scale * scale,
+        svd.sv.get(1) * this.two.scale * scale
       ];
       this.sigma.style.left = `calc(50% + ${pos[0] - size[0] / 2}px)`;
       this.sigma.style.top = `calc(50% + ${pos[1] - size[1] / 2}px)`;
@@ -116,18 +115,21 @@ export default {
 
     // Could be shared w/ dircol
     reset() {
-      const P = eig.Matrix.fromArray(this.params.covariance);
-      const Q = eig.Matrix.fromArray(this.params.processNoise);
+      const P = new eig.Matrix(this.params.covariance);
+      const Q = new eig.Matrix(this.params.processNoise);
       this.kalmanFilter.reset(P, Q);
       this.$refs.sensors.reset();
     },
 
     update(params) {
+      if (params)
+        return;
       // Inject process noise at u
       const mean = new eig.Matrix(2, 1);
-      const cov = eig.Matrix.fromArray(this.params.inputNoise);
+      const cov = new eig.Matrix(this.params.inputNoise);
       const rdn = eig.Random.normal(mean, cov, 1);
       const u = params.u.matAdd(rdn);
+      u.print("u");
 
       // Run prediction step
       this.kalmanFilter.predict(u, params.dt);

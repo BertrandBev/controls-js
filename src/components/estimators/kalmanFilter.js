@@ -39,10 +39,10 @@ class KalmanFilter {
     const z = sensor.measurement(sensor, this.system.x);
     const zHat = sensor.measurement(sensor, this.x);
     // Add measurement noise
-    const cov = eig.Matrix.fromArray(sensor.noise);
+    const cov = new eig.Matrix(sensor.noise);
     addNoise(z, cov);
     const H = LinearSystem.linearize(x => sensor.measurement(sensor, x), this.x);
-    const R = eig.Matrix.fromArray(sensor.noise);
+    const R = new eig.Matrix(sensor.noise);
     // Compute Kalman gain
     const PHt = this.P.matMul(H.transpose());
     const K = PHt.matMul((H.matMul(PHt).matAdd(R)).inverse());

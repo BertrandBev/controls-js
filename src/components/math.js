@@ -56,4 +56,41 @@ class Gaussian {
   }
 }
 
-export { wrapAngle, sqr, matFromDiag, addNoise, Gaussian }
+
+/**
+ * TODO: add to shared lib
+ * @param {Array} traj 
+ * @param {Number} dt 
+ * @param {Number} tau Decay characteristic time for low-pass
+ */
+function differenciate(traj, dt, tau = 1e-8, loop = false) {
+  const dTraj = []
+  for (let k = 0; k < traj.length; k++) {
+    const div = traj[(k + 1) % traj.length].matSub(traj[k % traj.length]).div(dt)
+    dTraj.push(div)
+  }
+  return smooth(dTraj, dt, tau)
+}
+
+/**
+ * 
+ * @param {Array} traj 
+ * @param {Number} tau Decay characteristic time for low-pass
+ */
+function smooth(traj, dt, tau = 1e-8) {
+  if (traj.length === 0) {
+    return []
+  }
+  const decay = Math.exp(-2 * Math.PI * dt / tau)
+  let val = traj[0]
+  const smoothed = []
+  for (let k = 0; k < 2 * traj.length; k++) {
+    val = val.mul(decay).matAdd(traj[k % traj.length].mul(1 - decay))
+    if (k >= traj.length) {
+      smoothed.push(val)
+    }
+  }
+  return smoothed
+}
+
+export { wrapAngle, sqr, matFromDiag, addNoise, Gaussian, differenciate, smooth }

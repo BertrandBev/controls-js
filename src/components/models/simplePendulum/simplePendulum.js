@@ -3,7 +3,7 @@ import _ from 'lodash'
 import { wrapAngle, sqr, matFromDiag } from '@/components/math.js'
 import colors from 'vuetify/lib/util/colors'
 import Model from '@/components/models/model.js'
-import { ValueIterationParams } from '@/components/planners/valueIterationPlanner.js'
+import { createCircularForce } from '../utils.js'
 
 class SimplePendulum extends Model {
   static NAME = 'simple pendulum';
@@ -30,8 +30,8 @@ class SimplePendulum extends Model {
 
   trim() {
     return {
-      x: eig.Matrix.fromArray([Math.PI, 0]),
-      u: new eig.Matrix.fromArray([0])
+      x: new eig.Matrix([Math.PI, 0]),
+      u: new new eig.Matrix([0])
     }
   }
 
@@ -41,7 +41,7 @@ class SimplePendulum extends Model {
    */
   bound(x) {
     super.bound(x)
-    x.vSet(0, wrapAngle(x.vGet(0)))
+    x.set(0, wrapAngle(x.get(0)))
   }
 
   /**
@@ -54,10 +54,10 @@ class SimplePendulum extends Model {
     // x = [theta, thetaDot]
     const p = this.params
     const dx = new eig.Matrix(2, 1);
-    const s = Math.sin(x.vGet(0))
-    const ddx = (-p.m * p.g * p.l * s - p.mu * x.vGet(1) + u.vGet(0)) / (p.m * Math.pow(p.l, 2))
-    dx.vSet(0, x.vGet(1))
-    dx.vSet(1, ddx)
+    const s = Math.sin(x.get(0))
+    const ddx = (-p.m * p.g * p.l * s - p.mu * x.get(1) + u.get(0)) / (p.m * Math.pow(p.l, 2))
+    dx.set(0, x.get(1))
+    dx.set(1, ddx)
     return dx
   }
 
@@ -69,8 +69,8 @@ class SimplePendulum extends Model {
    */
   xJacobian(x, u) {
     const p = this.params
-    const c = Math.cos(x.vGet(0))
-    return eig.Matrix.fromArray([
+    const c = Math.cos(x.get(0))
+    return new eig.Matrix([
       [0, 1],
       [-p.g / p.l * c, - p.mu / p.m * p.l]
     ])
@@ -84,7 +84,7 @@ class SimplePendulum extends Model {
    */
   uJacobian(x, u) {
     const p = this.params
-    return eig.Matrix.fromArray([
+    return new eig.Matrix([
       [0], [1 / p.m / sqr(p.l)]
     ])
   }
@@ -98,9 +98,9 @@ class SimplePendulum extends Model {
     const { u } = this.trim()
     const dx = this.dynamics(this.x, u)
     const theta = Math.atan2(mouseTarget[1], mouseTarget[0]) + Math.PI / 2
-    this.x.vSet(1, 10 * wrapAngle(theta - this.x.vGet(0)))
-    dx.vSet(0, this.x.vGet(1))
-    dx.vSet(1, 0)
+    this.x.set(1, 10 * wrapAngle(theta - this.x.get(0)))
+    dx.set(0, this.x.get(1))
+    dx.set(1, 0)
     const newX = this.x.matAdd(dx.mul(dt))
     this.bound(newX)
     this.setState(newX)
@@ -129,12 +129,18 @@ class SimplePendulum extends Model {
     );
     pole.fill = COLOR;
     pole.linewidth = 2;
-    const circle = two.makeCircle(0, GEOM.length, GEOM.radius);
 
     // Add counterweight
+    const circle = two.makeCircle(0, GEOM.length, GEOM.radius);
     circle.fill = COLOR_DARK;
     circle.linewidth = 2;
-    this.graphics = two.makeGroup(pole, circle);
+
+    this.graphics.pendulum = two.makeGroup(pole, circle);
+
+    // Add forces
+    const [force, setControl] = createCircularForce(two, GEOM.radius * 1.5, colors.red.base);
+    this.graphics.pendulum.add(force);
+    this.graphics.setControl = setControl;
   }
 
   /**
@@ -142,12 +148,15 @@ class SimplePendulum extends Model {
    */
   updateGraphics(worldToCanvas, params) {
     // TODO: draw torque
+    const { u } = params;
     const x = this.x;
     if (x) {
-      this.graphics.translation.set(...worldToCanvas([0, 0]));
-      this.graphics.rotation = -x.vGet(0);
+      this.graphics.pendulum.translation.set(...worldToCanvas([0, 0]));
+      this.graphics.pendulum.rotation = -x.get(0);
     }
-    this.graphics.visible = !!x;
+    if (u) {
+      this.graphics.setControl(u.get(0) || 0);
+    }
   }
 
   /**
@@ -169,15 +178,16 @@ class SimplePendulum extends Model {
    */
   valueIterationParams() {
     const maxThetaDot = 2 * Math.sqrt(this.params.g / this.params.l);
-    return new ValueIterationParams(
-      [
-        { min: -Math.PI, max: Math.PI, nPts: 50 },
-        { min: -maxThetaDot, max: maxThetaDot, nPts: 50 }
-      ],
-      [{ min: -5, max: 5, nPts: 2 }],
-      [[Math.PI, 0], [-Math.PI, 0]],
-      0.11
-    )
+    return {
+      x: {
+        min: [-Math.PI, -maxThetaDot],
+        max: [Math.PI, maxThetaDot],
+        nPts: [100, 100],
+        targets: [[Math.PI, 0], [-Math.PI, 0]]
+      },
+      u: { min: [-2], max: [2], nPts: [2] },
+      dt: 0.05
+    }
   }
 
   /**

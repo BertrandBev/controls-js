@@ -8,7 +8,7 @@ v-row(ref='container'
 
 <script>
 import Two from "two.js";
-import { SimplePendulum } from "@/components/simplePendulum.js";
+import { SimplePendulum } from "@/components/simplePendulum/simplePendulum.js";
 import LQR from "@/components/controllers/LQR.js";
 import worldMixin from "@/components/worldMixin.js";
 import _ from "lodash";
@@ -62,10 +62,10 @@ export default {
   },
 
   created() {
-    const xTop = eig.Matrix.fromArray([Math.PI, 0]);
+    const xTop = new eig.Matrix([Math.PI, 0]);
     const params = {
-      x0: eig.Matrix.fromArray([Math.PI - 0.2, 0]), // xTop,
-      u0: eig.Matrix.fromArray([0])
+      x0: new eig.Matrix([Math.PI - 0.2, 0]), // xTop,
+      u0: new eig.Matrix([0])
     };
     this.system = new SimplePendulum(params);
     this.controller = new LQR(this.system, params.x0, params.u0);
@@ -109,7 +109,7 @@ export default {
 
     // Setup MPD
     this.trajectory = new Trajectory(true);
-    const top = eig.Matrix.fromArray([Math.PI, 0, 0]);
+    const top = new eig.Matrix([Math.PI, 0, 0]);
     this.trajectory.set([top, top], 0.1);
     this.mdp = new MPC(
       this.system,
@@ -146,7 +146,7 @@ export default {
         eig.GC.set(this.system, "x", x);
       }
       // Graphic update
-      this.graphics.rotation = -this.system.x.vGet(0);
+      this.graphics.rotation = -this.system.x.get(0);
       this.graphics.translation.set(this.width / 2, this.height / 2);
       this.updateTime = Date.now();
       // Run GC

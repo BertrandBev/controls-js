@@ -8,10 +8,9 @@ import Flatness from "@/components/environments/Flatness/Flatness.vue";
 import DirectCollocation from "@/components/environments/DirectCollocation/DirectCollocation.vue";
 import MPC from "@/components/environments/MPC/MPC.vue";
 import KalmanFilter from "@/components/environments/KalmanFilter/KalmanFilter.vue";
+import ParticleFilter from "@/components/environments/ParticleFilter/ParticleFilter.vue";
 
 Vue.use(VueRouter)
-
-console.log('FILTER', KalmanFilter.name)
 
 const env = [
   LQR,
@@ -21,6 +20,7 @@ const env = [
   DirectCollocation,
   MPC,
   KalmanFilter,
+  ParticleFilter,
 ];
 const envRoutes = env.map(env => ({
   component: env,

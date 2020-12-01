@@ -51,7 +51,7 @@ export default {
   created() {
     const { x, u } = this.system.trim();
     // Populate matrices
-    this.simTraj = new Trajectory(this.system, false);
+    this.simTraj = new Trajectory(this.system, true);
   },
 
   mounted() {

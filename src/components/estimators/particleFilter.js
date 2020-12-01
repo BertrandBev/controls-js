@@ -19,7 +19,7 @@ class Particle {
         for (let k = 0; k < x.rows(); k++) {
           const min = params.range.min[k];
           const max = params.range.max[k];
-          this.system.x.vSet(k, min + (max - min) * x.vGet(k));
+          this.system.x.set(k, min + (max - min) * x.get(k));
         }
         break
       }
@@ -43,7 +43,7 @@ class Particle {
   predict(u, dt) {
     this.system.step(u, dt);
     // Add process noise
-    const cov = eig.Matrix.fromArray(this.params.processNoise).mul(dt);
+    const cov = new eig.Matrix(this.params.processNoise).mul(dt);
     addNoise(this.system.x, cov);
   }
 
@@ -53,7 +53,7 @@ class Particle {
     // Create gaussian if needed TODO: clear on parameter update
     if (!sensor.gaussian) {
       const mean = new eig.Matrix(zHat.rows(), 1);
-      const cov = eig.Matrix.fromArray(sensor.noise);
+      const cov = new eig.Matrix(sensor.noise);
       sensor.gaussian = new Gaussian(mean, cov);
     }
     // Update weight according to measurement likelihood
@@ -95,7 +95,7 @@ class ParticleFilter {
     // Take measurement
     const z = sensor.measurement(sensor, this.system.x);
     // Add measurement noise
-    const cov = eig.Matrix.fromArray(sensor.noise);
+    const cov = new eig.Matrix(sensor.noise);
     addNoise(z, cov);
     // Update particles
     this.particles.forEach(particle => particle.update(sensor, z))

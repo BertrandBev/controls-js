@@ -1,23 +1,33 @@
 <template lang="pug">
-Block(title='Value Iteration')
-  v-text-field(v-model.number='dt'
-              label='Timestep'
-              outlined
-              dense
-              hide-details)
-  v-text-field.mt-3(v-model.number='nPts'
-              label='Point count'
-              outlined
-              dense
-              hide-details)
-  v-btn.mt-2(@click='runValueIteration'
-             outlined
-             :disabled='running'
-             :loading='running'
-             color='primary') run value iteration
+Section(title="Value Iteration")
+  ValueInput(ref='dt'
+             :value.sync='params.dt'
+             label='Timestep')
+  ArrayInput.mt-3(ref='pointCount'
+             :array.sync='params.x.nPts'
+             label='State point count')
+  ArrayInput.mt-3(ref='uMin'
+             :array.sync='params.u.min'
+             label='uMin')
+  ArrayInput.mt-3(ref='uMax'
+             :array.sync='params.u.max'
+             label='uMax')
+  ArrayInput.mt-3(ref='uPointCount'
+             :array.sync='params.u.nPts'
+             label='u point count')
+  v-btn.mt-3(
+    @click="runValueIteration",
+    outlined,
+    :disabled="running",
+    :loading="running",
+    color="primary"
+  ) run value iteration
+  v-btn.mt-2(@click="simulate", outlined, color="primary") simulate
 </template>
 
 <script>
+import ValueInput from "@/components/environments/utils/ValueInput.vue";
+import ArrayInput from "@/components/environments/utils/ArrayInput.vue";
 import ValueIterationPlanner from "@/components/planners/valueIterationPlanner.js";
 import Trajectory from "@/components/planners/trajectory.js";
 import Section from "@/components/environments/utils/Section.vue";
@@ -31,85 +41,80 @@ export default {
   mixins: [pluginMixin],
 
   components: {
-    Section
+    Section,
+    ValueInput,
+    ArrayInput
   },
 
   props: {
-    system: Object
+    system: Object,
   },
 
   data: () => ({
     viPlanner: null,
     running: false,
     xPrev: null,
-    simTraj: null,
     // Parameters
-    t: 0,
-    dt: 0,
-    nPts: 0
+    params: {}
   }),
 
   computed: {
-    params() {
-      return this.system.valueIterationParams();
-    }
   },
 
   created() {
     this.viPlanner = new ValueIterationPlanner(this.system);
-    this.dt = this.params.dt;
-    this.nPts = this.params.xGrid[0].nPts;
-    this.simTraj = new Trajectory(this.system, true);
+    this.trajectory = new Trajectory(this.system, false);
+    this.params = _.cloneDeep(this.system.valueIterationParams());
   },
 
   methods: {
     ready() {
-      return this.simTraj.ready();
+      return this.trajectory.ready();
     },
 
     reset() {
-      const { x } = this.system.trim();
-      this.system.setState(x);
+      if (this.ready()) {
+        this.trajectory.reset(0);
+      } else {
+        const { x } = this.system.trim();
+        this.system.setState(x);
+      }
     },
 
-    simulate() {
-      const sequence = this.viPlanner.simulate(30);
-      this.simTraj.set(sequence, this.dt);
-      this.simTraj.reset(this.t);
-    },
-
-    update(params) {
-      this.t = params.t;
+    simulate(x0) {
+      if (!x0) x0 = this.system.x;
+      x0.print('x0')
+      this.viPlanner.simulate(x0, this.trajectory, 30);
+      this.trajectory.reset(this.t);
     },
 
     updateSystem(t, dt) {
       if (this.ready()) {
+        this.t = t;
         if (this.system.x !== this.xPrev) {
           console.log("Delta detected, re-run");
           this.simulate();
         }
-        const u = this.simTraj.getCommand(t);
-        const x = this.simTraj.getState(t);
+        const u = this.trajectory.getCommand(t);
+        const x = this.trajectory.getState(t);
         eig.GC.set(this, "xPrev", x);
         this.system.setState(x);
         return { u };
       }
 
-      return { u: eig.Matrix.fromArray([0]) };
+      return { u: new eig.Matrix([0]) };
     },
 
     runValueIteration() {
       // Get from system
-      const params = _.cloneDeep(this.params);
-      params.xGrid.forEach(spec => (spec.nPts = this.nPts));
-      params.dt = this.dt;
       this.running = true;
       setTimeout(() => {
-        const converged = this.viPlanner.run(params);
+        const converged = this.viPlanner.run(this.params);
         // if (converged) this.simulate();
         this.running = false;
+        this.simulate();
       }, 25);
-    }
-  }
+    },
+  },
 };
 </script>

@@ -73,8 +73,8 @@ class MPC extends Controller {
     lb.setBlock((this.n - 1) * xn, 0, dx0);
     ub.setBlock((this.n - 1) * xn, 0, dx0);
     for (let k = this.n * xn; k < dim; k++) {
-      lb.vSet(k, this.uBounds.min[k % un])
-      ub.vSet(k, this.uBounds.max[k % un])
+      lb.set(k, this.uBounds.min[k % un])
+      ub.set(k, this.uBounds.max[k % un])
     }
 
     // lb.print('lb')

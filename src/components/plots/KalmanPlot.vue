@@ -63,7 +63,7 @@ export default {
       const cov = this.kalmanFilter.P;
       const data = sys.states.map((state, idx) => {
         const { x, y } = this.getGaussian(
-          mean.vGet(idx),
+          mean.get(idx),
           cov.get(idx, idx),
           40
         );

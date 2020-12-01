@@ -1,11 +1,5 @@
 <template lang="pug">
-Block(title='Particle Filter')
-  //- MatrixInput.mt-2(label='Init. covariance'
-  //-                  :matrix.sync='params.covariance')
-  //- MatrixInput.mt-2(label='Process noise'
-  //-                  :matrix.sync='params.processNoise')
-  //- MatrixInput.mt-2(label='Input noise'
-  //-                  :matrix.sync='params.inputNoise')
+Section(title='Particle Filter')
   ValueInput(:value.sync='params.nPts'
              label='Point number')
   ValueInput.mt-2(:value.sync='params.dt'

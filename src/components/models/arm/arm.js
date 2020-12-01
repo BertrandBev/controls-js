@@ -33,13 +33,13 @@ class Arm extends Model {
   trim() {
     const n = this.params.n;
     const x = [...Array(2 * n).keys()].map(k => (
-      k == 0 ? Math.PI * 0.5 : 0
+      k == 0 ? Math.PI : 0
     ));
     // const x = [Math.PI / 2, Math.PI / 2];
     const u = [...Array(n).keys()].map(() => 0);
     return {
-      x: eig.Matrix.fromArray(x),
-      u: eig.Matrix.fromArray(u)
+      x: new eig.Matrix(x),
+      u: new eig.Matrix(u)
     }
   }
 
@@ -50,7 +50,7 @@ class Arm extends Model {
   bound(x) {
     super.bound(x)
     for (let k = 0; k < this.params.n; k++)
-      x.vSet(k, wrapAngle(x.vGet(k)));
+      x.set(k, wrapAngle(x.get(k)));
   }
 
 
@@ -61,19 +61,19 @@ class Arm extends Model {
     // https://studywolf.wordpress.com/2013/09/02/robot-control-jacobians-velocity-and-force/
     const T = [], dT = []; // T_(i+1)(i); dT/dtheta
     for (let i = 0; i < this.params.n; i++) {
-      const c = Math.cos(x.vGet(i));
-      const s = Math.sin(x.vGet(i));
+      const c = Math.cos(x.get(i));
+      const s = Math.sin(x.get(i));
       const l = this.params.l;
-      T.push(eig.Matrix.fromArray([
+      T.push(new eig.Matrix([
         [c, -s, c * l], [s, c, s * l], [0, 0, 1]
       ]));
-      dT.push(eig.Matrix.fromArray([
+      dT.push(new eig.Matrix([
         [-s, -c, -s * l], [c, -s, c * l], [0, 0, 0]
       ]));
     }
     // Compute jacobians
     const J = []; // J_i
-    const pos = eig.Matrix.fromArray([0, 0, 1]);
+    const pos = new eig.Matrix([0, 0, 1]);
     const Jacc = []; // dT_10/dtheta * T_21 * ...
     for (let i = 0; i < this.params.n; i++)
       Jacc.push(eig.Matrix.identity(3, 3));
@@ -105,16 +105,16 @@ class Arm extends Model {
       dJ.push(eig.Matrix(3, this.params.n));
     for (let j = 0; j < this.params.n; j++) {
       const dx = eig.Matrix(x);
-      dx.vSet(j, dx.vGet(j) + eps);
+      dx.set(j, dx.get(j) + eps);
       const Jeps = this.jacobians(dx);
 
-      const tDot = x.vGet(this.params.n + j);
+      const tDot = x.get(this.params.n + j);
       for (let i = 0; i < this.params.n; i++) {
         dJ[i].matAddSelf(Jeps[i].matSub(J[i]).mul(tDot / eps))
       }
     }
 
-    // u = eig.Matrix.fromArray([0, -2])
+    // u = new eig.Matrix([0, -2])
 
     // Now compute the dynamics
     const M = eig.Matrix(this.params.n, this.params.n);
@@ -122,15 +122,15 @@ class Arm extends Model {
     const tauG = eig.Matrix(this.params.n, 1);
     const Jr = eig.Matrix(this.params.n, 1);
     const tauExt = eig.Matrix(this.params.n, 1);
-    const g = eig.Matrix.fromArray([9.81, 0, 1]);
+    const g = new eig.Matrix([9.81, 0, 1]);
     for (let i = 0; i < this.params.n; i++) {
       const Jt = J[i].transpose();
       M.matAddSelf(Jt.matMul(J[i]).mul(this.params.m));
       dqtC.matAddSelf(Jt.matMul(dJ[i]).mul(this.params.m));
       tauG.matAddSelf(Jt.matMul(g).mul(this.params.m));
-      Jr.vSet(i, 1);
-      const tauF = x.vGet(this.params.n + i) * this.params.mu;
-      tauExt.matAddSelf(Jr.mul(u.vGet(i) - tauF));
+      Jr.set(i, 1);
+      const tauF = x.get(this.params.n + i) * this.params.mu;
+      tauExt.matAddSelf(Jr.mul(u.get(i) - tauF));
     }
 
     // Deduces the joint space acceleration vector
@@ -167,17 +167,21 @@ class Arm extends Model {
    * @param {Number} dt 
    */
   trackMouse(mouseTarget, dt) {
-    // const { u } = this.trim()
-    // const dx = this.dynamics(this.x, u)
-    // const theta = Math.atan2(mouseTarget[1], mouseTarget[0]) + Math.PI / 2
-    // this.x.vSet(2, 10 * wrapAngle(theta - this.x.vGet(0)))
-    // dx.vSet(0, this.x.vGet(2))
-    // dx.vSet(2, 0)
+    const { u } = this.trim()
+    const dx = this.dynamics(this.x, u)
+    const theta = Math.atan2(mouseTarget[1], mouseTarget[0]) + Math.PI / 2
+    for (let k = 0; k < this.params.n; k++) {
+      const thetaCmd = k == 0 ? theta : 0;
+      const xk = this.x.get(k);
+      this.x.set(this.params.n + k, 10 * wrapAngle(thetaCmd - xk));
+      dx.set(k, this.x.get(this.params.n + k));
+      dx.set(this.params.n + k, 0);
+    }
     // // TODO: extract in schema
-    // const newX = this.x.matAdd(dx.mul(dt))
-    // this.bound(newX)
-    // this.setState(newX)
-    // return { u }
+    const newX = this.x.matAdd(dx.mul(dt));
+    this.bound(newX);
+    this.setState(newX);
+    return { u };
   }
 
 
@@ -237,21 +241,41 @@ class Arm extends Model {
     const { y, xRef } = params;
     this.graphics[0].translation.set(...worldToCanvas([0, 0]))
     for (let k = 0; k < this.graphics.length; k++) {
-      this.graphics[k].rotation = -this.x.vGet(k);
+      this.graphics[k].rotation = -this.x.get(k);
     }
   }
 
   /**
-   * Get RRT params
+   * LQR Params
+   */
+  lqrParams() {
+    const Q = [...Array(2 * this.params.n).keys()].map(k => k < this.params.n ? 10 : 1);
+    const R = [...Array(this.params.n).keys()].map(k => 1);
+    return {
+      Q: matFromDiag(Q),
+      R: matFromDiag(R),
+      simEps: 1e-1,
+      simDuration: 3,
+      disengage: true,
+      divergenceThres: 500,
+    }
+  }
+
+  /**
+   * RRT params
    */
   rrtParams() {
     const n = this.params.n;
-    const xMin = [...Array(n).keys()].map(k => -Math.PI);
-    const xMax = [...Array(n).keys()].map(k => Math.PI);
-    const deltas = [...Array(n).keys()].map(k => Math.PI / 100);
+    const xMin = [...Array(n)].map(_ => -Math.PI);
+    const xMax = [...Array(n)].map(_ => Math.PI);
+    const wrap = [...Array(n)].map(_ => true);
+    const deltas = [...Array(n)].map(_ => Math.PI / 10);
     return {
+      nPts: 400,
+      n,
       xMin,
       xMax,
+      wrap,
       deltas,
     }
   }

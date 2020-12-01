@@ -108,7 +108,7 @@ export default {
     });
     this.graphics.setControl = u => {
       sides.forEach((side, idx) => {
-        const uh = _.clamp(u.vGet(idx) * 5, -100, 100);
+        const uh = _.clamp(u.get(idx) * 5, -100, 100);
         side.fHead.translation.y = propHeight - uh;
         side.fHead.rotation = uh > 0 ? 0 : Math.PI;
         side.fLine.vertices[1].y = side.fHead.translation.y;
@@ -120,7 +120,7 @@ export default {
     });
     this.graphics.showTraj = traj => {
       traj.forEach((x, idx) => {
-        const xy = this.worldToCanvas([x.vGet(0), x.vGet(1)]);
+        const xy = this.worldToCanvas([x.get(0), x.get(1)]);
         trajLines[idx].vertices[0].x = xy[0];
         trajLines[idx].vertices[0].y = xy[1];
         trajLines[idx].vertices[1].x = xy[0];
@@ -143,7 +143,7 @@ export default {
     trajRev.reverse();
     const symTraj = [...flipTraj.x, ...trajRev];
     this.trajectory.set(
-      symTraj.map(vec => eig.Matrix.fromArray(vec)),
+      symTraj.map(vec => new eig.Matrix(vec)),
       flipTraj.dt
     );
     this.dt = flipTraj.dt
@@ -179,13 +179,13 @@ export default {
   methods: {
     optimize() {
       const FREE = DirectCollocation.FREE;
-      // const xStart = eig.Matrix.fromArray([-2, -1.5, 0, 0, 0, 0]);
-      // const xEnd = eig.Matrix.fromArray([2, -1.5, -2 * Math.PI, 0, 0, 0]);
-      const xStart = eig.Matrix.fromArray([-2, -1.5, 0, 0, 0, 0]);
-      const xEnd = eig.Matrix.fromArray([2, -1.5, 0, 0, 0, 0]);
+      // const xStart = new eig.Matrix([-2, -1.5, 0, 0, 0, 0]);
+      // const xEnd = new eig.Matrix([2, -1.5, -2 * Math.PI, 0, 0, 0]);
+      const xStart = new eig.Matrix([-2, -1.5, 0, 0, 0, 0]);
+      const xEnd = new eig.Matrix([2, -1.5, 0, 0, 0, 0]);
       const uMax = {
-        min: eig.Matrix.fromArray([0, 0]),
-        max: eig.Matrix.fromArray([10, 10])
+        min: new eig.Matrix([0, 0]),
+        max: new eig.Matrix([10, 10])
       };
       const nPoints = 20;
       const anchors = [
@@ -228,7 +228,7 @@ export default {
       const dt = 1 / 60;
       const xy = this.path.discretize(travelTime / dt).map(val => {
         const pathPos = [val.x + this.width / 2, val.y + this.height / 2];
-        return eig.Matrix.fromArray(this.canvasToWorld(pathPos));
+        return new eig.Matrix(this.canvasToWorld(pathPos));
       });
       const x = this.system.fitTrajectory(xy, dt);
       // Init rollout
@@ -265,9 +265,9 @@ export default {
       }
       // Graphic update
       const x = this.system.x;
-      this.graphics.system.rotation = -x.vGet(2);
+      this.graphics.system.rotation = -x.get(2);
       this.graphics.system.translation.set(
-        ...this.worldToCanvas([x.vGet(0), x.vGet(1)])
+        ...this.worldToCanvas([x.get(0), x.get(1)])
       );
       this.graphics.setControl(u);
       // this.updateTime = Date.now();

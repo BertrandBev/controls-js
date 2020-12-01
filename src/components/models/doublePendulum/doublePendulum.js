@@ -34,8 +34,8 @@ class DoublePendulum extends Model {
 
   trim() {
     return {
-      x: eig.Matrix.fromArray([Math.PI, Math.PI, 0, 0]),
-      u: eig.Matrix.fromArray([0, 0])
+      x: new eig.Matrix([Math.PI, Math.PI, 0, 0]),
+      u: new eig.Matrix([0, 0])
     }
   }
 
@@ -45,8 +45,8 @@ class DoublePendulum extends Model {
    */
   bound(x) {
     super.bound(x)
-    x.vSet(0, wrapAngle(x.vGet(0)))
-    x.vSet(1, wrapAngle(x.vGet(1)))
+    x.set(0, wrapAngle(x.get(0)))
+    x.set(1, wrapAngle(x.get(1)))
   }
 
   /**
@@ -58,21 +58,21 @@ class DoublePendulum extends Model {
   dynamics(x, u) {
     // https://diego.assencio.com/?index=1500c66ae7ab27bb0106467c68feebc6
     const p = this.params
-    const [t1, t2, t1d, t2d] = [x.vGet(0), x.vGet(1), x.vGet(2), x.vGet(3)]
-    const [s1, s2] = [Math.sin(x.vGet(0)), Math.sin(x.vGet(1))]
+    const [t1, t2, t1d, t2d] = [x.get(0), x.get(1), x.get(2), x.get(3)]
+    const [s1, s2] = [Math.sin(x.get(0)), Math.sin(x.get(1))]
     const dt = t1 - t2
     const [cdt, sdt] = [Math.cos(dt), Math.sin(dt)]
     const M = p.m2 / (p.m1 + p.m2)
     const L = p.l2 / p.l1;
     const a1 = L * M * cdt
     const a2 = cdt / L
-    const tau1 = -p.mu * t1d + u.vGet(0)
-    const tau2 = -p.mu * (t2d - t1d) + p.s2 * u.vGet(1)
+    const tau1 = -p.mu * t1d + u.get(0)
+    const tau2 = -p.mu * (t2d - t1d) + p.s2 * u.get(1)
     const f1 = -L * M * sqr(t2d) * sdt - p.g / p.l1 * s1 + tau1 / sqr(p.l1) / (p.m1 + p.m2)
     const f2 = sqr(t1d) * sdt / L - p.g / p.l2 * s2 + tau2 / p.m2 / sqr(p.l2)
     const g1 = (f1 - a1 * f2) / (1 - a1 * a2)
     const g2 = (-a2 * f1 + f2) / (1 - a1 * a2)
-    return eig.Matrix.fromArray([
+    return new eig.Matrix([
       t1d,
       t2d,
       g1,
@@ -88,10 +88,10 @@ class DoublePendulum extends Model {
    */
   xJacobian(x, u) {
     const p = this.params
-    const [t1, t2, t1d, t2d] = [x.vGet(0), x.vGet(1), x.vGet(2), x.vGet(3)]
-    let [u1, u2] = [u.vGet(0), u.vGet(1)]
+    const [t1, t2, t1d, t2d] = [x.get(0), x.get(1), x.get(2), x.get(3)]
+    let [u1, u2] = [u.get(0), u.get(1)]
     u2 *= p.s2;
-    const [s1, s2] = [Math.sin(x.vGet(0)), Math.sin(x.vGet(1))]
+    const [s1, s2] = [Math.sin(x.get(0)), Math.sin(x.get(1))]
     const dt = t1 - t2
     const [cdt, sdt] = [Math.cos(dt), Math.sin(dt)]
     // const M = p.m2 / (p.m1 + p.m2)
@@ -111,7 +111,7 @@ class DoublePendulum extends Model {
     const dx2dt1d = ((p.m1 + p.m2) * (p.mu / (sqr(p.l2) * p.m2) + (2 * p.l1 * t1d * sdt) / p.l2) + (p.mu * cdt) / (p.l1 * p.l2)) / (p.m1 + p.m2 - p.m2 * sqr(cdt))
     const dx2dt2d = -(- t2d * s2dt * sqr(p.l2) * sqr(p.m2) + p.mu * p.m2 + p.m1 * p.mu) / (sqr(p.l2) * p.m2 * (p.m1 + p.m2 - p.m2 * sqr(cdt)))
 
-    return eig.Matrix.fromArray([
+    return new eig.Matrix([
       [0, 0, 1, 0],
       [0, 0, 0, 1],
       [dx1dt1, dx1dt2, dx1dt1d, dx1dt2d],
@@ -127,14 +127,14 @@ class DoublePendulum extends Model {
    */
   uJacobian(x, u) {
     const p = this.params
-    const [t1, t2] = [x.vGet(0), x.vGet(1)]
+    const [t1, t2] = [x.get(0), x.get(1)]
     const dt = t1 - t2
     const cdt = Math.cos(dt)
     const dx1du1 = 1 / (sqr(p.l1) * (p.m1 + p.m2 - p.m2 * sqr(cdt)))
     const dx1du2 = -cdt / (p.l1 * p.l2 * (p.m1 + p.m2 - p.m2 * sqr(cdt)))
     const dx2du1 = -cdt / (p.l1 * p.l2 * (p.m1 + p.m2 - p.m2 * sqr(cdt)))
     const dx2du2 = (p.m1 + p.m2) / (sqr(p.l2) * p.m2 * (p.m1 + p.m2 - p.m2 * sqr(cdt)))
-    return eig.Matrix.fromArray([
+    return new eig.Matrix([
       [0, 0], [0, 0], [dx1du1, dx1du2 * p.s2], [dx2du1, dx2du2 * p.s2]
     ])
   }
@@ -148,9 +148,9 @@ class DoublePendulum extends Model {
     const { u } = this.trim()
     const dx = this.dynamics(this.x, u)
     const theta = Math.atan2(mouseTarget[1], mouseTarget[0]) + Math.PI / 2
-    this.x.vSet(2, 10 * wrapAngle(theta - this.x.vGet(0)))
-    dx.vSet(0, this.x.vGet(2))
-    dx.vSet(2, 0)
+    this.x.set(2, 10 * wrapAngle(theta - this.x.get(0)))
+    dx.set(0, this.x.get(2))
+    dx.set(2, 0)
     // TODO: extract in schema
     const newX = this.x.matAdd(dx.mul(dt))
     this.bound(newX)
@@ -208,8 +208,8 @@ class DoublePendulum extends Model {
       const { root, p2 } = this.graphics[obj];
       if (x) {
         root.translation.set(...worldToCanvas([0, 0]))
-        root.rotation = -x.vGet(0)
-        p2.rotation = -(x.vGet(1) - x.vGet(0))
+        root.rotation = -x.get(0)
+        p2.rotation = -(x.get(1) - x.get(0))
       }
       root.visible = !!x
     })

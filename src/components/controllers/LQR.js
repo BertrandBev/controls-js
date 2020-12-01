@@ -24,8 +24,8 @@ class LQR extends Controller {
 
   solve(params) {
     const [Jx, Ju] = LinearSystem.linearizeSystem(this.system, this.x0, this.u0)
-    const Q = eig.Matrix.fromArray(params.Q)
-    const R = eig.Matrix.fromArray(params.R)
+    const Q = new eig.Matrix(params.Q)
+    const R = new eig.Matrix(params.R)
     const sol = eig.Solvers.careSolve(Jx, Ju, Q, R);
     eig.GC.set(this, 'K', sol.K)
   }

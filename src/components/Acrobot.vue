@@ -42,8 +42,8 @@ export default {
 
   created() {
     const params = {
-      x0: eig.Matrix.fromArray([Math.PI, 0, 0, 0]),
-      u0: eig.Matrix.fromArray([0])
+      x0: new eig.Matrix([Math.PI, 0, 0, 0]),
+      u0: new eig.Matrix([0])
     };
     this.system = new Acrobot(params);
     this.controller = new LQR(this.system, params.x0, params.u0);
@@ -92,8 +92,8 @@ export default {
       this.system.step(u, dt);
       // Update graphics
       const x = this.system.x;
-      this.graphics.p1.rotation = -x.vGet(0);
-      this.graphics.p2.rotation = -x.vGet(2);
+      this.graphics.p1.rotation = -x.get(0);
+      this.graphics.p2.rotation = -x.get(2);
       this.graphics.p1.translation.set(...this.worldToCanvas([0, 0]));
       this.updateTime = Date.now();
       // Run GC
