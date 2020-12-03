@@ -1,25 +1,23 @@
 <template lang='pug'>
 ModelLayout
   template(v-slot:canvas)
-    div.canvas(ref='canvas')
+    .canvas(ref="canvas")
   template(v-slot:overlay)
-    div(style='display: flex;')
-      v-chip.ma-2(label
-            color='red'
-            text-color='white') Dynamic
+    div(style="display: flex")
+      v-chip.ma-2(label, color="red", text-color="white") Dynamic
       v-spacer
       span.ma-2 fps: {{ fps.toFixed(0) }}
   template(v-slot:drawer)
-    MPCPlugin(ref='plugin'
-              :system='system'
-              :systemRef='systemRef'
-              @activate='() => {}')
-  template(v-if='isMounted'
-           v-slot:sheet)
-    TrajPlot(:trajectories='$refs.plugin.trajectories')
+    MPCPlugin(
+      ref="plugin",
+      :system="system",
+      :systemRef="systemRef",
+      @activate="() => {}"
+    )
+  template(v-if="isMounted", v-slot:sheet)
+    TrajPlot(:trajectories="$refs.plugin.trajectories")
   template(v-slot:bar)
-    v-btn(text dark
-          @click='reset') reset
+    v-btn(text, dark, @click="reset") reset
 </template>
 
 <script>
@@ -38,24 +36,27 @@ export default {
     icon: "mdi-camera-timer",
     systems: [
       Systems.secondOrder,
-      Systems.quadrotor2D
-    ]
+      Systems.simplePendulum,
+      Systems.doublePendulum,
+      Systems.cartPole,
+      Systems.quadrotor2D,
+    ],
   },
 
   components: {
     ModelLayout,
     TrajPlot,
-    MPCPlugin
+    MPCPlugin,
   },
 
   mixins: [worldMixin, systemMixin],
 
   props: {
-    systemName: String
+    systemName: String,
   },
 
   data: () => ({
-    systemRef: null
+    systemRef: null,
   }),
 
   computed: {
@@ -69,13 +70,12 @@ export default {
 
     dt() {
       return 1 / 60;
-    }
+    },
   },
 
   created() {
     const SysClass = Systems[this.systemName];
-    if (!SysClass)
-      throw new Error("Unsupported system", this.systemName);
+    if (!SysClass) throw new Error("Unsupported system", this.systemName);
     this.system = new SysClass();
     this.systemRef = new SysClass();
   },
@@ -95,10 +95,10 @@ export default {
       // Update ref system
       this.systemRef.updateGraphics(this.worldToCanvas, {
         // Set transparency & no controls
-        ghost: true
+        ghost: true,
       });
-    }
-  }
+    },
+  },
 };
 </script>
 

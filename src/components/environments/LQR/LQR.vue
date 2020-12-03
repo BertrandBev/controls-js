@@ -32,8 +32,6 @@ export default {
     icon: "mdi-matrix",
     systems: [
       Systems.secondOrder,
-      // Systems.simplePendulum,
-      // Systems.doublePendulum,
       Systems.arm,
       Systems.cartPole,
       Systems.quadrotor2D,

@@ -1,5 +1,5 @@
 const COLORS = {
-}
+};
 
 function createMarker(two, radius, color, stroke = 0) {
   const marker = two.makeGroup();
@@ -33,15 +33,43 @@ function createCircularForce(two, radius, color) {
   fHead.fill = color;
   const force = two.makeGroup(fArc, fHead);
   const setControl = u => {
-    force.opacity = Math.abs(u) < 1e-3 ? 0 : 1;
-    fHead.rotation = theta * Math.sign(u);
+    force.visible = !!u;
+    if (!u) return;
+    const opacity = Math.min(Math.abs(u) / 10, 1);
+    fArc.opacity = opacity;
+    fHead.opacity = opacity;
+    const headAngle = u < 0 ? sa : ea;
+    fHead.rotation = headAngle + (u < 0 ? Math.PI : 0);
     fHead.translation.set(
-      r * Math.cos(theta * Math.sign(u)),
-      r * Math.sin(theta * Math.sign(u))
+      r * Math.cos(headAngle),
+      r * Math.sin(headAngle)
     );
-  }
+  };
   setControl(0);
-  return [force, setControl];
+  return { force, setControl };
 }
 
-export { createMarker, createCircularForce, COLORS }
+function createTraj(two, nPts) {
+  const traj = {};
+  traj.data = [];
+  traj.lines = [...Array(nPts)].map(() => {
+    const line = two.makeLine(0, 0, 0, 0);
+    return line;
+  });
+  traj.update = (transform) => {
+    traj.data.forEach((x, idx) => {
+      const xy = transform(x);
+      traj.lines[idx].vertices[0].x = xy[0];
+      traj.lines[idx].vertices[0].y = xy[1];
+      traj.lines[idx].vertices[1].x = xy[0];
+      traj.lines[idx].vertices[1].y = xy[1];
+      if (idx > 0) {
+        traj.lines[idx - 1].vertices[1].x = xy[0];
+        traj.lines[idx - 1].vertices[1].y = xy[1];
+      }
+    });
+  };
+  return traj;
+}
+
+export { createMarker, createCircularForce, createTraj, COLORS };

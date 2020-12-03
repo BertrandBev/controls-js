@@ -1,21 +1,17 @@
 <template lang="pug">
-  v-text-field(v-model='model'
-               :label='label'
-               outlined
-               dense
-               hide-details)
+v-text-field(v-model="model", :label="label", outlined, dense, hide-details)
 </template>
 
 <script>
 export default {
   props: {
     array: Array,
-    label: String
+    label: String,
   },
 
   data: () => ({
     model: "",
-    error: null
+    error: null,
   }),
 
   created() {
@@ -25,7 +21,7 @@ export default {
   watch: {
     model() {
       this.parseModel();
-    }
+    },
   },
 
   methods: {
@@ -51,12 +47,12 @@ export default {
     },
 
     strToArr(str) {
-      return str.split(",").map(i => parseFloat(i));
+      return str.split(",").map((i) => parseFloat(i));
     },
 
     arrToStr(arr) {
       return arr.join(", ");
-    }
-  }
+    },
+  },
 };
 </script>

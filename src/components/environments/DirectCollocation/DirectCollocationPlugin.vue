@@ -81,7 +81,11 @@ export default {
   created() {
     this.params = _.cloneDeep(this.system.directCollocationParams());
     this.collocation = new DirectCollocation(this.system);
-    this.simTraj = new Trajectory(this.system, false);
+    this.simTraj = new Trajectory(this.system, true);
+    if (this.params.traj) {
+      this.simTraj.load(this.params.traj);
+      this.reset();
+    }
   },
 
   methods: {
@@ -135,6 +139,7 @@ export default {
         const rtn = this.collocation.optimize();
         if (rtn) {
           this.simTraj.set(rtn.x, rtn.dt);
+          this.reset();
         } else {
           this.$bus.notify("error", "Optimization failed");
         }

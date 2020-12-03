@@ -92,7 +92,7 @@ class Trajectory {
     idx = this.loop ? idx % this.array.length : Math.min(this.array.length - 2, idx)
     const nextIdx = (idx + 1) % this.array.length;
     let ratio = (t - idx * this.dt) / this.dt;
-    ratio = Math.max(0, Math.min(1, ratio));
+    ratio -= Math.floor(ratio);
     return this.array.length < 2 ?
       this.array[0] :
       this.array[idx].mul(1 - ratio).matAdd(this.array[nextIdx].mul(ratio))
@@ -127,7 +127,7 @@ class Trajectory {
    * @param {Object} dump 
    */
   load(dump) {
-    this.set(dump.x.map(new eig.Matrix), dump.dt);
+    this.set(dump.x.map(x => new eig.Matrix(x)), dump.dt);
   }
 
   /**

@@ -14,7 +14,7 @@ const defaultParams = {
 }
 
 class DirectCollocation {
-  static FREE = 1.23e-123
+  static FREE = NaN;
 
   /**
    * 
@@ -90,8 +90,9 @@ class DirectCollocation {
     // Add anchors
     anchors.forEach(a => {
       const idx = _.clamp(Math.floor(a.t * this.n), 0, this.n - 1) * this.shape[0]
+      console.log(a.x)
       for (let k = 0; k < this.shape[0]; k++) {
-        if (a.x[k] !== DirectCollocation.FREE) {
+        if (!isNaN(a.x[k])) {
           upper[idx + k] = a.x[k];
           lower[idx + k] = a.x[k];
           x0[idx + k] = a.x[k];
@@ -283,8 +284,7 @@ class DirectCollocation {
   }
 
   addDynamicContraints() {
-    const nx = this.shape[0]
-    const nu = this.shape[1]
+    const [nx, nu] = this.shape;
     const nConst = (this.n - 1) * nx
     const tolVec = [...Array(nConst)].map(() => 1e-4);
     this.opt.addEqualityMConstraint((x, grad, res) => {
@@ -311,11 +311,18 @@ class DirectCollocation {
       return new eig.Matrix(x).vcat(new eig.Matrix(uList[idx]))
     })
     tEnd = Math.max(tEnd, 0.1); // Safeguard for hold loop
-    const dt = tEnd / xList.length
+    const dt = tEnd / xList.length;
     // Array hold
+    const first = eig.Matrix(arr[0]);
+    const last = eig.Matrix(arr[arr.length - 1]);
+    const [nx, nu] = this.shape;
+    for (let k = nx; k < nx + nu; k++) {
+      first.set(k, 0);
+      last.set(k, 0);
+    }
     for (let k = 0; k < this.params.holdTime / dt; k++) {
-      arr.unshift(arr[0])
-      arr.push(arr[arr.length - 1])
+      arr.unshift(first);
+      arr.push(last);
     }
     // Array reverse
     if (this.params.reverse) {

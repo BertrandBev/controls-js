@@ -1,24 +1,26 @@
 <template lang="pug">
-Section(title='MPC')
-  ValueInput(ref='nPts'
-              :value.sync='params.nPts'
-              label='Point count')
-  div.mb-3.mt-3(style='display: flex; align-items: center')
-    ArrayInput(ref='uMin'
-               style='flex: 1 0 auto; width: 0px'
-               :array.sync='params.uBounds.min'
-               label='uMin')
-    ArrayInput.ml-2(ref='uMax'
-               style='flex: 1 0 auto; width: 0px'
-               :array.sync='params.uBounds.max'
-               label='uMax')
-  ValueInput(ref='dt'
-              style='flex: 0 0 auto; width: 48px'
-              :value.sync='params.dt'
-              label='dt')
-  v-btn.mt-2(@click='runMPC'
-             outlined
-             color='primary') run MPC optimisation
+Section(title="MPC")
+  ValueInput(ref="nPts", :value.sync="params.nPts", label="Point count")
+  .mb-3.mt-3(style="display: flex; align-items: center")
+    ArrayInput(
+      ref="uMin",
+      style="flex: 1 0 auto; width: 0px",
+      :array.sync="params.uBounds.min",
+      label="uMin"
+    )
+    ArrayInput.ml-2(
+      ref="uMax",
+      style="flex: 1 0 auto; width: 0px",
+      :array.sync="params.uBounds.max",
+      label="uMax"
+    )
+  ValueInput(
+    ref="dt",
+    style="flex: 0 0 auto; width: 48px",
+    :value.sync="params.dt",
+    label="dt"
+  )
+  v-btn.mt-2(@click="runMPC", outlined, color="primary") run MPC optimisation
 </template>
 
 <script>
@@ -39,24 +41,24 @@ export default {
   components: {
     Section,
     ArrayInput,
-    ValueInput
+    ValueInput,
   },
 
   props: {
     system: Object,
-    systemRef: Object
+    systemRef: Object,
   },
 
   data: () => ({
     mpc: null,
     trajectory: null,
-    params: {}
+    params: {},
   }),
 
   computed: {
     trajectories() {
       return [this.trajectory];
-    }
+    },
   },
 
   created() {
@@ -72,6 +74,7 @@ export default {
       this.params.nPts,
       this.params.uBounds
     );
+    this.reset();
   },
 
   methods: {
@@ -87,28 +90,33 @@ export default {
     },
 
     runMPC() {
-      const xTraj = this.mpc.getCommand(0);
+      const xTraj = this.mpc.optimize(0);
     },
 
     updateSystem(t, dt) {
-      if (this.ready()) {
+      if (this.ready() && !MPC.DEBUG) {
         // Update system ref
         const x = this.trajectory.getState(t);
         this.systemRef.setState(x);
         // return { u };
         // Update system
         const [xn, un] = this.system.shape;
-        const xTraj = this.mpc.getCommand(t);
+        const xTraj = this.mpc.optimize(t);
         const u = xTraj[0].block(xn, 0, un, 1);
+        // console.log(
+        //   "TRAJ u:",
+        //   this.trajectory.getCommand(t).get(0),
+        //   "mpc u:",
+        //   u.get(0)
+        // );
         this.system.step(u, dt);
-        this.system.graphics.traj = xTraj;
+        if (this.system.graphics.traj) this.system.graphics.traj.data = xTraj;
         return { u };
       }
       return {};
 
       // Temp mdp command
-      
-    }
-  }
+    },
+  },
 };
 </script>

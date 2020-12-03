@@ -4,6 +4,8 @@ import colors from 'vuetify/lib/util/colors'
 import Model from '@/components/models/model.js'
 import { wrapAngle, sqr, matFromDiag } from '@/components/math.js'
 import chroma from 'chroma-js'
+import { createMarker } from '../utils.js'
+import { createCircularForce } from '../utils.js'
 
 class Arm extends Model {
   static NAME = 'arm';
@@ -184,6 +186,49 @@ class Arm extends Model {
     return { u };
   }
 
+  static createPole(two, geom, fill) {
+    const r1 = two.makeRectangle(
+      0,
+      geom.length / 2,
+      geom.thickness,
+      geom.length + geom.thickness
+    );
+    r1.fill = fill;
+    r1.linewidth = 2;
+    const c1 = two.makeCircle(0, geom.length, geom.radius);
+    c1.fill = chroma(fill).darken(1);
+    c1.linewidth = 2;
+    return two.makeGroup(r1, c1)
+  }
+
+  static createArm(two, geom, fill, markerFill, n) {
+    const arms = [];
+    let arm = null;
+    for (let k = 0; k < n; k++) {
+      const p = Arm.createPole(two, geom, fill);
+      if (!arm) {
+        arm = p;
+      } else {
+        arm.translation.set(0, geom.length);
+        arm = two.makeGroup(arm, p);
+      }
+      const { force, setControl } = createCircularForce(two, 3 * geom.radius / 2, colors.red.base);
+      arm = two.makeGroup(arm, force);
+      arms.push({ arm, setControl });
+    }
+    const marker = createMarker(two, 2 * geom.radius / 3, markerFill, 5);
+    arms.push(two.makeGroup(arm, marker));
+    arms.reverse();
+    return arms;
+  }
+
+  static updateArm(graphics, worldToCanvas, x, u) {
+    graphics[0].translation.set(...worldToCanvas([0, 0]))
+    for (let k = 0; k < graphics.length - 1; k++) {
+      graphics[k + 1].setControl(u ? u.get(k) : null);
+      graphics[k + 1].arm.rotation = -x.get(k);
+    }
+  }
 
   /**
    * Draw model
@@ -191,58 +236,20 @@ class Arm extends Model {
   createGraphics(two, scale) {
     const GEOM = {
       length: scale,
-      radius: 12,
-      thickness: 4
-    }
-
-    const createPole = () => {
-      const r1 = two.makeRectangle(
-        0,
-        GEOM.length / 2,
-        GEOM.thickness,
-        GEOM.length + GEOM.thickness
-      );
-      r1.fill = chroma(colors.purple.darken4).alpha(1);
-      r1.noStroke();
-      const c1 = two.makeCircle(0, GEOM.length, GEOM.radius);
-      c1.fill = chroma(colors.purple.base).alpha(1);
-      c1.linewidth = 0;
-      return two.makeGroup(r1, c1)
-    }
-
-    const createArm = () => {
-      const arms = [];
-      let arm = null;
-      for (let k = 0; k < this.params.n; k++) {
-        const p = createPole();
-        if (!arm) {
-          arm = p;
-          // arm.translation.set(0, GEOM.length);
-          // arm = two.makeGroup(arm);
-        } else {
-          arm.translation.set(0, GEOM.length);
-          arm = two.makeGroup(arm, p);
-          console.log('translated by', GEOM.length);
-        }
-        arms.push(arm);
-      }
-      arms.reverse();
-      return arms;
+      radius: 14,
+      thickness: 8
     }
 
     // Assemble poles
-    this.graphics = createArm(false);
+    this.graphics = Arm.createArm(two, GEOM, colors.purple.lighten2, colors.indigo.darken4, this.params.n);
   }
 
   /**
    * Update model
    */
   updateGraphics(worldToCanvas, params) {
-    const { y, xRef } = params;
-    this.graphics[0].translation.set(...worldToCanvas([0, 0]))
-    for (let k = 0; k < this.graphics.length; k++) {
-      this.graphics[k].rotation = -this.x.get(k);
-    }
+    const { y, xRef, u } = params;
+    Arm.updateArm(this.graphics, worldToCanvas, this.x, u);
   }
 
   /**

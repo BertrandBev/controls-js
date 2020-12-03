@@ -5,6 +5,7 @@ import Model from '@/components/models/model.js'
 import { matFromDiag } from '@/components/math.js'
 import Two from "two.js";
 import { wrapAngle } from '@/components/math.js'
+import { createMarker } from '../utils.js'
 
 class Car extends Model {
   static TAG = 'car';
@@ -122,16 +123,8 @@ class Car extends Model {
     path.linewidth = 3
     this.graphics.car = two.makeGroup(path);
 
-    // Create marker
-    for (let k = 0; k < 4; k++) {
-      const [sa, ea] = [k * Math.PI / 2, (k + 1) * Math.PI / 2];
-      const segment = two.makeArcSegment(0, 0, 0, GEOM.mr, sa, ea);
-      segment.fill = k % 2 === 0 ? '#ffffff' : colors.blue.darken4;
-      segment.noStroke();
-      // segment.linewidth = 3;
-      // segment.stroke = colors.blue.darken4;
-      this.graphics.car.add(segment);
-    }
+    const marker = createMarker(two, GEOM.mr, colors.blue.darken4, 5);
+    this.graphics.car.add(marker);
 
     // Create wheels
     this.graphics.wheels = []
