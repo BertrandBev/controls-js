@@ -118,17 +118,10 @@ class SimplePendulum extends Model {
       thickness: 8,
       radius: 16,
     };
-
     this.graphics.arm = Arm.createArm(two, GEOM, colors.green.lighten2, colors.green.darken4, 1);
-
-    this.graphics.scale = scale;
-    this.graphics.traj = null;
-    this.graphics.trajLines = [...Array(20)].map(() => {
-      const line = two.makeLine(0, 0, 0, 0);
-      return line;
-    });
-
+    
     // Create traj
+    this.graphics.scale = scale;
     this.graphics.traj = createTraj(two, this.mpcParams().nPts);
   }
 
@@ -176,7 +169,7 @@ class SimplePendulum extends Model {
         targets: [[Math.PI, 0], [-Math.PI, 0]]
       },
       u: { min: [-2], max: [2], nPts: [2] },
-      dt: 0.05
+      dt: 0.06
     };
   }
 

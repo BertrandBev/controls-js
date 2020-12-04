@@ -28,7 +28,7 @@ Section(title="Value Iteration")
 <script>
 import ValueInput from "@/components/environments/utils/ValueInput.vue";
 import ArrayInput from "@/components/environments/utils/ArrayInput.vue";
-import ValueIterationPlanner from "@/components/planners/valueIterationPlanner.js";
+import ValueIterationPlanner2D from "@/components/planners/valueIterationPlanner2D.js";
 import Trajectory from "@/components/planners/trajectory.js";
 import Section from "@/components/environments/utils/Section.vue";
 import eig from "@eigen";
@@ -62,7 +62,7 @@ export default {
   },
 
   created() {
-    this.viPlanner = new ValueIterationPlanner(this.system);
+    this.viPlanner = new ValueIterationPlanner2D(this.system);
     this.trajectory = new Trajectory(this.system, false);
     this.params = _.cloneDeep(this.system.valueIterationParams());
   },
@@ -83,7 +83,6 @@ export default {
 
     simulate(x0) {
       if (!x0) x0 = this.system.x;
-      x0.print('x0')
       this.viPlanner.simulate(x0, this.trajectory, 30);
       this.trajectory.reset(this.t);
     },
@@ -110,9 +109,8 @@ export default {
       this.running = true;
       setTimeout(() => {
         const converged = this.viPlanner.run(this.params);
-        // if (converged) this.simulate();
+        if (converged) this.simulate();
         this.running = false;
-        this.simulate();
       }, 25);
     },
   },

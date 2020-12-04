@@ -1,5 +1,5 @@
-import _ from 'lodash'
-import eig from '@eigen'
+import _ from 'lodash';
+import eig from '@eigen';
 
 class Tensor {
   /**
@@ -7,9 +7,9 @@ class Tensor {
    * @param {Array} dims 
    */
   constructor(dims) {
-    this.dims = dims
-    this.length = _.reduce(dims, (p, n) => p * n, 1)
-    this.data = [...Array(this.length)].fill(0)
+    this.dims = dims;
+    this.length = _.reduce(dims, (p, n) => p * n, 1);
+    this.data = [...Array(this.length)].fill(0);
   }
 
   /**
@@ -17,11 +17,11 @@ class Tensor {
    * @param {Array} indices 
    */
   pack(indices) {
-    let k = 0
+    let k = 0;
     this.dims.forEach((dim, idx) => {
-      k = k * dim + indices[idx]
-    })
-    return k
+      k = k * dim + indices[idx];
+    });
+    return k;
   }
 
   /**
@@ -29,14 +29,14 @@ class Tensor {
    * @param {Number} k 
    */
   unpack(k) {
-    let prod = this.length
+    let prod = this.length;
     return this.dims.map(dim => {
-      prod /= dim
-      const newK = k % prod
-      const idx = (k - newK) / prod
-      k = newK
-      return idx
-    })
+      prod /= dim;
+      const newK = k % prod;
+      const idx = (k - newK) / prod;
+      k = newK;
+      return idx;
+    });
   }
 
   /**
@@ -44,7 +44,7 @@ class Tensor {
    * @param {Array} indices
    */
   get(indices) {
-    return this.data[this.pack(indices)]
+    return this.data[this.pack(indices)];
   }
 
   /**
@@ -53,7 +53,7 @@ class Tensor {
    * @param {Number} val
    */
   set(indices, val) {
-    this.data[this.pack(indices)] = val
+    this.data[this.pack(indices)] = val;
   }
 
   /**
@@ -70,8 +70,8 @@ class Tensor {
    */
   forEach(fun) {
     for (let k = 0; k < this.length; k++) {
-      const ind = this.unpack(k)
-      fun(k, ind)
+      const ind = this.unpack(k);
+      fun(k, ind);
     }
   }
 
@@ -80,17 +80,17 @@ class Tensor {
    * @param {String} title 
    */
   print() {
-    console.log(this.data)
+    console.log(this.data);
   }
 
   /**
    * Get matrix form
    */
   getMatrix() {
-    console.assert(this.dims.length === 2, `The tensor dimension (${this.dims}) must be 2`)
+    console.assert(this.dims.length === 2, `The tensor dimension (${this.dims}) must be 2`);
     return [...Array(this.dims[1])].map((val, j) => {
-      return [...Array(this.dims[0])].map((val, i) => this.get([i, j]))
-    })
+      return [...Array(this.dims[0])].map((val, i) => this.get([i, j]));
+    });
   }
 }
 
@@ -103,16 +103,16 @@ function testTensor() {
     [...Array(3)].map((_, i) => i).forEach(j => {
       [...Array(4)].map((_, i) => i).forEach(k => {
         const indices = [i, j, k];
-        const val = i + j + k
-        const flat = t.pack(indices)
+        const val = i + j + k;
+        const flat = t.pack(indices);
         const expanded = t.unpack(flat);
-        t.set(indices, val)
-        console.assert(_.isEqual(expanded, indices), 'Index packing, expected %s, got %s', indices, expanded)
-        console.assert(t.get(indices) === val, 'Value error, expected %d, got %d', val, t.get(indices))
-      })
-    })
-  })
-  console.log('Test successful')
+        t.set(indices, val);
+        console.assert(_.isEqual(expanded, indices), 'Index packing, expected %s, got %s', indices, expanded);
+        console.assert(t.get(indices) === val, 'Value error, expected %d, got %d', val, t.get(indices));
+      });
+    });
+  });
+  console.log('Test successful');
 }
 
 class Grid {
@@ -121,10 +121,10 @@ class Grid {
    * @param {Array} grid [{min, max, nPts}, ...] spec for each dimension
    */
   constructor(grid) {
-    this.grid = []
+    this.grid = [];
     for (let k = 0; k < grid.min.length; k++)
       this.grid.push({ min: grid.min[k], max: grid.max[k], nPts: grid.nPts[k] });
-    this.tensor = new Tensor(this.grid.map(val => val.nPts))
+    this.tensor = new Tensor(this.grid.map(val => val.nPts));
   }
 
   /**
@@ -132,12 +132,12 @@ class Grid {
    * @param {Matrix} vec 
    */
   clamp(vec) {
-    const clamped = new eig.Matrix(vec)
+    const clamped = new eig.Matrix(vec);
     this.grid.forEach((val, idx) => {
-      const v = Math.max(val.min, Math.min(val.max, clamped.get(idx)))
-      clamped.set(idx, v)
-    })
-    return clamped
+      const v = Math.max(val.min, Math.min(val.max, clamped.get(idx)));
+      clamped.set(idx, v);
+    });
+    return clamped;
   }
 
   /**
@@ -145,7 +145,7 @@ class Grid {
    * @param {Matrix} vec
    */
   pack(vec) {
-    const ind = this.toGrid(vec)
+    const ind = this.toGrid(vec);
     return ind ? this.tensor.pack(ind) : null;
   }
 
@@ -154,8 +154,8 @@ class Grid {
    * @param {Number} idx 
    */
   unpack(idx) {
-    const ind = this.tensor.unpack(idx)
-    return this.fromGrid(ind)
+    const ind = this.tensor.unpack(idx);
+    return this.fromGrid(ind);
   }
 
   /**
@@ -163,14 +163,14 @@ class Grid {
    * @param {Matrix} vec
    */
   toGrid(vec) {
-    let oob = false
+    let oob = false;
     const ind = this.grid.map((val, idx) => {
-      const scalar = (vec.get(idx) - val.min) / (val.max - val.min)
-      const k = Math.floor(scalar * (val.nPts - 1))
-      oob |= k < 0 || k >= val.nPts
-      return Math.max(0, Math.min(val.nPts - 1, k))
-    })
-    return oob ? null : ind
+      const scalar = (vec.get(idx) - val.min) / (val.max - val.min);
+      const k = Math.floor(scalar * (val.nPts - 1));
+      oob |= k < 0 || k >= val.nPts;
+      return Math.max(0, Math.min(val.nPts - 1, k));
+    });
+    return oob ? null : ind;
   }
 
   /**
@@ -179,11 +179,11 @@ class Grid {
    */
   fromGrid(indices) {
     const vec = this.grid.map((val, idx) => {
-      const interval = (val.max - val.min) / (val.nPts - 1)
-      const factor = Math.max(0, Math.min(val.nPts - 1, indices[idx]))
-      return val.min + interval * factor
-    })
-    return new eig.Matrix(vec)
+      const interval = (val.max - val.min) / (val.nPts - 1);
+      const factor = Math.max(0, Math.min(val.nPts - 1, indices[idx]));
+      return val.min + interval * factor;
+    });
+    return new eig.Matrix(vec);
   }
 
   /**
@@ -191,16 +191,16 @@ class Grid {
    * @param {Matrix} vec 
    */
   get(vec) {
-    const ind = this.toGrid(vec)
-    return this.tensor.get(ind)
+    const ind = this.toGrid(vec);
+    return this.tensor.get(ind);
   }
 
   /**
    * Set tensor value at
    */
   set(vec, val) {
-    const ind = this.toGrid(vec)
-    return this.tensor.set(ind, val)
+    const ind = this.toGrid(vec);
+    return this.tensor.set(ind, val);
   }
 
   /**
@@ -209,10 +209,10 @@ class Grid {
    */
   forEach(fun) {
     this.tensor.forEach((k, ind) => {
-      const vec = this.fromGrid(ind)
-      fun(k, vec)
-    })
+      const vec = this.fromGrid(ind);
+      fun(k, vec);
+    });
   }
 }
 
-export { Tensor, Grid }
+export { Tensor, Grid };

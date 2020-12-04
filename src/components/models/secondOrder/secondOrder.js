@@ -170,9 +170,9 @@ class SecondOrder extends Model {
    */
   valueIterationParams() {
     return {
-      x: { min: [-4, -5], max: [4, 5], nPts: [100, 100], targets: [[0, 0]] },
+      x: { min: [-5, -5], max: [5, 5], nPts: [100, 100], targets: [[0, 0]] },
       u: { min: [-5], max: [5], nPts: [2] },
-      dt: 0.05
+      dt: 0.02
     };
   }
 

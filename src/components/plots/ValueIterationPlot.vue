@@ -1,6 +1,5 @@
 <template lang="pug">
-div(style='width: 100%; height: 100%;'
-    ref='div')
+div(style="width: 100%; height: 100%", ref="div")
 </template>
 
 <script>
@@ -32,7 +31,7 @@ export default {
         if (newValue) newValue.addWatcher(this.update);
         this.update();
       },
-      immediate: true,
+      immediate: false,
     },
   },
 
@@ -45,7 +44,7 @@ export default {
       responsive: true,
     };
     Plotly.newPlot(this.$refs.div, [], [], config);
-    this.$refs.div.on('plotly_click', data => {
+    this.$refs.div.on("plotly_click", (data) => {
       this.onclick(data);
     });
 
@@ -63,7 +62,7 @@ export default {
     onclick(data) {
       if (data.points && data.points.length > 0) {
         const pt = data.points[0];
-        this.$emit('onclick', [pt.x, pt.y]);
+        this.$emit("onclick", [pt.x, pt.y]);
       }
     },
 
@@ -71,8 +70,8 @@ export default {
       const xList = [];
       const yList = [];
       this.trajectory.array.forEach((val, k) => {
-        xList.push(val.get(0))
-        yList.push(val.get(1))
+        xList.push(val.get(0));
+        yList.push(val.get(1));
       });
       return [xList, yList];
     },
@@ -81,25 +80,24 @@ export default {
       if (!this.valueIterationPlanner.V) {
         return;
       }
-      const xGrid = this.valueIterationPlanner.V.grid;
-      const mat = this.valueIterationPlanner.getMatrix();
+      const vi = this.valueIterationPlanner;
       const data = [
         {
-          z: mat,
-          x0: xGrid[0].min,
-          dx: (xGrid[0].max - xGrid[0].min) / xGrid[0].nPts,
-          y0: xGrid[1].min,
-          dy: (xGrid[1].max - xGrid[1].min) / xGrid[1].nPts,
+          z: vi.V,
+          x0: vi.xMin,
+          dx: (vi.xMax - vi.xMin) / vi.xn,
+          y0: vi.yMin,
+          dy: (vi.yMax - vi.yMin) / vi.xn,
           type: "heatmap",
         },
       ];
       // Add trajectory
-      if (this.trajectory.ready()) {
+      if (this.trajectory && this.trajectory.ready()) {
         const [x, y] = this.getXY();
         const trajData = {
           x,
           y,
-          type: "scatter"
+          type: "scatter",
         };
         data.push(trajData);
       }
