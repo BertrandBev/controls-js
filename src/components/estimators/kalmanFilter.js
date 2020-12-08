@@ -1,15 +1,15 @@
-import eig from '@eigen'
-import LinearSystem from '@/components/models/linearSystem.js'
-import { addNoise } from '@/components/math.js'
+import eig from '@eigen';
+import LinearSystem from '@/components/models/linearSystem.js';
+import { addNoise } from '@/components/math.js';
 
 class KalmanFilter {
   constructor(system) {
-    this.system = system
+    this.system = system;
     this.watchers = new Set();
   }
 
   ready() {
-    return !!this.P && !!this.Q
+    return !!this.P && !!this.Q;
   }
 
   reset(P, Q) {
@@ -27,11 +27,11 @@ class KalmanFilter {
     // Transform mean & covariance matrices
     const dx = this.system.dynamics(this.x, u).mul(dt);
     this.x.matAddSelf(dx);
-    this.system.bound(this.x)
+    this.system.bound(this.x);
     const dP = Jx.matMul(this.P).matMul(Jx.transpose()).matAdd(this.Q).mul(dt);
     this.P.matAddSelf(dP);
     // Notify watchers
-    this.watchers.forEach(fun => fun())
+    this.watchers.forEach(fun => fun());
   }
 
   update(sensor) {
@@ -50,22 +50,22 @@ class KalmanFilter {
     this.x.matAddSelf(K.matMul(z.matSub(zHat)));
     this.P.matSubSelf(K.matMul(H).matMul(this.P));
     // Notify watchers
-    this.watchers.forEach(fun => fun())
+    this.watchers.forEach(fun => fun());
   }
 
   /**
    * Add update callback
    */
   addWatcher(fun) {
-    this.watchers.add(fun)
+    this.watchers.add(fun);
   }
 
   /**
    * Add update callback
    */
   removeWatcher(fun) {
-    this.watchers.delete(fun)
+    this.watchers.delete(fun);
   }
 }
 
-export default KalmanFilter
+export default KalmanFilter;

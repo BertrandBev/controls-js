@@ -72,7 +72,7 @@ class ValueIterationPlanner2D {
   }
 
   unpackU(uk) {
-    const u = this.params.u.min[0] + uk / this.un *
+    const u = this.params.u.min[0] + uk / (this.un - 1) *
       (this.params.u.max[0] - this.params.u.min[0]);
     return new eig.Matrix([u]);
   }
@@ -249,7 +249,7 @@ class ValueIterationPlanner2D {
    * @param {Number} duration
    */
   simulate(x0, trajectory, maxDuration) {
-    const sequence = [];
+    let sequence = [];
     // Find closest value in table
     let dist = Infinity;
     let pt;
@@ -262,19 +262,27 @@ class ValueIterationPlanner2D {
       }
     });
     if (pt == null) return;
+    const x = this.unpackPt(pt);
+    x.print("")
     // Now start for x
+    const ptSet = new Set();
     for (let t = 0; t <= maxDuration; t += this.dt) {
       const ku = this.policy[pt.i][pt.j];
       const ni = this.tableI[ku][pt.i][pt.j];
       const nj = this.tableJ[ku][pt.i][pt.j];
+      const newPt = { i: ni, j: nj };
+      if (ptSet.has(newPt)) break;
       const x = this.unpack(ni, nj);
       const u = this.unpackU(ku);
       sequence.push(x.vcat(u));
       // Check for target
       const v = this.V[ni][nj];
       if (v == 0) break;
-      pt = { i: ni, j: nj };
+      pt = newPt;
+      ptSet.add(newPt);
     }
+    console.log('length:', ptSet.size);
+    sequence = smooth(sequence, this.dt, 1, false);
     trajectory.set(sequence, this.dt);
   }
 }

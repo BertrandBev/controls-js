@@ -1,11 +1,11 @@
-import eig from '@eigen'
-import _ from 'lodash'
-import colors from 'vuetify/lib/util/colors'
-import Model from '@/components/models/model.js'
-import { matFromDiag } from '@/components/math.js'
+import eig from '@eigen';
+import _ from 'lodash';
+import colors from 'vuetify/lib/util/colors';
+import Model from '@/components/models/model.js';
+import { matFromDiag } from '@/components/math.js';
 import Two from "two.js";
-import { wrapAngle } from '@/components/math.js'
-import { createMarker } from '../utils.js'
+import { wrapAngle } from '@/components/math.js';
+import { createMarker } from '../utils.js';
 
 class Car extends Model {
   static TAG = 'car';
@@ -15,11 +15,11 @@ class Car extends Model {
     { name: 'y', show: true },
     { name: 'theta', show: true },
     { name: 'v', show: false }
-  ])
+  ]);
   static COMMANDS = Object.freeze([
     { name: 'accel' },
     { name: 'delta' }
-  ])
+  ]);
 
   constructor(params = {}) {
     super(Car.STATES, Car.COMMANDS, {
@@ -28,14 +28,14 @@ class Car extends Model {
       mu: 0.5, // s^-1.kg^-1
       maxAccel: 20,
       maxDelta: Math.PI / 4
-    })
+    });
   }
 
   trim() {
     return {
       x: new eig.Matrix([0, 0, Math.PI / 2, 0]),
       u: new eig.Matrix([0, 0]),
-    }
+    };
   }
 
   /**
@@ -43,8 +43,8 @@ class Car extends Model {
    * @param {Matrix} x 
    */
   bound(x) {
-    super.bound(x)
-    x.set(2, wrapAngle(x.get(2)))
+    super.bound(x);
+    x.set(2, wrapAngle(x.get(2)));
   }
 
   /**
@@ -54,7 +54,7 @@ class Car extends Model {
    * @returns {Matrix} dx
    */
   dynamics(x, u) {
-    const p = this.params
+    const p = this.params;
     const theta = x.get(2);
     const v = x.get(3);
     const delta = u.get(1);
@@ -63,7 +63,7 @@ class Car extends Model {
       Math.sin(theta) * v,
       v * Math.tan(delta) / p.l,
       u.get(0) - v * p.mu
-    ])
+    ]);
   }
 
   /**
@@ -72,17 +72,20 @@ class Car extends Model {
    * @param {Array} mouseTarget 
    */
   trackMouse(mouseTarget, dt) {
-    const p = this.params
+    const p = this.params;
     const [x, y] = [this.x.get(0), this.x.get(1)];
-    const [theta, v] = [this.x.get(2), this.x.get(3)]
+    const [theta, v] = [this.x.get(2), this.x.get(3)];
     const [mx, my] = [mouseTarget[0], mouseTarget[1]];
     const d = Math.sqrt(Math.pow(mx - x, 2) + Math.pow(my - y, 2));
     const [dx, dy] = [Math.cos(theta), Math.sin(theta)];
-    const cross = (dx * (my - y) - dy * (mx - x)) / Math.max(d, 1e-3);
-    const dtheta = Math.asin(cross);
-    const rMin = p.l / Math.cos(p.maxDelta); // Check feasability
+    const dot = dx * (mx - x) + dy * (my - y);
+    const cross = dx * (my - y) - dy * (mx - x);
+    const dtheta = dot < 0 ?
+    Math.sign(cross) * p.maxDelta :
+    Math.asin(cross / Math.max(d, 1e-3));
     // Controller
-    const ac = _.clamp(10 * (d - v * 0.5), -p.maxAccel, p.maxAccel);
+    const dClipped = Math.max(d - 0.1, 0);
+    const ac = _.clamp(10 * (dClipped - v * 0.5), -p.maxAccel, p.maxAccel);
     const dc = _.clamp(dtheta, -p.maxDelta, p.maxDelta);
     const u = new eig.Matrix([ac, dc]);
     this.step(u, dt);
@@ -116,18 +119,18 @@ class Car extends Model {
       [GEOM.l, GEOM.w * GEOM.a2]
     ];
     anchors = anchors.concat(anchors.map(([i, j]) => [i, -j]).reverse());
-    const path = two.makePath(..._.flatten(anchors), false)
+    const path = two.makePath(..._.flatten(anchors), false);
     path.automatic = false;
     path.fill = colors.blue.base;
     path.stroke = colors.blue.darken4;
-    path.linewidth = 3
+    path.linewidth = 3;
     this.graphics.car = two.makeGroup(path);
 
     const marker = createMarker(two, GEOM.mr, colors.blue.darken4, 5);
     this.graphics.car.add(marker);
 
     // Create wheels
-    this.graphics.wheels = []
+    this.graphics.wheels = [];
     const CORNERS = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
     CORNERS.forEach(([i, j], idx) => {
       const wheel = two.makeRectangle(0, 0, GEOM.lw, GEOM.ww);
@@ -137,11 +140,11 @@ class Car extends Model {
       );
       wheel.noStroke();
       wheel.fill = '#000000';
-      this.graphics.wheels[idx] = wheel
+      this.graphics.wheels[idx] = wheel;
       this.graphics.car.add(wheel);
-    })
+    });
 
-    this.graphics.showControl = true
+    this.graphics.showControl = true;
     this.graphics.setControl = u => {
       const delta = u.get(1);
       this.graphics.wheels[2].rotation = -delta;
@@ -153,10 +156,10 @@ class Car extends Model {
    * Update model
    */
   updateGraphics(worldToCanvas, params) {
-    const { u } = params
+    const { u } = params;
     const x = this.x;
     this.graphics.car.translation.set(...worldToCanvas([x.get(0), x.get(1)]));
-    this.graphics.car.rotation = -x.get(2)
+    this.graphics.car.rotation = -x.get(2);
     this.graphics.setControl(u);
   }
 
@@ -165,18 +168,19 @@ class Car extends Model {
    */
   kalmanFilterParams() {
     function measurement(params, x) {
-      const pos = new eig.Matrix(params.pos)
+      const pos = new eig.Matrix(params.pos);
       const dist = pos.matSub(x.block(0, 0, 2, 1)).norm();
       return new eig.Matrix([dist]);
     }
     return {
       covariance: [[5, 0, 0, 0], [0, 5, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
-      processNoise: [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+      processNoise: [[0.1, 0, 0, 0], [0, 0.1, 0, 0], [0, 0, 0.02, 0], [0, 0, 0, 0]],
       inputNoise: [[0, 0], [0, 0]],
       sensors: [
-        { type: 'radar', dt: 1, pos: [-2, 2], measurement, noise: [[5]] }
+        { type: 'radar', dt: 1, pos: [-2, 2], measurement, noise: [[1]] },
+        { type: 'radar', dt: 1, pos: [2, 2], measurement, noise: [[1]] }
       ]
-    }
+    };
   }
 
   /**
@@ -184,7 +188,7 @@ class Car extends Model {
    */
   particleFilterParams() {
     function measurement(params, x) {
-      const pos = new eig.Matrix(params.pos)
+      const pos = new eig.Matrix(params.pos);
       const dist = pos.matSub(x.block(0, 0, 2, 1)).norm();
       return new eig.Matrix([dist]);
     }
@@ -204,11 +208,11 @@ class Car extends Model {
         { type: 'radar', dt: 1, pos: [4, -4], measurement, noise: [[2]] },
         { type: 'radar', dt: 1, pos: [4, 4], measurement, noise: [[2]] }
       ]
-    }
+    };
   }
 }
 
-const traj = []
+const traj = [];
 
-export { traj }
-export default Car
+export { traj };
+export default Car;

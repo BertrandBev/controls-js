@@ -1,31 +1,31 @@
-import eig from '@eigen'
-import _ from 'lodash'
-import { addNoise, Gaussian } from '@/components/math.js'
+import eig from '@eigen';
+import _ from 'lodash';
+import { addNoise, Gaussian } from '@/components/math.js';
 
 
 class Particle {
   constructor(system, params) {
-    this.params = params
+    this.params = params;
     this.system = new system.constructor();
-    this.weight = 1
+    this.weight = 1;
     switch (params.distribution) {
       case 'exact':
         // Copy state
         this.system.setState(system.x);
-        break
+        break;
       case 'uniform': {
         // Sample state uniformely
-        const x = eig.Matrix.random(system.shape[0], 1)
+        const x = eig.Matrix.random(system.shape[0], 1);
         for (let k = 0; k < x.rows(); k++) {
           const min = params.range.min[k];
           const max = params.range.max[k];
           this.system.x.set(k, min + (max - min) * x.get(k));
         }
-        break
+        break;
       }
       case 'normal': {
         // Sample state from a multimodal gaussian density
-        break
+        break;
       }
     }
   }
@@ -64,29 +64,36 @@ class Particle {
 
 class ParticleFilter {
   constructor(system) {
-    this.system = system
-    this.particles = []
+    this.system = system;
+    this.particles = [];
+    this.watchers = new Set();
+  }
+
+  ready() {
+    return true;
   }
 
   reset(params) {
-    this.params = _.cloneDeep(params)
+    this.params = _.cloneDeep(params);
     this.particles.forEach(p => p.delete());
     this.particles = [];
     for (let k = 0; k < params.nPts; k++) {
       const p = new Particle(this.system, params);
-      this.particles.push(p)
+      this.particles.push(p);
     }
     this.normalizeWeights();
   }
 
   predict(u, dt) {
-    this.particles.forEach(particle => particle.predict(u, dt))
+    this.particles.forEach(particle => particle.predict(u, dt));
+    // Notify watchers
+    this.watchers.forEach(fun => fun());
   }
 
   normalizeWeights() {
     // Pseudo-normalize weight (~soft max?)
     const weights = this.particles.map(p => p.weight);
-    const max = _.max(weights)
+    const max = _.max(weights);
     const W = max; // TEMP (find better way)
     this.particles.forEach(p => p.weight /= W);
   }
@@ -98,30 +105,47 @@ class ParticleFilter {
     const cov = new eig.Matrix(sensor.noise);
     addNoise(z, cov);
     // Update particles
-    this.particles.forEach(particle => particle.update(sensor, z))
+    this.particles.forEach(particle => particle.update(sensor, z));
     this.normalizeWeights();
+    // Notify watchers
+    this.watchers.forEach(fun => fun());
   }
 
   resample() {
     // Stochastic sampling algorithm
     const n = this.particles.length;
-    const newParticles = []
-    let index = Math.floor(Math.random() * n)
-    let beta = 0.0
+    const newParticles = [];
+    let index = Math.floor(Math.random() * n);
+    let beta = 0.0;
     const weights = this.particles.map(p => p.weight);
-    const mw = _.max(weights)
+    const mw = _.max(weights);
     for (let k = 0; k < n; k++) {
-      beta += Math.random() * 2.0 * mw
+      beta += Math.random() * 2.0 * mw;
       while (beta > weights[index]) {
-        beta -= weights[index]
-        index = (index + 1) % n
+        beta -= weights[index];
+        index = (index + 1) % n;
       }
       const newParticle = this.particles[index].clone();
-      newParticles.push(newParticle)
+      newParticles.push(newParticle);
     }
     this.particles.forEach(p => p.delete());
     this.particles = newParticles;
   }
+
+
+  /**
+   * Add update callback
+   */
+  addWatcher(fun) {
+    this.watchers.add(fun);
+  }
+
+  /**
+   * Add update callback
+   */
+  removeWatcher(fun) {
+    this.watchers.delete(fun);
+  }
 }
 
-export default ParticleFilter
+export default ParticleFilter;

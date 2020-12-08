@@ -10,8 +10,7 @@ ModelLayout
               @activate='() => {}')
   template(v-if='isMounted'
            v-slot:sheet)
-    //- KalmanPlot(:kalmanFilter='$refs.plugin.kalmanFilter')
-    //- TrajPlot(:trajectories='$refs.plugin.trajectories')
+    ParticlePlot(:particleFilter='$refs.plugin.particleFilter')
   template(v-slot:bar)
     v-btn(text dark
           @click='reset') reset
@@ -22,7 +21,7 @@ import ModelLayout from "@/components/models/ModelLayout.vue";
 import worldMixin from "@/components/worldMixin.js";
 import systemMixin from "@/components/systemMixin.js";
 import TrajPlot from "@/components/plots/TrajPlot.vue";
-import KalmanPlot from "@/components/plots/KalmanPlot.vue";
+import ParticlePlot from "@/components/plots/ParticlePlot.vue";
 import ParticleFilterPlugin from "@/components/environments/ParticleFilter/ParticleFilterPlugin.vue";
 import Systems from "@/components/models/systems.js";
 
@@ -39,8 +38,7 @@ export default {
 
   components: {
     ModelLayout,
-    TrajPlot,
-    KalmanPlot,
+    ParticlePlot,
     ParticleFilterPlugin
   },
 

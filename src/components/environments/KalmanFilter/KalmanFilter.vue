@@ -33,7 +33,7 @@ export default {
     title: "Kalman Filter",
     icon: "mdi-chart-bell-curve",
     systems: [
-      Systems.secondOrder,
+      // Systems.secondOrder,
       Systems.car,
     ]
   },

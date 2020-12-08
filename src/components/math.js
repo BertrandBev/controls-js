@@ -75,18 +75,20 @@ function differenciate(traj, dt, tau = 1e-8, loop = false) {
 /**
  * 
  * @param {Array} traj 
+ * @param {Number} dt 
  * @param {Number} tau Decay characteristic time for low-pass
+ * @param {Boolean} wrap Wether the trajectory smoothing should wrap
  */
-function smooth(traj, dt, tau = 1e-8) {
+function smooth(traj, dt, tau = 1e-8, wrap = true) {
   if (traj.length === 0) {
     return []
   }
   const decay = Math.exp(-2 * Math.PI * dt / tau)
   let val = traj[0]
   const smoothed = []
-  for (let k = 0; k < 2 * traj.length; k++) {
+  for (let k = 0; k < (wrap ? 2 : 1) * traj.length; k++) {
     val = val.mul(decay).matAdd(traj[k % traj.length].mul(1 - decay))
-    if (k >= traj.length) {
+    if (!wrap || k >= traj.length) {
       smoothed.push(val)
     }
   }

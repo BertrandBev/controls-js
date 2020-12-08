@@ -1,18 +1,15 @@
 <template lang="pug">
-Section(title='Kalman Filter')
-  MatrixInput.mt-2(label='Init. covariance'
-                   :matrix.sync='params.covariance')
-  MatrixInput.mt-2(label='Process noise'
-                   :matrix.sync='params.processNoise')
-  MatrixInput.mt-2(label='Input noise'
-                   :matrix.sync='params.inputNoise')
-  Sensors(ref='sensors'
-          :system='system'
-          :params='params'
-          @update='sensorUpdate')
-  v-btn.mt-2(@click='reset'
-             outlined
-             color='primary') reset filter
+Section(title="Kalman Filter")
+  MatrixInput.mt-2(label="Init. covariance", :matrix.sync="params.covariance")
+  MatrixInput.mt-2(label="Process noise", :matrix.sync="params.processNoise")
+  MatrixInput.mt-2(label="Input noise", :matrix.sync="params.inputNoise")
+  Sensors(
+    ref="sensors",
+    :system="system",
+    :params="params",
+    @update="sensorUpdate"
+  )
+  v-btn.mt-2(@click="reset", outlined, color="primary") reset filter
 </template>
 
 <script>
@@ -39,7 +36,7 @@ export default {
     ValueInput,
     MatrixInput,
     ArrayInput,
-    Sensors
+    Sensors,
   },
 
   props: {
@@ -51,13 +48,13 @@ export default {
     sigma: null,
     kalmanFilter: null,
     // Parameters
-    params: {}
+    params: {},
   }),
 
   computed: {
     mouseTargetEnabled() {
       return !this.$refs.sensors.sensorDragged;
-    }
+    },
   },
 
   created() {
@@ -66,7 +63,7 @@ export default {
   },
 
   mounted() {
-    console.log('sensors', this.$refs.sensors)
+    console.log("sensors", this.$refs.sensors);
     this.reset();
   },
 
@@ -76,7 +73,7 @@ export default {
     createGraphics(two) {
       this.two = two;
       // Create sensors
-      console.log('create graphics', this.$refs.sensors)
+      console.log("create graphics", this.$refs.sensors);
       this.$refs.sensors.createGraphics(two);
       // Create sigma on screen
       const container = two.canvas.parentNode;
@@ -96,16 +93,18 @@ export default {
       const P = this.kalmanFilter.P.block(0, 0, 2, 2);
       const x = this.kalmanFilter.x.block(0, 0, 2, 1);
       const pos = this.two.worldToCanvas([x.get(0), x.get(1)]);
-      const center = this.two.worldToCanvas([0, 0])
-      pos[0] -= center[0]; pos[1] -= center[1];
+      const center = this.two.worldToCanvas([0, 0]);
+      pos[0] -= center[0];
+      pos[1] -= center[1];
       // P.print("P");
       const svd = eig.Decompositions.svd(P, true);
       const sign = Math.sign(svd.U.det());
       const theta = Math.atan2(svd.U.get(0, 1), svd.U.get(0, 0)) * sign;
       const size = [
         svd.sv.get(0) * this.two.scale * scale,
-        svd.sv.get(1) * this.two.scale * scale
+        svd.sv.get(1) * this.two.scale * scale,
       ];
+      this.sigma.style["pointer-events"] = "none";
       this.sigma.style.left = `calc(50% + ${pos[0] - size[0] / 2}px)`;
       this.sigma.style.top = `calc(50% + ${pos[1] - size[1] / 2}px)`;
       this.sigma.style.width = `${size[0]}px`;
@@ -122,14 +121,13 @@ export default {
     },
 
     update(params) {
-      if (params)
-        return;
+      // if (params)
+      //   return;
       // Inject process noise at u
       const mean = new eig.Matrix(2, 1);
       const cov = new eig.Matrix(this.params.inputNoise);
       const rdn = eig.Random.normal(mean, cov, 1);
       const u = params.u.matAdd(rdn);
-      u.print("u");
 
       // Run prediction step
       this.kalmanFilter.predict(u, params.dt);
@@ -148,7 +146,7 @@ export default {
     },
 
     updateSystem(t, dt) {},
-  }
+  },
 };
 </script>
 
