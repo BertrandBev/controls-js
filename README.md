@@ -1,9 +1,9 @@
-<p align="center">
-  <img width="192" src="/src/assets/logo.png">
-</p>
-
 [![Website shields.io](https://img.shields.io/website-up-down-green-red/http/shields.io.svg)](https://bertrandbev.github.io/controls.js/#/)
 [![GitHub license](https://img.shields.io/github/license/Naereen/StrapDown.js.svg)](https://github.com/Naereen/StrapDown.js/blob/master/LICENSE)
+
+<p align="center">
+  <img width="340" src="/src/assets/logo.png">
+</p>
 
 # Controls.js
 
@@ -11,7 +11,7 @@ Controls.js is a sandbox showcasing a few modern controls techiques directly in 
 
 It harnesses [eigen-js](https://github.com/BertrandBev/eigen-js) for all linear algebra and quadratic programming, and [nlopt-js](https://github.com/BertrandBev/nlopt-js) for non-linear optimization.
 
-[Home](https://bertrandbev.github.io/eigen-js/#/)
+[Home](https://bertrandbev.github.io/controls-js/#/)
 
 ## Environments
 

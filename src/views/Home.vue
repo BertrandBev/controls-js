@@ -1,10 +1,9 @@
 <template lang="pug">
 div(style="display: flex; flex-direction: column; align-items: center")
   div(:style="divStyle")
-    div(style="display: flex; flex-direction: column; align-items: center")
-      v-img(src="@assets/logo.png", width="350px")
-      span.display-1.font-weight-light.white--text(style="margin-top: 16px") Controls JS
-      //- Demo(style="margin-top: 48px")
+    Demo(style="position: absolute")
+    div(style="position: absolute; display: flex; width: 100%;justify-content: center")
+      span.display-1.blue--text(style="margin-top: 32px") Controls JS
   div(
     style="width: 100%; max-width: 960px; padding: 40px",
     v-html="markdownHtml"
@@ -14,9 +13,11 @@ div(style="display: flex; flex-direction: column; align-items: center")
 <script>
 import markdown from "!raw-loader!../../README.md";
 import MarkdownIt from "markdown-it";
+import Demo from "./Demo.vue";
 
 export default {
   components: {
+    Demo,
   },
 
   data: () => ({
@@ -43,11 +44,7 @@ export default {
       return {
         width: `${this.$store.windowSize.x}px`,
         height: `${this.$store.windowSize.y}px`,
-        display: "flex",
-        "flex-direction": "row",
-        "justify-content": "center",
-        "align-items": "center",
-        background: "#00796B",
+        position: "relative",
       };
     },
   },

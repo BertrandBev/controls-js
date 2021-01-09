@@ -62,7 +62,8 @@ export default {
   },
 
   props: {
-    system: Object
+    system: Object,
+    disableMouse: Boolean,
   },
 
   data: () => ({
@@ -75,6 +76,10 @@ export default {
   computed: {
     trajectories() {
       return [this.simTraj];
+    },
+
+    mouseTargetEnabled() {
+      return !this.disableMouse;
     }
   },
 

@@ -8,8 +8,9 @@ div(:style='containerStyle')
   div(:style='overlayStyle')
     slot(name='overlay')
   //* Bottom sheet
-  div.blue(ref='sheet'
-          :style='sheetStyle')
+  div.blue(v-if='!noSheet'
+           ref='sheet'
+           :style='sheetStyle')
     //* Bottom toolbar
     div.bottomBar
       slot(name='bar')
@@ -33,6 +34,10 @@ import anime from "animejs";
 
 export default {
   components: {},
+
+  props: {
+    noSheet: Boolean
+  },
 
   data: () => ({
     sheet: true,
