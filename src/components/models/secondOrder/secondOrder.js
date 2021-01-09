@@ -156,6 +156,7 @@ class SecondOrder extends Model {
    */
   lqrParams() {
     return {
+      x0: [-2, 0],
       Q: matFromDiag([10, 1]),
       R: matFromDiag([1]),
       simEps: 1,
@@ -170,9 +171,11 @@ class SecondOrder extends Model {
    */
   valueIterationParams() {
     return {
-      x: { min: [-5, -5], max: [5, 5], nPts: [100, 100], targets: [[0, 0]] },
-      u: { min: [-5], max: [5], nPts: [2] },
-      dt: 0.02
+      x: { min: [-5, -2], max: [5, 2], nPts: [100, 100], targets: [[0, 0]] },
+      u: { min: [-2], max: [2], nPts: [2] },
+      dt: 0.05,
+    x0: [-2, 0],
+    dump: () => import('./viTable.json')
     };
   }
 

@@ -15,7 +15,7 @@ Vue.use(VueRouter)
 const env = [
   LQR,
   ValueIteration,
-  RRT,
+  // RRT,
   Flatness,
   DirectCollocation,
   MPC,

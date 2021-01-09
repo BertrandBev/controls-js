@@ -43,7 +43,7 @@ export default {
   methods: {
     update() {
       if (!this.$refs.div || !this.particleFilter.ready()) return;
-      if (Date.now() - this.tPrev < 200) return;
+      if (Date.now() - this.tPrev < 500) return;
       this.tPrev = Date.now();
       const particles = this.particleFilter.particles;
       const px = [];

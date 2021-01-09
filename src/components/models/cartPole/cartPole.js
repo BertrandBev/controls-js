@@ -224,6 +224,7 @@ class CartPole extends Model {
    */
   lqrParams() {
     return {
+      x0: [-2, Math.PI, 0, 0],
       Q: matFromDiag([10, 10, 1, 1]),
       R: matFromDiag([1]),
       simEps: 1e-1,
@@ -255,8 +256,8 @@ class CartPole extends Model {
       nPts: 20,
       uBounds: { min: [-10], max: [10] },
       dt: 1 / 10,
-      // traj: swingupMPC,
-      traj: topToTop,
+      traj: swingupMPC,
+      // traj: topToTop,
       xWeight: [100, 100, 0.1, 0.1],
     };
   }

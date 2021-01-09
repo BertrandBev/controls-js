@@ -31,7 +31,7 @@ export default {
         if (newValue) newValue.addWatcher(this.update);
         this.update();
       },
-      immediate: false,
+      immediate: true,
     },
   },
 
@@ -77,13 +77,13 @@ export default {
     },
 
     update() {
-      if (!this.valueIterationPlanner.V) {
+      if (!this.$refs.div || !this.valueIterationPlanner.V)
         return;
-      }
       const vi = this.valueIterationPlanner;
+      const V = vi.V[0].map((_, colIndex) => vi.V.map(row => row[colIndex]));
       const data = [
         {
-          z: vi.V,
+          z: V,
           x0: vi.xMin,
           dx: (vi.xMax - vi.xMin) / vi.xn,
           y0: vi.yMin,
@@ -98,6 +98,8 @@ export default {
           x,
           y,
           type: "scatter",
+          line: { color: 'white'},
+          hoverinfo: 'skip',
         };
         data.push(trajData);
       }

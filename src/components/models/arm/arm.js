@@ -256,9 +256,11 @@ class Arm extends Model {
    * LQR Params
    */
   lqrParams() {
+    const x0 = [...Array(2 * this.params.n).keys()].map(k => (k == 0 ? Math.PI : 0) + Math.PI / 8);
     const Q = [...Array(2 * this.params.n).keys()].map(k => k < this.params.n ? 10 : 1);
     const R = [...Array(this.params.n).keys()].map(k => 1);
     return {
+      x0: x0,
       Q: matFromDiag(Q),
       R: matFromDiag(R),
       simEps: 1e-1,

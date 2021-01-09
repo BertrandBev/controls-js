@@ -169,7 +169,9 @@ class SimplePendulum extends Model {
         targets: [[Math.PI, 0], [-Math.PI, 0]]
       },
       u: { min: [-2], max: [2], nPts: [2] },
-      dt: 0.06
+      dt: 0.06,
+      x0: [0, 0],
+      dump: () => import('./viTable.json')
     };
   }
 

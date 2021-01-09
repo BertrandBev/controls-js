@@ -244,6 +244,7 @@ class Quadrotor2D extends Model {
    */
   lqrParams() {
     return {
+      x0: [-2, 0, 0, 0, 0, 0],
       Q: matFromDiag([10, 10, 10, 1, 1, 1]),
       R: matFromDiag([1, 1]),
       simEps: 0.1,

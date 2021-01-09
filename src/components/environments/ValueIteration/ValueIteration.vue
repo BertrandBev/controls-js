@@ -38,7 +38,7 @@ export default {
   meta: {
     title: "Value iteration",
     icon: "mdi-restore",
-    systems: [Systems.secondOrder, Systems.simplePendulum]
+    systems: [Systems.simplePendulum]
   },
 
   components: {

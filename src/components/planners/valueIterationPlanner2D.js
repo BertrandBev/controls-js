@@ -170,8 +170,8 @@ class ValueIterationPlanner2D {
     // Transition created. Now smooth table
     this.smoothTable(this.tableI);
     this.smoothTable(this.tableJ);
-    console.log('tableI:', this.tableI);
-    console.log('tableJ:', this.tableJ);
+    // console.log('tableI:', this.tableI);
+    // console.log('tableJ:', this.tableJ);
   }
 
   /**
@@ -179,14 +179,6 @@ class ValueIterationPlanner2D {
    */
   cost() {
     return this.dt;
-  }
-
-  valueIterationInit() {
-    this.policy = {};
-    this.V.tensor.clear(Infinity);
-    this.kxTargets.forEach(k => {
-      this.V.tensor.data[k] = 0;
-    });
   }
 
   /**
@@ -218,7 +210,7 @@ class ValueIterationPlanner2D {
       // console.log('V after', JSON.parse(JSON.stringify(this.V)));
       if (maxUpdate < 1e-3) {
         console.log(`Successfully converged in ${k} iterations`);
-        console.log('bestU', this.policy);
+        // console.log('bestU', this.policy);
         return true;
       }
     }
@@ -234,6 +226,29 @@ class ValueIterationPlanner2D {
     // Run VI
     this.runValueIteration(maxIter);
     // Update watchers
+    this.watchers.forEach(fun => fun());
+    // Dump
+    this.dump();
+  }
+
+  dump() {
+    // Dump result to clipboard
+    navigator.clipboard.writeText(JSON.stringify({
+      V: this.V.map((sub) => sub.map(v => v.toFixed(2))),
+      tableI: this.tableI,
+      tableJ: this.tableJ,
+      policy: this.policy,
+    })).then(() => console.log("dumped to clipboard"));
+  }
+
+  parse(params, dump) {
+    this.setParams(params);
+    // Parse result from dump
+    this.V = dump.V.map((sub) => sub.map(v => parseFloat(v)));
+    this.tableI = dump.tableI;
+    this.tableJ = dump.tableJ;
+    this.policy = dump.policy;
+    // Notify watchers
     this.watchers.forEach(fun => fun());
   }
 
@@ -262,8 +277,6 @@ class ValueIterationPlanner2D {
       }
     });
     if (pt == null) return;
-    const x = this.unpackPt(pt);
-    x.print("")
     // Now start for x
     const ptSet = new Set();
     for (let t = 0; t <= maxDuration; t += this.dt) {
@@ -281,8 +294,9 @@ class ValueIterationPlanner2D {
       pt = newPt;
       ptSet.add(newPt);
     }
-    console.log('length:', ptSet.size);
-    sequence = smooth(sequence, this.dt, 1, false);
+    const xf = sequence[sequence.length - 1];
+    // sequence = smooth(sequence, this.dt, 1, false);
+    sequence.push(xf);
     trajectory.set(sequence, this.dt);
   }
 }

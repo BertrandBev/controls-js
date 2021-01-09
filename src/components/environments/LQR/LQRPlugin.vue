@@ -75,6 +75,10 @@ export default {
     this.simTraj = new Trajectory(this.system, false);
     this.linearTraj = new Trajectory(this.system, false);
     this.runLQR();
+    // Set init state if needed
+    if (this.params.x0) {
+      this.system.setState(new eig.Matrix(this.params.x0));
+    }
   },
 
   methods: {
