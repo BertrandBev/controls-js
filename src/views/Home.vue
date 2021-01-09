@@ -2,8 +2,8 @@
 div(style="display: flex; flex-direction: column; align-items: center")
   div(:style="divStyle")
     div(style="display: flex; flex-direction: column; align-items: center")
-      v-img(src="@assets/logo.png", width="150px")
-      span.display-1.font-weight-light.white--text(style="margin-top: 16px") Eigen JS
+      v-img(src="@assets/logo.png", width="350px")
+      span.display-1.font-weight-light.white--text(style="margin-top: 16px") Controls JS
       //- Demo(style="margin-top: 48px")
   div(
     style="width: 100%; max-width: 960px; padding: 40px",

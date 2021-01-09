@@ -65,7 +65,7 @@ export default {
 
   methods: {
     navHome() {
-      this.$router.push({ name: '' });
+      this.$router.push({ path: '/' });
     },
 
     toggle() {

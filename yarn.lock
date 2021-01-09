@@ -3414,6 +3414,13 @@ ee-first@1.1.1:
   resolved "https://registry.yarnpkg.com/ee-first/-/ee-first-1.1.1.tgz#590c61156b0ae2f4f0255732a158b266bc56b21d"
   integrity sha1-WQxhFWsK4vTwJVcyoViyZrxWsh0=
 
+eigen@^0.2.0:
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/eigen/-/eigen-0.2.0.tgz#55f35e1bbbf31cbeefb57639a1eb2c680ece18be"
+  integrity sha512-x5jgZoidIHzxbUlTY9lIlIRL9E6ve0E7y1/AbAzixx0gXscu8erUEiW7A4eJppNU1uIqC3cBrGHDaY39LH+YiA==
+  dependencies:
+    hashmap "^2.4.0"
+
 ejs@^2.6.1:
   version "2.7.4"
   resolved "https://registry.yarnpkg.com/ejs/-/ejs-2.7.4.tgz#48661287573dcc53e366c7a1ae52c3a120eec9ba"
@@ -4434,6 +4441,11 @@ hash.js@^1.0.0, hash.js@^1.0.3:
   dependencies:
     inherits "^2.0.3"
     minimalistic-assert "^1.0.1"
+
+hashmap@^2.4.0:
+  version "2.4.0"
+  resolved "https://registry.yarnpkg.com/hashmap/-/hashmap-2.4.0.tgz#4bcfe01fbbd2713db9d9254ce936b838412af884"
+  integrity sha512-Ngj48lhnxJdnBAEVbubKBJuN1elfVLZJs94ZixRi98X3GCU4v6pgj9qRkHt6H8WaVJ69Wv0r1GhtS7hvF9zCgg==
 
 he@1.2.x, he@^1.1.0, he@^1.2.0:
   version "1.2.0"
@@ -5856,6 +5868,13 @@ nice-try@^1.0.4:
   version "1.0.5"
   resolved "https://registry.yarnpkg.com/nice-try/-/nice-try-1.0.5.tgz#a3378a7696ce7d223e88fc9b764bd7ef1089e366"
   integrity sha512-1nh45deeb5olNY7eX82BkPO7SSxR5SSYJiPTrTdFUVYwAl8CKMA5N9PjTYkHiRjisVcxcQ1HXdLhx2qxxJzLNQ==
+
+nlopt-js@^0.1.1:
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/nlopt-js/-/nlopt-js-0.1.1.tgz#49c496a630198cf40561e83a94134d173a7fde42"
+  integrity sha512-WhTbQelM5zxM3epyZayfCh9722TDInOMcbcTFbnFiHNx8/JqfGKrPhFqnZNylIPUjA6PfBM/zQqLzSvXO9YHkw==
+  dependencies:
+    hashmap "^2.4.0"
 
 no-case@^2.2.0:
   version "2.3.2"

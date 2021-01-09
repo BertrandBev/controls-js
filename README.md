@@ -1,5 +1,5 @@
 <p align="center">
-  <img width="192" src="https://user-images.githubusercontent.com/12652154/71167221-945de480-2254-11ea-97ba-faadc933ed4f.png">
+  <img width="192" src="/src/assets/logo.png">
 </p>
 
 [![Website shields.io](https://img.shields.io/website-up-down-green-red/http/shields.io.svg)](https://bertrandbev.github.io/controls.js/#/)
