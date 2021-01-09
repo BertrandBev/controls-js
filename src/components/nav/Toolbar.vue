@@ -15,7 +15,7 @@ v-app-bar(app clipped-left clipped-right
     span.font-weight-light {{ title }}
   v-spacer
   v-toolbar-items
-    v-btn(href='https://github.com/BertrandBev/eigen-js', target='_blank', text)
+    v-btn(href='https://github.com/BertrandBev/controls-js', target='_blank', text)
       span.mr-2 Github
       v-icon mdi-open-in-new
   //* Right action

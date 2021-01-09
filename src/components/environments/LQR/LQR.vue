@@ -3,7 +3,10 @@ ModelLayout
   template(v-slot:canvas)
     div.canvas(ref='canvas')
   template(v-slot:overlay)
-    span.ma-2 fps: {{ fps.toFixed(0) }}
+    div(style="display: flex")
+      v-chip.ma-2(label, color="red", text-color="white") Dynamic
+      v-spacer
+      span.ma-2 fps: {{ fps.toFixed(0) }}
   template(v-slot:drawer)
     LQRPlugin(ref='plugin'
               :system='system'

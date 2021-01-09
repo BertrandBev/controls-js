@@ -14,6 +14,7 @@
     "chroma-js": "^2.1.0",
     "core-js": "^3.8.0",
     "lodash": "^4.17.20",
+    "markdown-it": "^12.0.4",
     "plotly.js-dist": "^1.57.1",
     "two.js": "^0.7.0-stable.1",
     "vue": "^2.6.12",

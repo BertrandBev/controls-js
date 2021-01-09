@@ -1,6 +1,7 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
 // Environments
+import Home from "@/views/Home.vue";
 import LQR from "@/components/environments/LQR/LQR.vue";
 import ValueIteration from "@/components/environments/ValueIteration/ValueIteration.vue";
 import RRT from "@/components/environments/RRT/RRT.vue";
@@ -36,6 +37,7 @@ const envRoutes = env.map(env => ({
 const routes = [
   {
     path: '/',
+    component: Home,
   },
   ...envRoutes
 ]

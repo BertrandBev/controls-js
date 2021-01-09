@@ -7,6 +7,7 @@ v-navigation-drawer(v-model='drawer'
       v-list-item-icon
         v-icon mdi-home
       v-list-item-title Home
+    v-divider
     //* Environments
     v-list-group(v-for='route, idx in envRoutes'
                  :key='`env_${idx}`'
@@ -21,6 +22,14 @@ v-navigation-drawer(v-model='drawer'
         v-list-item-title {{ system.NAME }}
         v-list-item-icon
           v-icon {{ icons[sidx] }}
+  //* Footer
+  v-divider
+  v-list(dense style='flex: 0 0 auto')
+    v-list-item(@click='github')
+      v-list-item-action
+        v-icon mdi-github
+      v-list-item-content
+        v-list-item-title Github
 </template>
 
 <script>
@@ -56,7 +65,7 @@ export default {
 
   methods: {
     navHome() {
-      console.log("to implement");
+      this.$router.push({ name: '' });
     },
 
     toggle() {
@@ -64,7 +73,7 @@ export default {
     },
 
     github() {
-      window.open("https://github.com/BertrandBev/nl-controls", "_blank");
+      window.open("https://github.com/BertrandBev/controls-js", "_blank");
     },
 
     isEnv(env) {

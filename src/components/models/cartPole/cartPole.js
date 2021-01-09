@@ -206,6 +206,11 @@ class CartPole extends Model {
     // TODO: draw torque
     const { u, ghost } = params;
     const x = this.x;
+    // TEMP
+    // x.set(0, 0);
+    // x.set(1, Math.PI - Math.PI / 8);
+    // x.set(2, 0);
+    // x.set(3, 0);
     this.graphics.cart.opacity = ghost ? 0.3 : 1;
     this.graphics.pole.rotation = -x.get(1);
     this.graphics.cart.translation.set(...worldToCanvas([x.get(0), 0]));
