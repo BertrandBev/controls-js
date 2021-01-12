@@ -13,7 +13,7 @@ class Arm extends Model {
 
   constructor(params = {}) {
     // n is the number of links
-    const n = params['n'] || 2;
+    const n = params['n'] || 3;
     const states = [...Array(2 * n).keys()].map(k => ({
       name: k < n ? `theta${k}` : `theta${k - n}Dot`,
       show: k < n,

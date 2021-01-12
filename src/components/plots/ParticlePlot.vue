@@ -60,6 +60,7 @@ export default {
           marker: {
             color: "green",
           },
+          name: "x", 
         },
         {
           x: py,
@@ -68,6 +69,7 @@ export default {
           marker: {
             color: "red",
           },
+          name: "y", 
         },
       ];
       const layout = {

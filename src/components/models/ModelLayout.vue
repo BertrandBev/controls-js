@@ -78,7 +78,7 @@ export default {
     sheetStyle() {
       const translateY = 0; // this.sheet ? 0 : this.sheetHeight;
       return {
-        width: `${this.$store.windowSize.x}px`,
+        width: `100%`, //`${this.$store.windowSize.x}px`,
         height: `${this.sheetHeight}px`,
         position: "absolute",
         bottom: `0px`,
@@ -90,7 +90,7 @@ export default {
       const translateY = -this.sheetHeight / 2; // this.sheet ? -this.sheetHeight / 2 : 0;
       return {
         position: 'relative',
-        width: `${this.$store.windowSize.x}px`,
+        width: `100%`, //`${this.$store.windowSize.x}px`,
         height: `${this.$store.windowSize.y}px`,
         transform: `translateY(${translateY}px)`,
         background:
@@ -106,7 +106,7 @@ export default {
 
     containerStyle() {
       return {
-        width: `${this.$store.windowSize.x}px`,
+        width: `100%`, //`${this.$store.windowSize.x}px`,
         height: `${this.$store.windowSize.y}px`,
         display: "flex",
         "flex-direction": "row",

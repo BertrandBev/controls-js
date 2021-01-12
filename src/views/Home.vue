@@ -42,7 +42,7 @@ export default {
 
     divStyle() {
       return {
-        width: `${this.$store.windowSize.x}px`,
+        width: `100%`,
         height: `${this.$store.windowSize.y}px`,
         position: "relative",
       };
