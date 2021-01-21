@@ -15,30 +15,30 @@ It harnesses [eigen-js](https://github.com/BertrandBev/eigen-js) for all linear 
 
 ## Environments
 
-![alt text](https://api.iconify.design/mdi-matrix.svg?color=purple&width=25&height=25) &nbsp;   [Linear quadratic regulation]()
+![alt text](https://api.iconify.design/mdi-matrix.svg?color=purple&width=25&height=25) &nbsp;   [Linear quadratic regulation](https://bertrandbev.github.io/controls-js/#/lqr/cartPole)
 
 > This environment demonstrates [linear quadratic regulation](https://en.wikipedia.org/wiki/Linear%E2%80%93quadratic_regulator) of a few test systems around unstable trim points
 
-![alt text](https://api.iconify.design/mdi-restore.svg?color=purple&width=25&height=25) &nbsp;   [Value iteration]()
+![alt text](https://api.iconify.design/mdi-restore.svg?color=purple&width=25&height=25) &nbsp;   [Value iteration](https://bertrandbev.github.io/controls-js/#/valueIteration/simplePendulum)
 
 > A simple pendulum dynamics phase plane is discretized and [the value iteration](https://en.wikipedia.org/wiki/Markov_decision_process#Value_iteration) algorithm is run to obtain a swingup policy
 
-![alt text](https://api.iconify.design/mdi-infinity.svg?color=purple&width=25&height=25) &nbsp;   [Differential flatness]()
+![alt text](https://api.iconify.design/mdi-infinity.svg?color=purple&width=25&height=25) &nbsp;   [Differential flatness](https://bertrandbev.github.io/controls-js/#/flatness/quadrotor2D)
 
 > A [differentially flat](https://en.wikipedia.org/wiki/Flatness_(systems_theory)) system, a 2D quadcopter, follows a custom spatial trajectory
 
-![alt text](https://api.iconify.design/mdi-vector-curve.svg?color=purple&width=25&height=25) &nbsp;   [Direct collocation]()
+![alt text](https://api.iconify.design/mdi-vector-curve.svg?color=purple&width=25&height=25) &nbsp;   [Direct collocation](https://bertrandbev.github.io/controls-js/#/directCollocation/cartPole)
 
 > Nonlinear trajectory optimisation is demonstrated on a few dynamical systems using [direct collocation](https://en.wikipedia.org/wiki/Trajectory_optimization)
 
-![alt text](https://api.iconify.design/mdi-camera-timer.svg?color=purple&width=25&height=25) &nbsp;   [Model predictive control]()
+![alt text](https://api.iconify.design/mdi-camera-timer.svg?color=purple&width=25&height=25) &nbsp;   [Model predictive control](https://bertrandbev.github.io/controls-js/#/mpc/cartPole)
 
 > [Model predictive control](https://en.wikipedia.org/wiki/Model_predictive_control) is used to dynamically stabilize the systems in the previous section around their optimized trajectories for robust tracking.
 
-![alt text](https://api.iconify.design/mdi-chart-bell-curve.svg?color=purple&width=25&height=25) &nbsp;   [Kalman Filter]()
+![alt text](https://api.iconify.design/mdi-chart-bell-curve.svg?color=purple&width=25&height=25) &nbsp;   [Kalman Filter](https://bertrandbev.github.io/controls-js/#/kalmanFilter/car)
 
 > A [kalman filter](https://en.wikipedia.org/wiki/Kalman_filter) estimator tracks a 2d top down car's state based on radar measurements
 
-![alt text](https://api.iconify.design/mdi-dots-hexagon.svg?color=purple&width=25&height=25) &nbsp;   [Particle Filter]()
+![alt text](https://api.iconify.design/mdi-dots-hexagon.svg?color=purple&width=25&height=25) &nbsp;   [Particle Filter](https://bertrandbev.github.io/controls-js/#/particleFilter/car)
 
 > A [particle filter](https://en.wikipedia.org/wiki/Particle_filter) estimator tracks a 2d top down car's state based on radar measurements using a swarm of simulated particles
