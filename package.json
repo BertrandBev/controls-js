@@ -15,7 +15,7 @@
     "core-js": "^3.8.2",
     "eigen": "^0.2.0",
     "lodash": "^4.17.20",
-    "markdown-it": "^12.0.4",
+    "markdown-it": "^12.3.2",
     "nlopt-js": "^0.1.1",
     "plotly.js-dist": "^1.58.4",
     "two.js": "^0.7.0-stable.1",
